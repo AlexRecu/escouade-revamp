@@ -1,0 +1,440 @@
+[
+    {
+        "target": "enemy",
+        "name": "Brasier",
+        "element": "Feu",
+        "cost": 1,
+        "power": 3,
+        "hp": null,
+        "status": null,
+        "description": "Projette une boule de feu sur l'ennemi"
+    },
+    {
+        "target": "enemy",
+        "name": "Glacier",
+        "element": "Glace",
+        "cost": 1,
+        "power": 3,
+        "hp": null,
+        "status": null,
+        "description": "Projette un cristal de glace sur l'ennemi"
+    },
+    {
+        "target": "enemy",
+        "name": "Foudre",
+        "element": "Foudre",
+        "cost": 1,
+        "power": 3,
+        "hp": null,
+        "status": null,
+        "description": "Envoie un éclair sur l'ennemi"
+    },
+    {
+        "target": "enemy",
+        "name": "Brasier +",
+        "element": "Feu",
+        "cost": 1,
+        "power": 5,
+        "hp": null,
+        "status": null,
+        "description": "Projette une grosse boule de feu sur l'ennemi"
+    },
+    {
+        "target": "enemy",
+        "name": "Glacier +",
+        "element": "Glace",
+        "cost": 1,
+        "power": 5,
+        "hp": null,
+        "status": null,
+        "description": "Projette un gros cristal de glace sur l'ennemi"
+    },
+    {
+        "target": "enemy",
+        "name": "Foudre +",
+        "element": "Foudre",
+        "cost": 1,
+        "power": 5,
+        "hp": null,
+        "status": null,
+        "description": "Fait s'abattre un éclair sur l'ennemi"
+    },
+    {
+        "target": "enemy",
+        "name": "Brasier X",
+        "element": "Feu",
+        "cost": 2,
+        "power": 7,
+        "hp": null,
+        "status": null,
+        "description": "Projette une énorme boule de feu sur l'ennemi"
+    },
+    {
+        "target": "enemy",
+        "name": "Glacier X",
+        "element": "Glace",
+        "cost": 2,
+        "power": 7,
+        "hp": null,
+        "status": null,
+        "description": "Projette un énorme cristal de glace sur l'ennemi"
+    },
+    {
+        "target": "enemy",
+        "name": "Foudre X",
+        "element": "Foudre",
+        "cost": 2,
+        "power": 7,
+        "hp": null,
+        "status": null,
+        "description": "Fait s'abattre une pluie d'éclair sur l'ennemi"
+    },
+    {
+        "target": "enemy",
+        "name": "Séisme",
+        "element": "Terre",
+        "cost": 3,
+        "power": 8,
+        "hp": null,
+        "status": null,
+        "description": "Fait trembler le sol sous les ennemis "
+    },
+    {
+        "target": "enemy",
+        "name": "Ouragan",
+        "element": "Air",
+        "cost": 3,
+        "power": 8,
+        "hp": null,
+        "status": null,
+        "description": "Invoque un énorme tourbillon sur les ennemis"
+    },
+    {
+        "target": "enemy",
+        "name": "Atomnium",
+        "element": null,
+        "cost": 5,
+        "power": 15,
+        "hp": null,
+        "status": null,
+        "description": "Crée un trou noir qui englouti les ennemis et leur inflide des dégâts"
+    },
+    {
+        "target": "enemy",
+        "name": "Ténèbres",
+        "element": "Ténèbre",
+        "cost": null,
+        "power": null,
+        "hp": null,
+        "status": null,
+        "description": "Sacrifie la moitié de ses PV pour réduire de moitié les PV de l'ennemi"
+    },
+    {
+        "target": "enemy",
+        "name": "Toxine",
+        "element": null,
+        "cost": 2,
+        "power": null,
+        "hp": null,
+        "status": {
+            "name": "Poison",
+            "nbTurnEffect": null
+        },
+        "description": "Empoisonne l'ennemi"
+    },
+    {
+        "target": "enemy",
+        "name": "Morphée",
+        "element": null,
+        "cost": 1,
+        "power": null,
+        "hp": null,
+        "status": {
+            "name": "Paralysie",
+            "nbTurnEffect": 2
+        },
+        "description": "Fais dormir un ennemi"
+    },
+    {
+        "target": "enemy",
+        "name": "Fièvre",
+        "element": null,
+        "cost": 1,
+        "power": null,
+        "hp": null,
+        "status": {
+            "name": "Confusion",
+            "nbTurnEffect": 2
+        },
+        "description": "Rend un ennemi confus"
+    },
+    {
+        "target": "enemy",
+        "name": "Mort",
+        "element": null,
+        "cost": 3,
+        "power": null,
+        "hp": null,
+        "status": {
+            "name": "Mort",
+            "nbTurnEffect": null
+        },
+        "description": "Peut tuer un ennemi instantanément"
+    },
+    {
+        "target": "ally",
+        "name": "Célérité",
+        "element": null,
+        "cost": 2,
+        "power": null,
+        "hp": null,
+        "status": {
+            "name": "Célérité",
+            "nbTurnEffect": 3
+        },
+        "description": "Permet une action supplémentaire sur un allié ou soi-même"
+    },
+    {
+        "target": "ally",
+        "name": "Fureur",
+        "element": null,
+        "cost": 2,
+        "power": null,
+        "hp": null,
+        "status": {
+            "name": "Fureur",
+            "nbTurnEffect": 2
+        },
+        "description": "Augmente la Force de 2 d'un allié ou soi-même mais oblige une attaque normale"
+    },
+    {
+        "target": "ally",
+        "name": "Rage",
+        "element": null,
+        "cost": 1,
+        "power": null,
+        "hp": null,
+        "status": {
+            "name": "Rage",
+            "nbTurnEffect": 2
+        },
+        "description": "Augmente la Force de 1 d'un allié ou soi-même mais oblige une attaque normale"
+    },
+    {
+        "target": "ally",
+        "name": "Renvoi",
+        "element": null,
+        "cost": 1,
+        "power": null,
+        "hp": null,
+        "status": {
+            "name": "Renvoi",
+            "nbTurnEffect": null
+        },
+        "description": "Fuite forcée en combat"
+    },
+    {
+        "target": "enemy",
+        "name": "Saignée",
+        "element": null,
+        "cost": 1,
+        "power": null,
+        "hp": null,
+        "status": {
+            "name": "Saignée",
+            "nbTurnEffect": null
+        },
+        "description": "Absorbe la vie d'un adversaire"
+    },
+    {
+        "target": "enemy",
+        "name": "Supplice",
+        "element": null,
+        "cost": 2,
+        "power": null,
+        "hp": null,
+        "status": {
+            "name": "Supplice",
+            "nbTurnEffect": null
+        },
+        "description": "Empoisonne l'ennemi, voire le tuer instantanément"
+    },
+    {
+        "target": "ally",
+        "name": "Soin",
+        "element": "Sacré",
+        "cost": 1,
+        "power": null,
+        "hp": 3,
+        "status": null,
+        "description": "Soigne 3PV d'un allié"
+    },
+    {
+        "target": "ally",
+        "name": "Grâce",
+        "element": "Sacré",
+        "cost": 1,
+        "power": null,
+        "hp": 2,
+        "status": {
+            "name": "Grace",
+            "nbTurnEffect": 3
+        },
+        "description": "Rend un peu PV à chaque tour"
+    },
+    {
+        "target": "enemy",
+        "name": "Lumen",
+        "element": "Sacré",
+        "cost": 1,
+        "power": 3,
+        "hp": null,
+        "status": null,
+        "description": "Envoie une boule de lumière sacrée sur un ennemi"
+    },
+    {
+        "target": "ally",
+        "name": "Soin +",
+        "element": "Sacré",
+        "cost": 2,
+        "power": null,
+        "hp": 7,
+        "status": null,
+        "description": "Soigne 7PV d'un allié"
+    },
+    {
+        "target": "ally",
+        "name": "Grâce +",
+        "element": "Sacré",
+        "cost": 2,
+        "power": null,
+        "hp": 4,
+        "status": {
+            "name": "Grace+",
+            "nbTurnEffect": 4
+        },
+        "description": "Rend des PV à chaque tour"
+    },
+    {
+        "target": "enemy",
+        "name": "Lumen +",
+        "element": "Sacré",
+        "cost": 2,
+        "power": 5,
+        "hp": null,
+        "status": null,
+        "description": "Envoie une grosse boule de lumière sacrée sur un ennemi"
+    },
+    {
+        "target": "ally",
+        "name": "Soin X",
+        "element": "Sacré",
+        "cost": 3,
+        "power": null,
+        "hp": 15,
+        "status": null,
+        "description": "Soigne 15PV d'un allié"
+    },
+    {
+        "target": "ally",
+        "name": "Grâce X",
+        "element": "Sacré",
+        "cost": 3,
+        "power": null,
+        "hp": 6,
+        "status": {
+            "name": "GraceX",
+            "nbTurnEffect": 5
+        },
+        "description": "Rend plusieurs PV à chaque tour"
+    },
+    {
+        "target": "enemy",
+        "name": "Lumen X",
+        "element": "Sacré",
+        "cost": 3,
+        "power": 7,
+        "hp": null,
+        "status": null,
+        "description": "Envoie une énorme boule de lumière sacrée sur un ennemi"
+    },
+    {
+        "target": "ally",
+        "name": "Esuna",
+        "element": "Sacré",
+        "cost": 2,
+        "power": null,
+        "hp": null,
+        "status": {
+            "name": "Esuna",
+            "nbTurnEffect": null
+        },
+        "description": "Soigne les altérations de status"
+    },
+    {
+        "target": "ally",
+        "name": "Vie",
+        "element": "Sacré",
+        "cost": 3,
+        "power": null,
+        "hp": 5,
+        "status": null,
+        "description": "Ranime un allié KO avec quelques points de vie"
+    },
+    {
+        "target": "ally",
+        "name": "Vie +",
+        "element": "Sacré",
+        "cost": 4,
+        "power": null,
+        "hp": 12,
+        "status": null,
+        "description": "Ranime un allié KO avec la moitié de ses points de vie"
+    },
+    {
+        "target": "ally",
+        "name": "Vie X",
+        "element": "Sacré",
+        "cost": 5,
+        "power": null,
+        "hp": 20,
+        "status": null,
+        "description": "Ranime un allié KO avec beaucoup de points de vie"
+    },
+    {
+        "target": "enemy",
+        "name": "Dissipation",
+        "element": null,
+        "cost": 2,
+        "power": null,
+        "hp": null,
+        "status": {
+            "name": "Dissipation",
+            "nbTurnEffect": null
+        },
+        "description": "Dissipe les statuts d'une cible"
+    },
+    {
+        "target": "ally",
+        "name": "Barrière",
+        "element": "Sacré",
+        "cost": 1,
+        "power": null,
+        "hp": null,
+        "status": {
+            "name": "Barrière",
+            "nbTurnEffect": 3
+        },
+        "description": "Protège des altérations de statuts pendant 3 tours"
+    },
+    {
+        "target": "enemy",
+        "name": "Sidéral",
+        "element": "Sacré",
+        "cost": 4,
+        "power": 15,
+        "hp": null,
+        "status": null,
+        "description": "Invoque une colonne de lumière divine sur la cible"
+    }
+]

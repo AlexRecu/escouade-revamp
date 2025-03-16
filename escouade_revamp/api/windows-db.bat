@@ -1,0 +1,20 @@
+@echo off
+
+set CONTAINER_NAME=mongodb_escouade
+set MONGO_INITDB_ROOT_USERNAME=escouade_user
+set MONGO_INITDB_ROOT_PASSWORD=escouade_pass
+set MONGO_DATABASE=escouade
+
+docker rm -f %CONTAINER_NAME%
+
+docker run -d ^
+  --name %CONTAINER_NAME% ^
+  -e MONGO_INITDB_ROOT_USERNAME=%MONGO_INITDB_ROOT_USERNAME% ^
+  -e MONGO_INITDB_ROOT_PASSWORD=%MONGO_INITDB_ROOT_PASSWORD% ^
+  -e MONGO_INITDB_DATABASE=%MONGO_DATABASE% ^
+  -p 27027:27017 ^
+  mongo
+
+echo MongoDB container '%CONTAINER_NAME%' started with database '%MONGO_DATABASE%'.
+echo Username: %MONGO_INITDB_ROOT_USERNAME%
+echo Password: %MONGO_INITDB_ROOT_PASSWORD%

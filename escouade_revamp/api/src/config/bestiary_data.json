@@ -1,0 +1,1701 @@
+[
+  {
+    "name": "Frelon",
+    "type": "Physique",
+    "weakness": [
+      "Feu"
+    ],
+    "immunity": [],
+    "resistance": [],
+    "attack": ["Dard empoisonné"],
+    "atk": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "pv": [
+      20,
+      40,
+      60,
+      80,
+      100,
+      120
+    ],
+    "xp": [
+      15,
+      30,
+      45,
+      60,
+      75,
+      90
+    ],
+    "gold": [
+      5,
+      20,
+      45,
+      80,
+      125,
+      180
+    ],
+    "spawn_rates": {
+      "forest": 20.34,
+      "cave": 0.00,
+      "tower": 0.00,
+      "castle": 0.00,
+      "gorge": 0.00,
+      "frozenEarth": 0.00
+    }
+  },
+  {
+    "name": "Gobelin",
+    "type": "Physique",
+    "weakness": [],
+    "immunity": [],
+    "resistance": [
+      "Feu"
+    ],
+    "attack": ["Lance Pierre"],
+    "atk": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "pv": [
+      20,
+      40,
+      60,
+      80,
+      100,
+      120
+    ],
+    "xp": [
+      15,
+      30,
+      45,
+      60,
+      75,
+      90
+    ],
+    "gold": [
+      10,
+      30,
+      60,
+      100,
+      150,
+      210
+    ],
+    "spawn_rates": {
+      "forest": 10.17,
+      "cave": 0.00,
+      "tower": 0.00,
+      "castle": 14.55,
+      "gorge": 13.45,
+      "frozenEarth": 0.00
+    }
+  },
+  {
+    "name": "Veuve noire",
+    "type": "Physique",
+    "weakness": [
+      "Feu"
+    ],
+    "immunity": [],
+    "resistance": [],
+    "attack": ["Toile Gluante"],
+    "atk": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "pv": [
+      20,
+      40,
+      60,
+      80,
+      100,
+      120
+    ],
+    "xp": [
+      15,
+      30,
+      45,
+      60,
+      75,
+      90
+    ],
+    "gold": [
+      10,
+      30,
+      60,
+      100,
+      150,
+      210
+    ],
+    "spawn_rates": {
+      "forest": 10.17,
+      "cave": 13.39,
+      "tower": 0.00,
+      "castle": 0.00,
+      "gorge": 0.00,
+      "frozenEarth": 0.00
+    }
+  },
+  {
+    "name": "Loup",
+    "type": "Physique",
+    "weakness": [],
+    "immunity": [],
+    "resistance": [],
+    "attack": ["Morsure", "Appel à la meute"],
+    "atk": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "pv": [
+      25,
+      50,
+      75,
+      100,
+      125,
+      150
+    ],
+    "xp": [
+      15,
+      30,
+      45,
+      60,
+      75,
+      90
+    ],
+    "gold": [
+      10,
+      30,
+      60,
+      100,
+      150,
+      210
+    ],
+    "spawn_rates": {
+      "forest": 8.14,
+      "cave": 0.00,
+      "tower": 0.00,
+      "castle": 0.00,
+      "gorge": 0.00,
+      "frozenEarth": 12.97
+    }
+  },
+  {
+    "name": "Vautour",
+    "type": "Physique",
+    "weakness": [],
+    "immunity": [],
+    "resistance": [],
+    "attack": ["Rapace"],
+    "atk": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "pv": [
+      25,
+      50,
+      75,
+      100,
+      125,
+      150
+    ],
+    "xp": [
+      15,
+      30,
+      45,
+      60,
+      75,
+      90
+    ],
+    "gold": [
+      10,
+      30,
+      60,
+      100,
+      150,
+      210
+    ],
+    "spawn_rates": {
+      "forest": 8.14,
+      "cave": 0.00,
+      "tower": 0.00,
+      "castle": 0.00,
+      "gorge": 10.76,
+      "frozenEarth": 0.00
+    }
+  },
+  {
+    "name": "Bombo Feu",
+    "type": "Magique",
+    "weakness": [
+      "Glace"
+    ],
+    "immunity": [
+      "Feu"
+    ],
+    "resistance": [],
+    "attack": ["Brasier", "Explosion"],
+    "atk": [
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "pv": [
+      25,
+      50,
+      75,
+      100,
+      125,
+      150
+    ],
+    "xp": [
+      15,
+      30,
+      45,
+      60,
+      75,
+      90
+    ],
+    "gold": [
+      15,
+      40,
+      75,
+      120,
+      175,
+      240
+    ],
+    "spawn_rates": {
+      "forest": 10.85,
+      "cave": 0.00,
+      "tower": 12.77,
+      "castle": 0.00,
+      "gorge": 14.35,
+      "frozenEarth": 0.00
+    }
+  },
+  {
+    "name": "Bombo Glace",
+    "type": "Magique",
+    "weakness": [
+      "Feu"
+    ],
+    "immunity": [
+      "Glace"
+    ],
+    "resistance": [
+      "Feu"
+    ],
+    "attack": ["Glacier", "Explosion"],
+    "atk": [
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "pv": [
+      25,
+      50,
+      75,
+      100,
+      125,
+      150
+    ],
+    "xp": [
+      15,
+      30,
+      45,
+      60,
+      75,
+      90
+    ],
+    "gold": [
+      15,
+      40,
+      75,
+      120,
+      175,
+      240
+    ],
+    "spawn_rates": {
+      "forest": 0.00,
+      "cave": 0.00,
+      "tower": 12.77,
+      "castle": 0.00,
+      "gorge": 0.00,
+      "frozenEarth": 17.30
+    }
+  },
+  {
+    "name": "Bombo Terre",
+    "type": "Magique",
+    "weakness": [
+      "Air"
+    ],
+    "immunity": [
+      "Terre"
+    ],
+    "resistance": [
+      "Foudre"
+    ],
+    "attack": ["Tremblement", "Explosion"],
+    "atk": [
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "pv": [
+      25,
+      50,
+      75,
+      100,
+      125,
+      150
+    ],
+    "xp": [
+      15,
+      30,
+      45,
+      60,
+      75,
+      90
+    ],
+    "gold": [
+      15,
+      40,
+      75,
+      120,
+      175,
+      240
+    ],
+    "spawn_rates": {
+      "forest": 0.00,
+      "cave": 14.29,
+      "tower": 12.77,
+      "castle": 0.00,
+      "gorge": 14.35,
+      "frozenEarth": 0.00
+    }
+  },
+  {
+    "name": "Bombo Air",
+    "type": "Magique",
+    "weakness": [
+      "Foudre"
+    ],
+    "immunity": [
+      "Air"
+    ],
+    "resistance": [
+      "Terre"
+    ],
+    "attack": ["Air", "Explosion"],
+    "atk": [
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "pv": [
+      25,
+      50,
+      75,
+      100,
+      125,
+      150
+    ],
+    "xp": [
+      15,
+      30,
+      45,
+      60,
+      75,
+      90
+    ],
+    "gold": [
+      15,
+      40,
+      75,
+      120,
+      175,
+      240
+    ],
+    "spawn_rates": {
+      "forest": 0.00,
+      "cave": 0.00,
+      "tower": 12.77,
+      "castle": 15.52,
+      "gorge": 0.00,
+      "frozenEarth": 0.00
+    }
+  },
+  {
+    "name": "Bombo Foudre",
+    "type": "Magique",
+    "weakness": [
+      "Terre"
+    ],
+    "immunity": [
+      "Foudre"
+    ],
+    "resistance": [
+      "Air"
+    ],
+    "attack": ["Foudre", "Explosion"],
+    "atk": [
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "pv": [
+      25,
+      50,
+      75,
+      100,
+      125,
+      150
+    ],
+    "xp": [
+      15,
+      30,
+      45,
+      60,
+      75,
+      90
+    ],
+    "gold": [
+      15,
+      40,
+      75,
+      120,
+      175,
+      240
+    ],
+    "spawn_rates": {
+      "forest": 0.00,
+      "cave": 0.00,
+      "tower": 12.77,
+      "castle": 15.52,
+      "gorge": 0.00,
+      "frozenEarth": 17.30
+    }
+  },
+  {
+    "name": "Cendre Bombo",
+    "type": "Magique",
+    "weakness": [
+      "Ténèbres"
+    ],
+    "immunity": [
+      "Sacré"
+    ],
+    "resistance": [],
+    "attack": ["Lumen", "Explosion"],
+    "atk": [
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "pv": [
+      25,
+      50,
+      75,
+      100,
+      125,
+      150
+    ],
+    "xp": [
+      15,
+      30,
+      45,
+      60,
+      75,
+      90
+    ],
+    "gold": [
+      15,
+      40,
+      75,
+      120,
+      175,
+      240
+    ],
+    "spawn_rates": {
+      "forest": 0.00,
+      "cave": 14.29,
+      "tower": 0.00,
+      "castle": 0.00,
+      "gorge": 0.00,
+      "frozenEarth": 0.00
+    }
+  },
+  {
+    "name": "Mage gobelin",
+    "type": "Magique",
+    "weakness": [],
+    "immunity": [],
+    "resistance": [
+      "Feu"
+    ],
+    "attack": ["Ruine"],
+    "atk": [
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "pv": [
+      25,
+      50,
+      75,
+      100,
+      125,
+      150
+    ],
+    "xp": [
+      15,
+      30,
+      45,
+      60,
+      75,
+      90
+    ],
+    "gold": [
+      15,
+      40,
+      75,
+      120,
+      175,
+      240
+    ],
+    "spawn_rates": {
+      "forest": 10.85,
+      "cave": 14.29,
+      "tower": 0.00,
+      "castle": 0.00,
+      "gorge": 0.00,
+      "frozenEarth": 0.00
+    }
+  },
+  {
+    "name": "Lézard ailé",
+    "type": "Physique",
+    "weakness": [
+      "Air",
+      "Foudre"
+    ],
+    "immunity": [],
+    "resistance": [
+      "Glace"
+    ],
+    "attack": ["Morsure"],
+    "atk": [
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "pv": [
+      30,
+      60,
+      90,
+      120,
+      150,
+      180
+    ],
+    "xp": [
+      20,
+      40,
+      60,
+      80,
+      100,
+      120
+    ],
+    "gold": [
+      20,
+      53.33,
+      100,
+      160,
+      233,
+      320
+    ],
+    "spawn_rates": {
+      "forest": 0.00,
+      "cave": 0.00,
+      "tower": 0.00,
+      "castle": 0.00,
+      "gorge": 11.96,
+      "frozenEarth": 14.42
+    }
+  },
+  {
+    "name": "Ahriman",
+    "type": "Magique",
+    "weakness": [],
+    "immunity": [],
+    "resistance": [],
+    "attack": ["Mort"],
+    "atk": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "pv": [
+      45,
+      90,
+      135,
+      180,
+      225,
+      270
+    ],
+    "xp": [
+      25,
+      50,
+      75,
+      100,
+      125,
+      150
+    ],
+    "gold": [
+      16.67,
+      50,
+      100,
+      167,
+      250,
+      350
+    ],
+    "spawn_rates": {
+      "forest": 0.00,
+      "cave": 5.95,
+      "tower": 0.00,
+      "castle": 0.00,
+      "gorge": 0.00,
+      "frozenEarth": 0.00
+    }
+  },
+  {
+    "name": "Dragonnet",
+    "type": "Physique",
+    "weakness": [],
+    "immunity": [],
+    "resistance": [],
+    "attack": ["Brasier +"],
+    "atk": [
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "pv": [
+      50,
+      100,
+      150,
+      200,
+      250,
+      300
+    ],
+    "xp": [
+      30,
+      60,
+      90,
+      120,
+      150,
+      180
+    ],
+    "gold": [
+      30,
+      60,
+      90,
+      120,
+      150,
+      180
+    ],
+    "spawn_rates": {
+      "forest": 0.00,
+      "cave": 0.00,
+      "tower": 0.00,
+      "castle": 7.76,
+      "gorge": 7.18,
+      "frozenEarth": 0.00
+    }
+  },
+  {
+    "name": "Bandit",
+    "type": "Physique",
+    "weakness": [
+      "Feu"
+    ],
+    "immunity": [],
+    "resistance": [],
+    "attack": ["Coup d'épée", "Appel à la meute"],
+    "atk": [
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "pv": [
+      50,
+      100,
+      150,
+      200,
+      250,
+      300
+    ],
+    "xp": [
+      30,
+      60,
+      90,
+      120,
+      150,
+      180
+    ],
+    "gold": [
+      5.43,
+      0.00,
+      0.00,
+      0.00,
+      7.18,
+      8.65
+    ],
+    "spawn_rates": {
+      "forest": 0.00,
+      "cave": 0.00,
+      "tower": 0.00,
+      "castle": 0.00,
+      "gorge": 7.18,
+      "frozenEarth": 8.65
+    }
+  },
+  {
+    "name": "Troll",
+    "type": "Physique",
+    "weakness": [
+      "Feu"
+    ],
+    "immunity": [],
+    "resistance": [],
+    "attack": ["Écrasement", "Coup de massue"],
+    "atk": [
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "pv": [
+      40,
+      80,
+      120,
+      160,
+      200,
+      240
+    ],
+    "xp": [
+      25,
+      50,
+      75,
+      100,
+      125,
+      150
+    ],
+    "gold": [
+      41.67,
+      100,
+      175,
+      267,
+      375,
+      500
+    ],
+    "spawn_rates": {
+      "forest": 0.00,
+      "cave": 10.72,
+      "tower": 9.58,
+      "castle": 11.64,
+      "gorge": 0.00,
+      "frozenEarth": 0.00
+    }
+  },
+  {
+    "name": "Coeurl",
+    "type": "Physique",
+    "weakness": [
+      "Feu"
+    ],
+    "immunity": [],
+    "resistance": [],
+    "attack": ["Foudre +"],
+    "atk": [
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "pv": [
+      50,
+      100,
+      150,
+      200,
+      250,
+      300
+    ],
+    "xp": [
+      30,
+      60,
+      90,
+      120,
+      150,
+      180
+    ],
+    "gold": [
+      6.10,
+      8.04,
+      7.18,
+      8.73,
+      8.07,
+      9.73
+    ],
+    "spawn_rates": {
+      "forest": 0.00,
+      "cave": 0.00,
+      "tower": 0.00,
+      "castle": 0.00,
+      "gorge": 8.07,
+      "frozenEarth": 9.73
+    }
+  },
+  {
+    "name": "Chevalier mort vivant",
+    "type": "Physique",
+    "weakness": [
+      "Feu",
+      "Sacré"
+    ],
+    "immunity": [],
+    "resistance": [
+      "Ténèbres"
+    ],
+    "attack": ["Ruée mortelle"],
+    "atk": [
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "pv": [
+      60,
+      120,
+      180,
+      240,
+      300,
+      360
+    ],
+    "xp": [
+      30,
+      60,
+      90,
+      120,
+      150,
+      180
+    ],
+    "gold": [
+      6.61,
+      7.55,
+      8.07,
+      9.67,
+      9.73,
+      11.04
+    ],
+    "spawn_rates": {
+      "forest": 0.00,
+      "cave": 11.46,
+      "tower": 11.30,
+      "castle": 12.23,
+      "gorge": 0.00,
+      "frozenEarth": 0.00
+    }
+  },
+  {
+    "name": "Garde dragon",
+    "type": "Physique",
+    "weakness": [
+      "Glace",
+      "Foudre",
+      "Air"
+    ],
+    "immunity": [
+      "Feu"
+    ],
+    "resistance": [],
+    "attack": ["Saut", "Double Saut"],
+    "atk": [
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "pv": [
+      80,
+      160,
+      240,
+      320,
+      400,
+      480
+    ],
+    "xp": [
+      45,
+      90,
+      135,
+      180,
+      225,
+      270
+    ],
+    "gold": [
+      0.00,
+      0.00,
+      4.49,
+      5.46,
+      0.00,
+      0.00
+    ],
+    "spawn_rates": {
+      "forest": 0.00,
+      "cave": 0.00,
+      "tower": 4.49,
+      "castle": 5.46,
+      "gorge": 0.00,
+      "frozenEarth": 0.00
+    }
+  },
+  {
+    "name": "Yéti",
+    "type": "Magique",
+    "weakness": [
+      "Feu"
+    ],
+    "immunity": [],
+    "resistance": [
+      "Glace"
+    ],
+    "attack": ["Glacier +", "Glissade gelée"],
+    "atk": [
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "pv": [
+      80,
+      160,
+      240,
+      320,
+      400,
+      480
+    ],
+    "xp": [
+      45,
+      90,
+      135,
+      180,
+      225,
+      270
+    ],
+    "gold": [
+      60,
+      150,
+      270,
+      420,
+      600,
+      810
+    ],
+    "spawn_rates": {
+      "forest": 0.00,
+      "cave": 0.00,
+      "tower": 0.00,
+      "castle": 0.00,
+      "gorge": 0.00,
+      "frozenEarth": 6.08
+    }
+  },
+  {
+    "name": "Griffon",
+    "type": "Physique",
+    "weakness": [
+      "Foudre"
+    ],
+    "immunity": [],
+    "resistance": [
+      "Air"
+    ],
+    "attack": ["Air +"],
+    "atk": [
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "pv": [
+      90,
+      180,
+      270,
+      360,
+      450,
+      540
+    ],
+    "xp": [
+      50,
+      100,
+      150,
+      200,
+      250,
+      300
+    ],
+    "gold": [
+      66.67,
+      166.67,
+      300,
+      467,
+      667,
+      900
+    ],
+    "spawn_rates": {
+      "forest": 0.00,
+      "cave": 0.00,
+      "tower": 0.00,
+      "castle": 4.85,
+      "gorge": 4.49,
+      "frozenEarth": 0.00
+    }
+  },
+  {
+    "name": "Ours élastique",
+    "type": "Physique",
+    "weakness": [
+      "Feu"
+    ],
+    "immunity": [],
+    "resistance": [],
+    "attack": ["Poing élastique", "Morsure"],
+    "atk": [
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "pv": [
+      80,
+      160,
+      240,
+      320,
+      400,
+      480
+    ],
+    "xp": [
+      45,
+      90,
+      135,
+      180,
+      225,
+      270
+    ],
+    "gold": [
+      75,
+      180,
+      315,
+      480,
+      675,
+      900
+    ],
+    "spawn_rates": {
+      "forest": 4.07,
+      "cave": 0.00,
+      "tower": 0.00,
+      "castle": 0.00,
+      "gorge": 0.00,
+      "frozenEarth": 0.00
+    }
+  },
+  {
+    "name": "Dullahan",
+    "type": "Physique",
+    "weakness": [
+      "Feu",
+      "Sacré"
+    ],
+    "immunity": [],
+    "resistance": [
+      "Ténèbres"
+    ],
+    "attack": ["Ténèbres"],
+    "atk": [
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "pv": [
+      100,
+      200,
+      300,
+      400,
+      500,
+      600
+    ],
+    "xp": [
+      550,
+      1100,
+      1650,
+      2200,
+      2750,
+      3300
+    ],
+    "gold": [
+      733.33,
+      1833.33,
+      3300,
+      5133,
+      7333,
+      9900
+    ],
+    "spawn_rates": {
+      "forest": 0.00,
+      "cave": 4.02,
+      "tower": 3.59,
+      "castle": 4.36,
+      "gorge": 0.00,
+      "frozenEarth": 0.00
+    }
+  },
+  {
+    "name": "Brûleur",
+    "type": "Physique",
+    "weakness": [
+      "Glace"
+    ],
+    "immunity": [],
+    "resistance": [
+      "Foudre"
+    ],
+    "attack": ["Foudre X"],
+    "atk": [
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "pv": [
+      130,
+      260,
+      390,
+      520,
+      650,
+      780
+    ],
+    "xp": [
+      70,
+      140,
+      210,
+      280,
+      350,
+      420
+    ],
+    "gold": [
+      93.33,
+      233.33,
+      420,
+      653,
+      933,
+      1260
+    ],
+    "spawn_rates": {
+      "forest": 2.35,
+      "cave": 3.09,
+      "tower": 2.76,
+      "castle": 3.36,
+      "gorge": 3.11,
+      "frozenEarth": 3.74
+    }
+  },
+  {
+    "name": "Chimère",
+    "type": "Magique",
+    "weakness": [
+      "Terre"
+    ],
+    "immunity": [],
+    "resistance": [
+      "Air",
+      "Feu",
+      "Glace"
+    ],
+    "attack": ["Ouragan"],
+    "atk": [
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "pv": [
+      120,
+      240,
+      360,
+      480,
+      600,
+      720
+    ],
+    "xp": [
+      65,
+      130,
+      195,
+      260,
+      325,
+      390
+    ],
+    "gold": [
+      108.33,
+      260,
+      455,
+      693,
+      975,
+      1300
+    ],
+    "spawn_rates": {
+      "forest": 0.00,
+      "cave": 0.00,
+      "tower": 0.00,
+      "castle": 0.00,
+      "gorge": 0.00,
+      "frozenEarth": 4.33
+    }
+  },
+  {
+    "name": "Géant de fer",
+    "type": "Physique",
+    "weakness": [
+      "Foudre",
+      "Terre"
+    ],
+    "immunity": [],
+    "resistance": [
+      "Feu",
+      "Glace",
+      "Air"
+    ],
+    "attack": ["Brise garde"],
+    "atk": [
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "pv": [
+      150,
+      300,
+      450,
+      600,
+      750,
+      900
+    ],
+    "xp": [
+      80,
+      160,
+      240,
+      320,
+      400,
+      480
+    ],
+    "gold": [
+      133.33,
+      320,
+      560,
+      853,
+      1200,
+      1600
+    ],
+    "spawn_rates": {
+      "forest": 0.00,
+      "cave": 2.86,
+      "tower": 2.55,
+      "castle": 0.00,
+      "gorge": 2.87,
+      "frozenEarth": 0.00
+    }
+  },
+  {
+    "name": "Dragon squelette",
+    "type": "Physique",
+    "weakness": [
+      "Feu",
+      "Sacré"
+    ],
+    "immunity": [],
+    "resistance": [
+      "Ténèbres"
+    ],
+    "attack": ["Souffle putride"],
+    "atk": [
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "pv": [
+      180,
+      360,
+      540,
+      720,
+      900,
+      1080
+    ],
+    "xp": [
+      95,
+      190,
+      285,
+      380,
+      475,
+      570
+    ],
+    "gold": [
+      158.33,
+      380,
+      665,
+      1013,
+      1425,
+      1900
+    ],
+    "spawn_rates": {
+      "forest": 0.00,
+      "cave": 2.38,
+      "tower": 0.00,
+      "castle": 0.00,
+      "gorge": 0.00,
+      "frozenEarth": 0.00
+    }
+  },
+  {
+    "name": "Dragon rouge",
+    "type": "Magique",
+    "weakness": [
+      "Glace"
+    ],
+    "immunity": [],
+    "resistance": [
+      "Feu"
+    ],
+    "attack": ["Brasier X"],
+    "atk": [
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "pv": [
+      200,
+      400,
+      600,
+      800,
+      1000,
+      1200
+    ],
+    "xp": [
+      600,
+      1200,
+      1800,
+      2400,
+      3000,
+      3600
+    ],
+    "gold": [
+      1200,
+      2800,
+      4800,
+      7200,
+      10000,
+      13200
+    ],
+    "spawn_rates": {
+      "forest": 0.00,
+      "cave": 0.00,
+      "tower": 0.00,
+      "castle": 0.00,
+      "gorge": 0.00,
+      "frozenEarth": 2.24
+    }
+  },
+  {
+    "name": "Dragon bleu",
+    "type": "Magique",
+    "weakness": [
+      "Foudre"
+    ],
+    "immunity": [],
+    "resistance": [
+      "Glacier"
+    ],
+    "attack": ["Glacier X"],
+    "atk": [
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "pv": [
+      200,
+      400,
+      600,
+      800,
+      1000,
+      1200
+    ],
+    "xp": [
+      600,
+      1200,
+      1800,
+      2400,
+      3000,
+      3600
+    ],
+    "gold": [
+      1200,
+      2800,
+      4800,
+      7200,
+      10000,
+      13200
+    ],
+    "spawn_rates": {
+      "forest": 0.00,
+      "cave": 0.00,
+      "tower": 0.00,
+      "castle": 0.00,
+      "gorge": 0.00,
+      "frozenEarth": 2.70
+    }
+  },
+  {
+    "name": "Dragon de glace",
+    "type": "Magique",
+    "weakness": [
+      "Feu"
+    ],
+    "immunity": [],
+    "resistance": [],
+    "attack": ["Souffle gelé"],
+    "atk": [
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ],
+    "pv": [
+      200,
+      400,
+      600,
+      800,
+      1000,
+      1200
+    ],
+    "xp": [
+      600,
+      1200,
+      1800,
+      2400,
+      3000,
+      3600
+    ],
+    "gold": [
+      1400,
+      3200,
+      5400,
+      8000,
+      11000,
+      14400
+    ],
+    "spawn_rates": {
+      "forest": 0.00,
+      "cave": 0.00,
+      "tower": 0.00,
+      "castle": 0.00,
+      "gorge": 0.00,
+      "frozenEarth": 2.78
+    }
+  },
+  {
+    "name": "???",
+    "type": "Physique",
+    "weakness": [
+      "???"
+    ],
+    "immunity": [
+      "???"
+    ],
+    "resistance": [
+      "???"
+    ],
+    "attack": ["???"],
+    "atk": [
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ],
+    "pv": [
+      500,
+      1000,
+      1500,
+      2000,
+      2500,
+      3000
+    ],
+    "xp": [
+      750,
+      1500,
+      2250,
+      3000,
+      3750,
+      4500
+    ],
+    "gold": [
+      1750,
+      4000,
+      6750,
+      10000,
+      13750,
+      18000
+    ],
+    "spawn_rates": {
+      "forest": 0.00,
+      "cave": 0.00,
+      "tower": 0.00,
+      "castle": 1.00,
+      "gorge": 0.00,
+      "frozenEarth": 0.00
+    }
+  },
+  {
+    "name": "Teddy Bear",
+    "type": "Magique",
+    "weakness": [],
+    "immunity": [],
+    "resistance": [],
+    "attack": [],
+    "atk": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "pv": [
+      100000,
+      100000,
+      100000,
+      100000,
+      100000,
+      100000
+    ],
+    "xp": [
+      500,
+      1000,
+      1500,
+      2000,
+      2500,
+      3000
+    ],
+    "gold": [
+      1500,
+      3000,
+      4500,
+      6000,
+      7500,
+      9000
+    ],
+    "spawn_rates": {
+      "forest": 0.01,
+      "cave": 0.01,
+      "tower": 0.01,
+      "castle": 0.01,
+      "gorge": 0.01,
+      "frozenEarth": 0.01
+    }
+  }
+]
