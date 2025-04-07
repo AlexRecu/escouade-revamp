@@ -1,31 +1,12 @@
-import { Unit } from "./Unit";
-
-export type Status = {
-    name: string,
-    description?: string,
-    unitType?: 'ally' | 'enemy',
-    counterItem?: Item[],
-    nbTurnEffect?: number | null,
-    aoe?: boolean,
-    chance?: number
-};
-
-export type Job = {
-    name: string,
-    description: string,
-    defaultStats : Statistics,
-    weapons: string[],
-    item: Item[],
-    gold: number,
-    skills: Skill[],
-    spells: Spell[]
-};
+import { Status } from "./Status";
 
 export type Evolution = {
     name: string,
     requirements: Requirement,
     specialAbility: string,
     bonuses : Statistics,
+    skills : { level: number; skill: Skill }[],
+    spells:  { level: number; spell: string}[]
 };
 
 export type Requirement = {
@@ -47,6 +28,7 @@ export type Skill = {
     formula: string,
     target: 'ally' | 'self' | 'enemy',
     type: 'single' | 'multi',
+    move: number | 0,
     range: number,
     apCost: number,
     mpCost: number,
@@ -57,37 +39,38 @@ export type Skill = {
     description: string
 };
 
-export type Spell = {
-   target: 'ally' | 'enemy',
-   name: string,
-   element: string,
-   manaCost: number | null,
-   hpCost: number | null,
-   power: number | null,
-   hp: number | null,
-   status: Status,
-   description: string
+export type EonSkill = {
+        name: string,
+        description: string,
+        tp: number,
+        formula: string,
+        type: string,
+        range: number,
+        power: number | null
 };
 
-export type Item = {
-    id: string,
-    name: string,
-    type: 'weapon' | 'consumable',
-    effect: string,
-    purchasePrice: number,
-    resaleBase: number,
-    zoneThreshold: number
-};
+export class Spell {
+   target: 'ally' | 'self' | 'enemy';
+   name: string;
+   element: string;
+   mpCost: number | null;
+   hpCost: number | null;
+   power: number | null;
+   hp: number | null;
+   status?: Status;
+   description: string;
 
-export type Weapon = Item & {
-    weaponType: string,
-    mainStat: string,
-    subStat: string,
-    weaponStat: number,
-    weaponSubStat: number,
-    range: number,
-    status: Status,
-    element: string
+   constructor(name: string, description: string, target: 'ally' | 'self' | 'enemy', element: string, mpCost: number | null, hpCost: number | null, hp: number | null, power: number | null, status?: Status){
+    this.name = name;
+    this.description = description;
+    this.element = element;
+    this.target = target;
+    this.power = power;
+    this.mpCost = mpCost;
+    this.hpCost = hpCost;
+    this.hp = hp;
+    this.status = status;
+   }
 };
 
 export type Position = {
@@ -101,10 +84,22 @@ export type MonsterAttack = {
     condition: string,
     target: 'nearest' | 'farthest',
     move: number,
-    range: null,
+    range: number,
     turn: number,
     zoneEffect: number,
     status: Status,
     chance: number,
     deathMessage: string
 };
+
+export type AstroCard = {
+    name: string;
+    description: string; // Description de l'effet
+    bonus?: Statistics; // bonus de stats des autres cartes
+    power?: number; // Le Roi des couronnes
+    status?: Status; // La Flèche
+    isAce: boolean; // Le Roi et la Reine des couronnes
+    sigil?: string; // Astrologie
+};
+
+export type Element = "Feu" | "Glace" | "Foudre" | "Air" | "Terre" | "Ténèbre" | "Sacré" | "";

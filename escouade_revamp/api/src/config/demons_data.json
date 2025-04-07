@@ -1,0 +1,81 @@
+[
+    {
+        "id": "Demon_Mateus",
+        "name":"Mateus, le Corrompu",
+        "strength": 3,
+        "endurance": 4,
+        "intelligence": 6,
+        "actions": [
+            "Congélation",
+            "Attaque",
+            "Soin +",
+            "Glacier X",
+            "Onde glacière"
+        ]
+    },
+    {
+        "id": "Demon_Belias",
+        "name":"Bélias, le Titan",
+        "strength": 2,
+        "endurance": 3,
+        "intelligence": 6,
+        "actions": [
+            "Combustion",
+            "Attaque",
+            "Brasier X",
+            "Flammes de l'enfer"
+        ]
+    },
+    {
+        "id": "Demon_Adrammelech",
+        "name":"Adrammelech, le Grand Courroux",
+        "strength": 3,
+        "endurance": 5,
+        "intelligence": 6,
+        "actions": [
+            "Fulguration",
+            "Soin X",
+            "Foudre +",
+            "Toxine",
+            "Foudre X",
+            "Foudre du jugement"
+        ]
+    },
+    {
+        "id": "Demon_Hashmal",
+        "name":"Hashmal, le Grand Ordonnateur",
+        "strength": 5,
+        "endurance": 3,
+        "intelligence": 6,
+        "actions": [
+            "Rocher",
+            "Attaque",
+            "Seisme",
+            "Colère de Gaïa"
+        ]
+    },
+    {
+        "id": "Demon_Zeromus",
+        "name":"Zeromus, le Condamnateur",
+        "strength": 5,
+        "endurance": 2,
+        "intelligence": 9,
+        "actions": [
+            "Puit gravitationnel",
+            "Ténèbres",
+            "Big Bang"
+        ]
+    },
+    {
+        "id": "Demon_Ultima",
+        "name":"Ultima, le Grand Séraphin",
+        "strength": 2,
+        "endurance": 2,
+        "intelligence": 9,
+        "actions": [
+            "Aérolithe",
+            "Sidéral",
+            "Météore"
+        ]
+    }
+]

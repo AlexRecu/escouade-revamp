@@ -1,0 +1,586 @@
+[
+    {
+        "name": "Épée en fer",
+        "type": "Arme",
+        "effect": "Une lame robuste en fer, usée par d'innombrables batailles. Elle incarne la simplicité et la résilience des guerriers endurcis.",
+        "purchasePrice": 200,
+        "resaleBase": 100,
+        "zoneThreshold": 1
+    },
+    {
+        "name": "Épée de mithril",
+        "type": "Arme",
+        "effect": "Forgée dans les profondeurs des montagnes, cette épée de mithril brille d'une lueur argentée. Elle est aussi légère qu'une plume, mais sa puissance est redoutable.",
+        "purchasePrice": 400,
+        "resaleBase": 200,
+        "zoneThreshold": 1
+    },
+    {
+        "name": "Épée Sanguine",
+        "type": "Arme",
+        "effect": "Cette épée lugubre est imprégnée du sang de ses victimes, donnant à son tranchant une teinte rougeâtre. Elle dévore l'âme de ceux qui la manient.",
+        "purchasePrice": 500,
+        "resaleBase": 250,
+        "zoneThreshold": 2
+    },
+    {
+        "name": "Épée Runique",
+        "type": "Arme",
+        "effect": "Ornementée de mystérieuses inscriptions, cette épée runique dégage une aura ancienne. Elle semble tirer son pouvoir des arcanes eux-mêmes.",
+        "purchasePrice": 600,
+        "resaleBase": 300,
+        "zoneThreshold": 3
+    },
+    {
+        "name": "Diamantine",
+        "type": "Arme",
+        "effect": "Une épée étincelante, forgée à partir du matériau le plus précieux. Elle coupe à travers l'acier comme du beurre et brille comme une étoile dans la nuit.",
+        "purchasePrice": 700,
+        "resaleBase": 350,
+        "zoneThreshold": 4
+    },
+    {
+        "name": "Vengeresse",
+        "type": "Arme",
+        "effect": "Cette lame imposante porte le fardeau des injustices passées. Elle inflige une punition brutale à ceux qui se dressent contre la justice.",
+        "purchasePrice": 800,
+        "resaleBase": 400,
+        "zoneThreshold": 5
+    },
+    {
+        "name": "Dévoreuse",
+        "type": "Arme",
+        "effect": "Une épée sombre et démoniaque qui aspire l'essence vitale de ses ennemis. Elle est un instrument de terreur pour ceux qui osent la brandir.",
+        "purchasePrice": 1000,
+        "resaleBase": 500,
+        "zoneThreshold": 6
+    },
+    {
+        "name": "Calamité",
+        "type": "Arme",
+        "effect": "L'épée de la calamité, forgée dans les abysses les plus profonds. Elle porte en elle le pouvoir de la destruction, capable de déchirer la réalité elle-même.",
+        "purchasePrice": 1000,
+        "resaleBase": 500,
+        "zoneThreshold": 6
+    },
+    {
+        "name": "Excalibur",
+        "type": "Arme",
+        "effect": "Une épée légendaire, emprunte de la pureté du roi. Elle choisit son porteur avec sagesse et accorde la puissance de la légende arthurienne.",
+        "purchasePrice": 1200,
+        "resaleBase": 600,
+        "zoneThreshold": 7
+    },
+    {
+        "name": "Ragnarok",
+        "type": "Arme",
+        "effect": "Une épée maudite qui annonce la fin des temps. Son tranchant effraie les dieux eux-mêmes, et son pouvoir est apocalyptique.",
+        "purchasePrice": 1200,
+        "resaleBase": 600,
+        "zoneThreshold": 7
+    },
+    {
+        "name": "Bandages",
+        "type": "Arme",
+        "effect": "Des bandages enroulés autour des poings, utilisés par les combattants déterminés. Ils rappellent les guerriers qui se battent sans armes, prêts à tout pour la victoire.",
+        "purchasePrice": 100,
+        "resaleBase": 50,
+        "zoneThreshold": 1
+    },
+    {
+        "name": "Griffes de chat",
+        "type": "Arme",
+        "effect": "Des griffes acérées conçues pour évoquer la férocité des félins. Elles permettent des attaques rapides et gracieuses, idéales pour les prédateurs silencieux.",
+        "purchasePrice": 300,
+        "resaleBase": 150,
+        "zoneThreshold": 1
+    },
+    {
+        "name": "Poings soniques",
+        "type": "Arme",
+        "effect": "Ces gantelets émettent des ondes de choc dévastatrices lors des attaques. Ils confèrent à leur porteur un pouvoir titanesque, capable de briser la résistance de ses ennemis.",
+        "purchasePrice": 500,
+        "resaleBase": 250,
+        "zoneThreshold": 2
+    },
+    {
+        "name": "Griffes infernales",
+        "type": "Arme",
+        "effect": "Des griffes enveloppées de flammes démoniaques, qui infligent des brûlures à ceux qui les touchent. Elles sont l'incarnation de la colère ardente.",
+        "purchasePrice": 700,
+        "resaleBase": 350,
+        "zoneThreshold": 3
+    },
+    {
+        "name": "Griffes du tigre",
+        "type": "Arme",
+        "effect": "Inspirées par la force majestueuse du tigre, ces griffes permettent des attaques précises et dévastatrices. Elles incarnent la grâce mortelle de la faune sauvage.",
+        "purchasePrice": 900,
+        "resaleBase": 450,
+        "zoneThreshold": 4
+    },
+    {
+        "name": "Mains de Dieu",
+        "type": "Arme",
+        "effect": "Des gantelets massifs qui incarnent la puissance divine. Ils sont capables de délivrer des coups écrasants, comme si les dieux eux-mêmes étaient en colère.",
+        "purchasePrice": 1100,
+        "resaleBase": 550,
+        "zoneThreshold": 5
+    },
+    {
+        "name": "Marteau",
+        "type": "Arme",
+        "effect": "Un marteau simple mais brutal, idéal pour écraser les adversaires. Il représente la force brute et la simplicité dans un monde de complexité.",
+        "purchasePrice": 300,
+        "resaleBase": 150,
+        "zoneThreshold": 6
+    },
+    {
+        "name": "Marteau de guerre",
+        "type": "Arme",
+        "effect": "Un marteau de guerre imposant, conçu pour la destruction. Il est l'outil des guerriers prêts à tout pour la victoire sur le champ de bataille.",
+        "purchasePrice": 500,
+        "resaleBase": 250,
+        "zoneThreshold": 1
+    },
+    {
+        "name": "Règle cylindrique",
+        "type": "Arme",
+        "effect": "Une règle cylindrique en métal, aiguisée pour devenir une arme mortelle. Elle est un symbole de précision et de rigueur.",
+        "purchasePrice": 500,
+        "resaleBase": 250,
+        "zoneThreshold": 2
+    },
+    {
+        "name": "Marteau de mithril",
+        "type": "Arme",
+        "effect": "Un marteau forgé à partir du précieux mithril, léger mais incroyablement puissant. Il est l'incarnation de la fusion entre la grâce et la force.",
+        "purchasePrice": 700,
+        "resaleBase": 350,
+        "zoneThreshold": 3
+    },
+    {
+        "name": "Mjölnir",
+        "type": "Arme",
+        "effect": "Le marteau légendaire de Thor, dieu de la foudre. Il déclenche la colère des cieux et fracasse tout sur son passage.",
+        "purchasePrice": 900,
+        "resaleBase": 450,
+        "zoneThreshold": 5
+    },
+    {
+        "name": "Héphaïstos",
+        "type": "Arme",
+        "effect": "Le marteau du dieu forgeron Héphaïstos, symbole de l'artisanat divin. Il modèle la réalité comme l'acier brûlant.",
+        "purchasePrice": 1100,
+        "resaleBase": 550,
+        "zoneThreshold": 6
+    },
+    {
+        "name": "Masse d'arme",
+        "type": "Arme",
+        "effect": "Une masse brutale conçue pour écraser les ennemis en un seul coup. Elle incarne la brutalité et la simplicité de la violence pure.",
+        "purchasePrice": 400,
+        "resaleBase": 200,
+        "zoneThreshold": 1
+    },
+    {
+        "name": "Masse de bronze",
+        "type": "Arme",
+        "effect": "Une masse en bronze forgée avec soin, qui allie la puissance à la durabilité. Elle est l'arme de choix des guerriers tactiques.",
+        "purchasePrice": 600,
+        "resaleBase": 300,
+        "zoneThreshold": 2
+    },
+    {
+        "name": "Masse du délire",
+        "type": "Arme",
+        "effect": "Cette masse étrange émet des vibrations psychiques, perturbant l'esprit de ceux qu'elle frappe. Elle incarne la folie et la désorientation.",
+        "purchasePrice": 600,
+        "resaleBase": 300,
+        "zoneThreshold": 3
+    },
+    {
+        "name": "Crosse de diamant",
+        "type": "Arme",
+        "effect": "Une crosse incrustée de diamants, qui brille de mille feux. Elle est à la fois élégante et mortelle, incarnant la richesse et la mort.",
+        "purchasePrice": 800,
+        "resaleBase": 400,
+        "zoneThreshold": 4
+    },
+    {
+        "name": "Masse de Zeus",
+        "type": "Arme",
+        "effect": "Une masse d'une puissance dévastatrice, inspirée par le dieu du tonnerre. Elle est capable de libérer la foudre sur les ennemis, les réduisant en cendres.",
+        "purchasePrice": 1000,
+        "resaleBase": 500,
+        "zoneThreshold": 5
+    },
+    {
+        "name": "Masse de maître",
+        "type": "Arme",
+        "effect": "La quintessence de l'art de la fabrication d'armes. Cette masse de maître est une œuvre d'art fonctionnelle, alliant beauté et efficacité.",
+        "purchasePrice": 1200,
+        "resaleBase": 600,
+        "zoneThreshold": 6
+    },
+    {
+        "name": "Lance de mithril",
+        "type": "Arme",
+        "effect": "Une lance légère et meurtrière, faite de mithril pur. Elle traverse les rangs ennemis avec une grâce mortelle.",
+        "purchasePrice": 200,
+        "resaleBase": 100,
+        "zoneThreshold": 1
+    },
+    {
+        "name": "Bardiche",
+        "type": "Arme",
+        "effect": "Une hache à deux mains à la lame tranchante comme une guillotine. Elle découpe les ennemis avec une brutalité sans pareille.",
+        "purchasePrice": 300,
+        "resaleBase": 150,
+        "zoneThreshold": 2
+    },
+    {
+        "name": "Obélisque",
+        "type": "Arme",
+        "effect": "Une lance majestueuse, ornée d'ornements égyptiens anciens. Elle perfore l'armure comme si elle n'était que de la paille.",
+        "purchasePrice": 500,
+        "resaleBase": 250,
+        "zoneThreshold": 3
+    },
+    {
+        "name": "Barbe de dragon",
+        "type": "Arme",
+        "effect": " Cette lance emprunte la forme d'une griffe de dragon, symbole de puissance draconienne. Elle crache le feu de la colère.",
+        "purchasePrice": 700,
+        "resaleBase": 350,
+        "zoneThreshold": 4
+    },
+    {
+        "name": "Lance du Zodiaque",
+        "type": "Arme",
+        "effect": "Une lance sacrée, forgée sous les étoiles du zodiaque. Elle porte en elle les pouvoirs des constellations.",
+        "purchasePrice": 900,
+        "resaleBase": 450,
+        "zoneThreshold": 5
+    },
+    {
+        "name": "Gungnir",
+        "type": "Arme",
+        "effect": "La lance de l'Allfather Odin, capable d'atteindre n'importe quelle cible. Elle est l'incarnation de la précision mortelle.",
+        "purchasePrice": 1200,
+        "resaleBase": 600,
+        "zoneThreshold": 6
+    },
+    {
+        "name": "Bâton de mage",
+        "type": "Arme",
+        "effect": "Un bâton simple mais puissant, taillé dans le bois de l'arbre ancestral. Il canalise la magie comme un lien entre le mage et les arcanes.",
+        "purchasePrice": 200,
+        "resaleBase": 100,
+        "zoneThreshold": 1
+    },
+    {
+        "name": "Bâton doré",
+        "type": "Arme",
+        "effect": "Un bâton doré incrusté de gemmes précieuses, symbole de la richesse et de la puissance. Il émet une lueur magique éblouissante.",
+        "purchasePrice": 300,
+        "resaleBase": 150,
+        "zoneThreshold": 3
+    },
+    {
+        "name": "Caducée",
+        "type": "Arme",
+        "effect": "Un bâton sacré, orné de serpents entrelacés, symbole de guérison et de protection. Il apporte la grâce divine aux soins prodigués.",
+        "purchasePrice": 200,
+        "resaleBase": 100,
+        "zoneThreshold": 1
+    },
+    {
+        "name": "Sceptre Ophidien",
+        "type": "Arme",
+        "effect": "Un sceptre en ivoire orné de motifs de serpents venimeux. Il répand le poison et la terreur dans le cœur des ennemis.",
+        "purchasePrice": 500,
+        "resaleBase": 250,
+        "zoneThreshold": 4
+    },
+    {
+        "name": "Sceptre Céleste",
+        "type": "Arme",
+        "effect": "Un sceptre céleste, incrusté de pierres célestes rares. Il manipule les énergies stellaires pour des sorts d'une puissance éblouissante.",
+        "purchasePrice": 700,
+        "resaleBase": 350,
+        "zoneThreshold": 5
+    },
+    {
+        "name": "Sceptre de la foi",
+        "type": "Arme",
+        "effect": "Un sceptre sacré béni par les dieux, symbole de la foi inébranlable. Il canalise la puissance divine pour purger les ténèbres.",
+        "purchasePrice": 700,
+        "resaleBase": 350,
+        "zoneThreshold": 6
+    },
+    {
+        "name": "Kotetsu",
+        "type": "Arme",
+        "effect": "Une paire de lames acérées, forgées dans la tradition des légendaires forgerons japonais. Elles sont la quintessence de l'art de l'épée.",
+        "purchasePrice": 500,
+        "resaleBase": 250,
+        "zoneThreshold": 2
+    },
+    {
+        "name": "Osafune",
+        "type": "Arme",
+        "effect": "Des katanas raffinés de la lignée Osafune, réputée pour leur précision mortelle. Ils coupent l'air aussi facilement que la chair.",
+        "purchasePrice": 700,
+        "resaleBase": 350,
+        "zoneThreshold": 3
+    },
+    {
+        "name": "Murasame",
+        "type": "Arme",
+        "effect": "Des katanas légendaires, connus pour leur capacité à absorber le sang de leurs ennemis. Ils sont maudits et assoiffés de vengeance.",
+        "purchasePrice": 900,
+        "resaleBase": 450,
+        "zoneThreshold": 4
+    },
+    {
+        "name": "Kuki-Ichimonji",
+        "type": "Arme",
+        "effect": "Des katanas ornés de motifs marins, portés par les guerriers des mers. Ils symbolisent la liberté et la fureur de l'océan.",
+        "purchasePrice": 900,
+        "resaleBase": 450,
+        "zoneThreshold": 5
+    },
+    {
+        "name": "Murakumo",
+        "type": "Arme",
+        "effect": "Une grande épée courbée, maniée avec une grâce mortelle. Elle danse dans les mains de son porteur, tranchant tout sur son passage.",
+        "purchasePrice": 1100,
+        "resaleBase": 550,
+        "zoneThreshold": 6
+    },
+    {
+        "name": "Masamune",
+        "type": "Arme",
+        "effect": "Un katana légendaire, forgé par le célèbre forgeron Masamune. Il est la perfection incarnée de l'art de l'épée.",
+        "purchasePrice": 1200,
+        "resaleBase": 600,
+        "zoneThreshold": 6
+    },
+    {
+        "name": "Dague en fer",
+        "type": "Arme",
+        "effect": "Une dague simple en fer, idéale pour les coups furtifs. Elle brille d'un éclat discret mais efficace.",
+        "purchasePrice": 200,
+        "resaleBase": 100,
+        "zoneThreshold": 1
+    },
+    {
+        "name": "Coutelas",
+        "type": "Arme",
+        "effect": "Une dague courbée, parfaite pour les attaques rapides et vicieuses. Elle est le choix des assassins silencieux.",
+        "purchasePrice": 400,
+        "resaleBase": 200,
+        "zoneThreshold": 2
+    },
+    {
+        "name": "Main gauche",
+        "type": "Arme",
+        "effect": "Une dague légère, conçue pour la défense et la paralysie de l'ennemi. Elle est la compagne fidèle des duellistes agiles.",
+        "purchasePrice": 500,
+        "resaleBase": 250,
+        "zoneThreshold": 3
+    },
+    {
+        "name": "Kukris",
+        "type": "Arme",
+        "effect": "Des couteaux recourbés, redoutés pour leur capacité à infliger des blessures profondes. Ils sont l'outil de prédilection des assassins.",
+        "purchasePrice": 500,
+        "resaleBase": 250,
+        "zoneThreshold": 4
+    },
+    {
+        "name": "Orochi",
+        "type": "Arme",
+        "effect": "Des couteaux jumeaux à la lame dentelée, inspirés du serpent mythologique. Ils empoisonnent l'âme de ceux qui les portent.",
+        "purchasePrice": 700,
+        "resaleBase": 350,
+        "zoneThreshold": 5
+    },
+    {
+        "name": "Dague Zorin",
+        "type": "Arme",
+        "effect": "Une dague maléfique, imprégnée de l'essence des ténèbres. Elle est le choix des disciples du chaos.",
+        "purchasePrice": 900,
+        "resaleBase": 450,
+        "zoneThreshold": 6
+    },
+    {
+        "name": "Arc court",
+        "type": "Arme",
+        "effect": "Un arc court simple mais efficace, idéal pour les tirs rapides et précis. Il est l'outil des chasseurs agiles.",
+        "purchasePrice": 300,
+        "resaleBase": 150,
+        "zoneThreshold": 1
+    },
+    {
+        "name": "Arc de chasse",
+        "type": "Arme",
+        "effect": "Un arc de chasse puissant, capable de transpercer même les créatures les plus robustes. Il porte la marque des chasseurs de légendes.",
+        "purchasePrice": 400,
+        "resaleBase": 200,
+        "zoneThreshold": 2
+    },
+    {
+        "name": "Arc Assassin",
+        "type": "Arme",
+        "effect": "Un arc conçu pour les tirs silencieux et meurtriers. Il est l'arme des tueurs à distance implacables.",
+        "purchasePrice": 500,
+        "resaleBase": 250,
+        "zoneThreshold": 3
+    },
+    {
+        "name": "Arc elfique",
+        "type": "Arme",
+        "effect": "Un arc élégant et gracieux, fabriqué par les archers elfiques. Il tire des flèches avec une précision surnaturelle.",
+        "purchasePrice": 600,
+        "resaleBase": 300,
+        "zoneThreshold": 4
+    },
+    {
+        "name": "Arc d'Artemis",
+        "type": "Arme",
+        "effect": "Un arc sacré, béni par la déesse de la chasse. Il confère à son porteur la vitesse et la grâce d'une bête prédatrice.",
+        "purchasePrice": 700,
+        "resaleBase": 350,
+        "zoneThreshold": 5
+    },
+    {
+        "name": "Sagittaire",
+        "type": "Arme",
+        "effect": "L'arc ultime des maîtres archers, capable de décocher des flèches mortelles à une distance incroyable. Il est l'incarnation de la précision à distance.",
+        "purchasePrice": 1000,
+        "resaleBase": 500,
+        "zoneThreshold": 6
+    },
+    {
+        "name": "Bois",
+        "type": "Consommable",
+        "effect": "Utilisable à n'importe quel moment en mode aventure, ce pouvoir termine le tour complet de l'équipe en restaurant les points de vie, les points d'action (AP) et la mana, sans toutefois ranimer les alliés morts.",
+        "purchasePrice": 0,
+        "resaleBase": 0,
+        "zoneThreshold": 0
+    },
+    {
+        "name": "Potion",
+        "type": "Consommable",
+        "effect": "Restitue 5 points de vie.",
+        "purchasePrice": 60,
+        "resaleBase": 30,
+        "zoneThreshold": 1
+    },
+    {
+        "name": "Potion+",
+        "type": "Consommable",
+        "effect": "Restitue 10 points de vie.",
+        "purchasePrice": 100,
+        "resaleBase": 50,
+        "zoneThreshold": 1
+    },
+    {
+        "name": "Potion X",
+        "type": "Consommable",
+        "effect": "Restitue 20 points de vie.",
+        "purchasePrice": 120,
+        "resaleBase": 60,
+        "zoneThreshold": 1
+    },
+    {
+        "name": "Éther",
+        "type": "Consommable",
+        "effect": "Restitue 3 points de magie.",
+        "purchasePrice": 80,
+        "resaleBase": 40,
+        "zoneThreshold": 1
+    },
+    {
+        "name": "Éther +",
+        "type": "Consommable",
+        "effect": "Restitue 6 points de magie.",
+        "purchasePrice": 120,
+        "resaleBase": 60,
+        "zoneThreshold": 1
+    },
+    {
+        "name": "Éther X",
+        "type": "Consommable",
+        "effect": "Restitue 10 points de magie.",
+        "purchasePrice": 160,
+        "resaleBase": 80,
+        "zoneThreshold": 1
+    },
+    {
+        "name": "Élixir",
+        "type": "Consommable",
+        "effect": "Restitue tous les points de vie et de mana.",
+        "purchasePrice": 1000,
+        "resaleBase": 500,
+        "zoneThreshold": 1
+    },
+    {
+        "name": "Queue de phénix",
+        "type": "Consommable",
+        "effect": "Ranime un allié avec la moitié de ses points de vie maximum.",
+        "purchasePrice": 500,
+        "resaleBase": 250,
+        "zoneThreshold": 1
+    },
+    {
+        "name": "Antidote universel",
+        "type": "Consommable",
+        "effect": "Guérit les empoisonnements.",
+        "purchasePrice": 30,
+        "resaleBase": 15,
+        "zoneThreshold": 1
+    },
+    {
+        "name": "Sérum",
+        "type": "Consommable",
+        "effect": "Soigne de toutes les altérations d'état.",
+        "purchasePrice": 50,
+        "resaleBase": 25,
+        "zoneThreshold": 1
+    },
+    {
+        "name": "Repousse",
+        "type": "Consommable",
+        "effect": "Décale les seuils de rencontres aléatoires de 1 pour 3 tours complets.",
+        "purchasePrice": 100,
+        "resaleBase": 50,
+        "zoneThreshold": 1
+    },
+    {
+        "name": "Corde Sortie",
+        "type": "Consommable",
+        "effect": "Sortie du donjon.",
+        "purchasePrice": 50,
+        "resaleBase": 25,
+        "zoneThreshold": 1
+    },
+    {
+        "name": "Monstronomicon",
+        "type": "Consommable",
+        "effect": "Une encyclopédie compilant l'ensemble des créatures du royaume, on y trouve leur forces et faiblesses seuls les plus grands Sages bleus peuvent l'utiliser pleinement",
+        "purchasePrice": 0,
+        "resaleBase": 0,
+        "zoneThreshold": 0
+    },
+    {
+        "name": "Pièce marquée",
+        "type": "Consommable",
+        "effect": "Pièce portée par les voleurs, elle est marquée d'un étrange symbole. Ne peut être utilisée comme monnaie, elle ne semble avoir aucune utilité.",
+        "purchasePrice": 0,
+        "resaleBase": 0,
+        "zoneThreshold": 0
+    }
+]

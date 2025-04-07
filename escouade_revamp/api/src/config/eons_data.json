@@ -1,0 +1,254 @@
+[
+    {
+        "element" : "Feu",
+        "name": "Phoenix",
+        "skills":[
+            {
+                "name":"Eclipse de Phoenix",
+                "description": "Se déplace instantanément sur une case adjacente de la cible",
+                "tp": 0.5,
+                "formula": "this.position = this.findClosestAdjacent(target.position, allUnits);",
+                "type": "single",
+                "range": 0,
+                "power": null
+            },
+            {
+                "name":"Cyclone écarlate",
+                "description": "Attaque magique de feu",
+                "tp": 3,
+                "formula": "",
+                "type": "multi",
+                "range": 0,
+                "power": 4
+            },
+            {
+                "name":"Onde incendiaire",
+                "description": "Attaque magique de feu monocible (3) Erige une barrière qui bloque les dégâts au tour suivant",
+                "tp": 2,
+                "formula": "",
+                "type": "single",
+                "range": 4,
+                "power": 3
+            },
+            {
+                "name":"Feu résurrecteur",
+                "description": "Attaque magique de feu (AOE) (11) et applique un Soin + sur les alliés",
+                "tp": 10,
+                "formula": "",
+                "type": "multi",
+                "range": 0,
+                "power": 11
+            }
+        ]
+    },
+    {
+        "element" : "Air",
+        "name": "Garuda",
+        "skills":[
+            {
+                "name":"Etreinte de Garuda",
+                "description": "Attire l’ennemi visé sur la case la plus proche",
+                "tp": 0.5,
+                "formula": "target.position = target.findClosestAdjacent(this.position, allUnits);",
+                "type": "single",
+                "range": 0,
+                "power": null
+            },
+            {
+                "name":"Rapacité",
+                "description": "Attaque magique de vent",
+                "tp": 2,
+                "formula": "",
+                "type": "multi",
+                "range": 1,
+                "power": 2
+            },
+            {
+                "name":"Virevolte captivante",
+                "description": "Attaque magique de vent monocible (3) Erige une barrière qui bloque les dégâts au tour suivant",
+                "tp": 3,
+                "formula": "",
+                "type": "single",
+                "range": 1,
+                "power": 4
+            },
+            {
+                "name":"Rafale aérienne",
+                "description": "Attaque magique de vent (AOE) (11) et applique un Soin + sur les alliés",
+                "tp": 10,
+                "formula": "",
+                "type": "multi",
+                "range": 0,
+                "power": 10
+            }
+        ]
+    },
+    {
+        "element" : "Foudre",
+        "name": "Ramuh",
+        "skills":[
+            {
+                "name":"Justice de Ramuh",
+                "description": "Appose des dégâts nets sur la cible",
+                "tp": 1,
+                "formula": "const damage = this.stats.intelligence+skill.power*(damageMultiplier==2?2:1); target.currentHp = Math.max(target.currentHp - Math.round(damage), 0);",
+                "type": "multi",
+                "range": 0,
+                "power": 10
+            },
+            {
+                "name":"Tempête de foudre",
+                "description": "Attaque magique de foudre",
+                "tp": 4,
+                "formula": "const damage = Math.pow(this.stats.intelligence+skill.power, 2)/2*damageMultiplier; target.currentHp = Math.max(target.currentHp - Math.round(damage), 0);",
+                "type": "multi",
+                "range": 0,
+                "power": 7
+            },
+            {
+                "name":"Tonnerre grondant",
+                "description": "Attaque magique de foudre qui frappe les ennemis sur le chemin",
+                "tp": 3,
+                "formula": "const damage = Math.pow(this.stats.intelligence+skill.power, 2)/2*damageMultiplier; target.currentHp = Math.max(target.currentHp - Math.round(damage), 0);",
+                "type": "multi",
+                "range": 0,
+                "power": 6
+            },
+            {
+                "name":"Foudre du jugement",
+                "description": "Attaque magique de foudre (AOE)",
+                "tp": 10,
+                "formula": "",
+                "type": "multi",
+                "range": 0,
+                "power": 12
+            }
+        ]
+    },
+    {
+        "element" : "Terre",
+        "name": "Titan",
+        "skills":[
+            {
+                "name":"Blocage de Titan",
+                "description": "Bloque les dégâts reçus à la fin du tour",
+                "tp": 1,
+                "formula": "",
+                "type": "single",
+                "range": 0,
+                "power": null
+            },
+            {
+                "name":"Crochet tellurique",
+                "description": "Attaque magique de terre",
+                "tp": 4,
+                "formula": "",
+                "type": "multi",
+                "range": 0,
+                "power": 4
+            },
+            {
+                "name":"Tumulte",
+                "description": "Attaque magique de terre monocible (3)",
+                "tp": 3,
+                "formula": "",
+                "type": "single",
+                "range": 4,
+                "power": 3
+            },
+            {
+                "name":"Fureur tellurique",
+                "description": "Attaque magique de terre (AOE) (11) qui envoie les ennemis au loin",
+                "tp": 10,
+                "formula": "const damage = Math.pow(this.stats.intelligence+skill.power, 2)/2*damageMultiplier; target.currentHp = Math.max(target.currentHp - Math.round(damage), 0); target.moveAwayFrom(this.position, 8, allUnits);",
+                "type": "multi",
+                "range": 0,
+                "power": 11
+            }
+        ]
+    },
+    {
+        "element" : "Glace",
+        "name": "Shiva",
+        "skills":[
+            {
+                "name":"Glissade de Shiva",
+                "description": "Se déplace instantanément sur une case adjacente de la cible et le paralyse",
+                "tp": 0.5,
+                "formula": "this.position = this.findClosestAdjacent(target.position, allUnits); target.status.push({name: 'Paralysie', statusType: 'curse', nbTurnEffect: 1});",
+                "type": "single",
+                "range": 0,
+                "power": null
+            },
+            {
+                "name":"Eruption de glace",
+                "description": "Attaque magique de glace qui pousse les ennemis.",
+                "tp": 3,
+                "formula": "const damage = Math.pow(this.stats.intelligence+skill.power, 2)/2*damageMultiplier; target.currentHp = Math.max(target.currentHp - Math.round(damage), 0); target.moveAwayFrom(this.position, 1, allUnits);",
+                "type": "multi",
+                "range": 3,
+                "power": 3
+            },
+            {
+                "name":"Frimas frigorifiant",
+                "description": "Attaque magique de glace (AOE) qui rapproche les ennemis",
+                "tp": 2,
+                "formula": "const damage = Math.pow(this.stats.intelligence+skill.power, 2)/2*damageMultiplier; target.currentHp = Math.max(target.currentHp - Math.round(damage), 0); target.moveTowards(this.position, 1, allUnits);",
+                "type": "multi",
+                "range": 0,
+                "power": 3
+            },
+            {
+                "name":"Poussière de diamant",
+                "description": "Attaque magique de glace (AOE) et Paralyse les ennemis touchés",
+                "tp": 10,
+                "formula": "const damage = Math.pow(this.stats.intelligence+skill.power, 2)/2*damageMultiplier; target.currentHp = Math.max(target.currentHp - Math.round(damage), 0); target.status.push({name: 'Paralysie', statusType: 'curse', nbTurnEffect: 1});",
+                "type": "multi",
+                "range": 0,
+                "power": 11
+            }
+        ]
+    },
+    {
+        "element" : "Ténèbre",
+        "name": "Odin",
+        "skills":[
+            {
+                "name":"Lame d'Odin",
+                "description": "Appose des dégâts nets sur la cible",
+                "tp": 0.5,
+                "formula": "const damage = this.stats.intelligence+skill.power*damageMultiplier; target.currentHp = Math.max(target.currentHp - Math.round(damage), 0);",
+                "type": "multi",
+                "range": 0,
+                "power": 10
+            },
+            {
+                "name":"Prestesse pérenne",
+                "description": "Annule les dégâts du tour précédent",
+                "tp": 0.5,
+                "formula": "TODO: c'est compliqué",
+                "type": "multi",
+                "range": 0,
+                "power": null
+            },
+            {
+                "name":"Danse des lames",
+                "description": "Attaque de ténèbres (AOE)",
+                "tp": 2,
+                "formula": "",
+                "type": "multi",
+                "range": 0,
+                "power": 7
+            },
+            {
+                "name":"Zantetsuken",
+                "description": "Attaque magique de ténèbres (AOE)",
+                "tp": 10,
+                "formula": "",
+                "type": "multi",
+                "range": 0,
+                "power": 15
+            }
+        ]
+    }
+]

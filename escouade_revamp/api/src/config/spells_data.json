@@ -1,143 +1,305 @@
 [
     {
         "target": "enemy",
+        "name": "Ruine",
+        "element": "",
+        "mpCost": 1,
+        "hpCost": 0,
+        "power": 5,
+        "hp": null,
+        "description": "Projette une boule de magie condensée"
+    },
+    {
+        "target": "enemy",
+        "name": "Aérolithe",
+        "element": "",
+        "mpCost": 4,
+        "hpCost": 0,
+        "power": 15,
+        "hp": null,
+        "description": "Fais s'écraser une masse de magie condensée capable de faire voler les continents"
+    },
+    {
+        "target": "enemy",
+        "name": "Météore",
+        "element": "",
+        "mpCost": 4,
+        "hpCost": 0,
+        "power": 25,
+        "hp": null,
+        "description": "Fais s'abattre un corps célèste sur la cible"
+    },
+    {
+        "target": "enemy",
         "name": "Brasier",
         "element": "Feu",
-        "cost": 1,
+        "mpCost": 1,
+        "hpCost": 0,
         "power": 3,
         "hp": null,
-        "status": null,
         "description": "Projette une boule de feu sur l'ennemi"
     },
     {
         "target": "enemy",
         "name": "Glacier",
         "element": "Glace",
-        "cost": 1,
+        "mpCost": 1,
+        "hpCost": 0,
         "power": 3,
         "hp": null,
-        "status": null,
         "description": "Projette un cristal de glace sur l'ennemi"
     },
     {
         "target": "enemy",
         "name": "Foudre",
         "element": "Foudre",
-        "cost": 1,
+        "mpCost": 1,
+        "hpCost": 0,
         "power": 3,
         "hp": null,
-        "status": null,
         "description": "Envoie un éclair sur l'ennemi"
+    },
+    {
+        "target": "enemy",
+        "name": "Air",
+        "element": "Air",
+        "mpCost": 1,
+        "hpCost": 0,
+        "power": 3,
+        "hp": null,
+        "description": "Ivoque un petit tourbillon sur l'ennemi"
+    },
+    {
+        "target": "enemy",
+        "name": "Tremblement",
+        "element": "Terre",
+        "mpCost": 1,
+        "hpCost": 0,
+        "power": 3,
+        "hp": null,
+        "description": "Fait trembler le sol sous les ennemis "
     },
     {
         "target": "enemy",
         "name": "Brasier +",
         "element": "Feu",
-        "cost": 1,
+        "mpCost": 2,
+        "hpCost": 0,
         "power": 5,
         "hp": null,
-        "status": null,
         "description": "Projette une grosse boule de feu sur l'ennemi"
     },
     {
         "target": "enemy",
         "name": "Glacier +",
         "element": "Glace",
-        "cost": 1,
+        "mpCost": 2,
+        "hpCost": 0,
         "power": 5,
         "hp": null,
-        "status": null,
         "description": "Projette un gros cristal de glace sur l'ennemi"
     },
     {
         "target": "enemy",
         "name": "Foudre +",
         "element": "Foudre",
-        "cost": 1,
+        "mpCost": 2,
+        "hpCost": 0,
         "power": 5,
         "hp": null,
-        "status": null,
         "description": "Fait s'abattre un éclair sur l'ennemi"
+    },
+    {
+        "target": "enemy",
+        "name": "Air +",
+        "element": "Air",
+        "mpCost": 2,
+        "hpCost": 0,
+        "power": 5,
+        "hp": null,
+        "description": "Ivoque une tornade sur l'ennemi"
     },
     {
         "target": "enemy",
         "name": "Brasier X",
         "element": "Feu",
-        "cost": 2,
+        "mpCost": 3,
+        "hpCost": 0,
         "power": 7,
         "hp": null,
-        "status": null,
         "description": "Projette une énorme boule de feu sur l'ennemi"
+    },
+    {
+        "target": "enemy",
+        "name": "Combustion",
+        "element": "Feu",
+        "mpCost": 2,
+        "hpCost": 0,
+        "power": 6,
+        "hp": null,
+        "description": "Enflamme les molécules de la cible et l'air autour pour le rôtir"
+    },
+    {
+        "target": "enemy",
+        "name": "Flammes de l'enfer",
+        "element": "Feu",
+        "mpCost": 4,
+        "hpCost": 0,
+        "power": 11,
+        "hp": null,
+        "description": "Invoque un cercle de flammes incandescentes"
     },
     {
         "target": "enemy",
         "name": "Glacier X",
         "element": "Glace",
-        "cost": 2,
+        "mpCost": 3,
+        "hpCost": 0,
         "power": 7,
         "hp": null,
-        "status": null,
         "description": "Projette un énorme cristal de glace sur l'ennemi"
+    },
+    {
+        "target": "enemy",
+        "name": "Congélation",
+        "element": "Glace",
+        "mpCost": 2,
+        "hpCost": 0,
+        "power": 6,
+        "hp": null,
+        "description": "Refroidit les molécules de la cible et l'air autour jusqu'à en faire un bloc de glace"
+    },
+    {
+        "target": "enemy",
+        "name": "Onde glacière",
+        "element": "Glace",
+        "mpCost": 4,
+        "hpCost": 0,
+        "power": 11,
+        "hp": null,
+        "description": "Invoque le froid d'une époque disparue"
     },
     {
         "target": "enemy",
         "name": "Foudre X",
         "element": "Foudre",
-        "cost": 2,
+        "mpCost": 3,
+        "hpCost": 0,
         "power": 7,
         "hp": null,
-        "status": null,
         "description": "Fait s'abattre une pluie d'éclair sur l'ennemi"
+    },
+    {
+        "target": "enemy",
+        "name": "Fulguration",
+        "element": "Foudre",
+        "mpCost": 2,
+        "hpCost": 0,
+        "power": 6,
+        "hp": null,
+        "description": "Electrise les molécules de la cible et l'air autour jusqu'à le griller sur place"
+    },
+    {
+        "target": "enemy",
+        "name": "Foudre du jugement",
+        "element": "Foudre",
+        "mpCost": 4,
+        "hpCost": 0,
+        "power": 11,
+        "hp": null,
+        "description": "Invoque un éclair qui frappe la cible"
     },
     {
         "target": "enemy",
         "name": "Séisme",
         "element": "Terre",
-        "cost": 3,
+        "mpCost": 3,
+        "hpCost": 0,
         "power": 8,
         "hp": null,
-        "status": null,
-        "description": "Fait trembler le sol sous les ennemis "
+        "description": "Crée une secousse sismique sous les ennemis "
+    },
+    {
+        "target": "enemy",
+        "name": "Rocher",
+        "element": "Terre",
+        "mpCost": 2,
+        "hpCost": 0,
+        "power": 6,
+        "hp": null,
+        "description": "Lance un énorme rocher qui vient écraser la cible"
+    },
+    {
+        "target": "enemy",
+        "name": "Colère de Gaïa",
+        "element": "Terre",
+        "mpCost": 4,
+        "hpCost": 0,
+        "power": 11,
+        "hp": null,
+        "description": "Fait s'élever des lances de la terre qui viennent transpercer la cible"
     },
     {
         "target": "enemy",
         "name": "Ouragan",
         "element": "Air",
-        "cost": 3,
+        "mpCost": 3,
+        "hpCost": 0,
         "power": 8,
         "hp": null,
-        "status": null,
         "description": "Invoque un énorme tourbillon sur les ennemis"
     },
     {
         "target": "enemy",
         "name": "Atomnium",
-        "element": null,
-        "cost": 5,
+        "element": "Ténèbre",
+        "mpCost": 5,
+        "hpCost": 0,
         "power": 15,
         "hp": null,
-        "status": null,
-        "description": "Crée un trou noir qui englouti les ennemis et leur inflide des dégâts"
+        "description": "Crée un trou noir qui englouti les ennemis et leur inflige des dégâts"
     },
     {
         "target": "enemy",
         "name": "Ténèbres",
         "element": "Ténèbre",
-        "cost": null,
+        "mpCost": 0,
+        "hpCost": 10,
         "power": null,
         "hp": null,
-        "status": null,
-        "description": "Sacrifie la moitié de ses PV pour réduire de moitié les PV de l'ennemi"
+        "description": "Sacrifie ses PV pour réduire de moitié les PV de l'ennemi"
+    },
+    {
+        "target": "enemy",
+        "name": "Puit gravitationnel",
+        "element": "Ténèbre",
+        "mpCost": 2,
+        "hpCost": 0,
+        "power": 6,
+        "hp": null,
+        "description": "Crée un trou noir qui distord la gravité et écrase la cible"
+    },
+    {
+        "target": "enemy",
+        "name": "Big Bang",
+        "element": "Ténèbre",
+        "mpCost": 4,
+        "hpCost": 0,
+        "power": 11,
+        "hp": null,
+        "description": "Déploie un énergie colossale qui fait éclater la cible"
     },
     {
         "target": "enemy",
         "name": "Toxine",
-        "element": null,
-        "cost": 2,
+        "element": "",
+        "mpCost": 2,
+        "hpCost": 0,
         "power": null,
         "hp": null,
         "status": {
             "name": "Poison",
+            "statusType": "curse",
             "nbTurnEffect": null
         },
         "description": "Empoisonne l'ennemi"
@@ -145,12 +307,15 @@
     {
         "target": "enemy",
         "name": "Morphée",
-        "element": null,
-        "cost": 1,
+        "element": "",
+        "mpCost": 1,
+        "hpCost": 0,
         "power": null,
         "hp": null,
-        "status": {
-            "name": "Paralysie",
+        "status":{
+            "name": "Sommeil",
+            "description": "La cible ne peut effectuer aucune action",
+            "statusType": "curse",
             "nbTurnEffect": 2
         },
         "description": "Fais dormir un ennemi"
@@ -158,12 +323,14 @@
     {
         "target": "enemy",
         "name": "Fièvre",
-        "element": null,
-        "cost": 1,
+        "element": "",
+        "mpCost": 1,
+        "hpCost": 0,
         "power": null,
         "hp": null,
         "status": {
             "name": "Confusion",
+            "statusType": "curse",
             "nbTurnEffect": 2
         },
         "description": "Rend un ennemi confus"
@@ -171,12 +338,14 @@
     {
         "target": "enemy",
         "name": "Mort",
-        "element": null,
-        "cost": 3,
+        "element": "",
+        "mpCost": 3,
+        "hpCost": 0,
         "power": null,
         "hp": null,
         "status": {
             "name": "Mort",
+            "statusType": "curse",
             "nbTurnEffect": null
         },
         "description": "Peut tuer un ennemi instantanément"
@@ -184,25 +353,30 @@
     {
         "target": "ally",
         "name": "Célérité",
-        "element": null,
-        "cost": 2,
+        "element": "",
+        "mpCost": 2,
+        "hpCost": 0,
         "power": null,
         "hp": null,
         "status": {
             "name": "Célérité",
-            "nbTurnEffect": 3
+            "statusType": "boon",
+            "nbTurnEffect": 3,
+            "description": "Octroie une action bonus"
         },
         "description": "Permet une action supplémentaire sur un allié ou soi-même"
     },
     {
         "target": "ally",
         "name": "Fureur",
-        "element": null,
-        "cost": 2,
+        "element": "",
+        "mpCost": 2,
+        "hpCost": 0,
         "power": null,
         "hp": null,
         "status": {
             "name": "Fureur",
+            "statusType": "boon",
             "nbTurnEffect": 2
         },
         "description": "Augmente la Force de 2 d'un allié ou soi-même mais oblige une attaque normale"
@@ -210,12 +384,14 @@
     {
         "target": "ally",
         "name": "Rage",
-        "element": null,
-        "cost": 1,
+        "element": "",
+        "mpCost": 1,
+        "hpCost": 0,
         "power": null,
         "hp": null,
         "status": {
             "name": "Rage",
+            "statusType": "boon",
             "nbTurnEffect": 2
         },
         "description": "Augmente la Force de 1 d'un allié ou soi-même mais oblige une attaque normale"
@@ -223,8 +399,9 @@
     {
         "target": "ally",
         "name": "Renvoi",
-        "element": null,
-        "cost": 1,
+        "element": "",
+        "mpCost": 1,
+        "hpCost": 0,
         "power": null,
         "hp": null,
         "status": {
@@ -236,8 +413,9 @@
     {
         "target": "enemy",
         "name": "Saignée",
-        "element": null,
-        "cost": 1,
+        "element": "",
+        "mpCost": 1,
+        "hpCost": 0,
         "power": null,
         "hp": null,
         "status": {
@@ -248,13 +426,30 @@
     },
     {
         "target": "enemy",
+        "name": "Mutisme",
+        "element": "",
+        "mpCost": 1,
+        "hpCost": 0,
+        "power": null,
+        "hp": null,
+        "status": {
+            "name": "Mutisme",
+            "statusType": "curse",
+            "nbTurnEffect": 5
+        },
+        "description": "Empêche la cible d'utiliser des sorts"
+    },
+    {
+        "target": "enemy",
         "name": "Supplice",
-        "element": null,
-        "cost": 2,
+        "element": "",
+        "mpCost": 2,
+        "hpCost": 0,
         "power": null,
         "hp": null,
         "status": {
             "name": "Supplice",
+            "statusType": "curse",
             "nbTurnEffect": null
         },
         "description": "Empoisonne l'ennemi, voire le tuer instantanément"
@@ -263,21 +458,23 @@
         "target": "ally",
         "name": "Soin",
         "element": "Sacré",
-        "cost": 1,
+        "mpCost": 1,
+        "hpCost": 0,
         "power": null,
         "hp": 3,
-        "status": null,
         "description": "Soigne 3PV d'un allié"
     },
     {
         "target": "ally",
         "name": "Grâce",
         "element": "Sacré",
-        "cost": 1,
+        "mpCost": 1,
+        "hpCost": 0,
         "power": null,
         "hp": 2,
         "status": {
-            "name": "Grace",
+            "name": "Grâce",
+            "statusType": "boon",
             "nbTurnEffect": 3
         },
         "description": "Rend un peu PV à chaque tour"
@@ -286,31 +483,33 @@
         "target": "enemy",
         "name": "Lumen",
         "element": "Sacré",
-        "cost": 1,
+        "mpCost": 1,
+        "hpCost": 0,
         "power": 3,
         "hp": null,
-        "status": null,
         "description": "Envoie une boule de lumière sacrée sur un ennemi"
     },
     {
         "target": "ally",
         "name": "Soin +",
         "element": "Sacré",
-        "cost": 2,
+        "mpCost": 2,
+        "hpCost": 0,
         "power": null,
         "hp": 7,
-        "status": null,
         "description": "Soigne 7PV d'un allié"
     },
     {
         "target": "ally",
         "name": "Grâce +",
         "element": "Sacré",
-        "cost": 2,
+        "mpCost": 2,
+        "hpCost": 0,
         "power": null,
         "hp": 4,
         "status": {
-            "name": "Grace+",
+            "name": "Grâce +",
+            "statusType": "boon",
             "nbTurnEffect": 4
         },
         "description": "Rend des PV à chaque tour"
@@ -319,31 +518,33 @@
         "target": "enemy",
         "name": "Lumen +",
         "element": "Sacré",
-        "cost": 2,
+        "mpCost": 2,
+        "hpCost": 0,
         "power": 5,
         "hp": null,
-        "status": null,
         "description": "Envoie une grosse boule de lumière sacrée sur un ennemi"
     },
     {
         "target": "ally",
         "name": "Soin X",
         "element": "Sacré",
-        "cost": 3,
+        "mpCost": 3,
+        "hpCost": 0,
         "power": null,
         "hp": 15,
-        "status": null,
         "description": "Soigne 15PV d'un allié"
     },
     {
         "target": "ally",
         "name": "Grâce X",
         "element": "Sacré",
-        "cost": 3,
+        "mpCost": 3,
+        "hpCost": 0,
         "power": null,
         "hp": 6,
         "status": {
-            "name": "GraceX",
+            "name": "Grâce X",
+            "statusType": "boon",
             "nbTurnEffect": 5
         },
         "description": "Rend plusieurs PV à chaque tour"
@@ -352,21 +553,23 @@
         "target": "enemy",
         "name": "Lumen X",
         "element": "Sacré",
-        "cost": 3,
+        "mpCost": 3,
+        "hpCost": 0,
         "power": 7,
         "hp": null,
-        "status": null,
         "description": "Envoie une énorme boule de lumière sacrée sur un ennemi"
     },
     {
         "target": "ally",
         "name": "Esuna",
         "element": "Sacré",
-        "cost": 2,
+        "mpCost": 2,
+        "hpCost": 0,
         "power": null,
         "hp": null,
         "status": {
             "name": "Esuna",
+            "statusType": "boon",
             "nbTurnEffect": null
         },
         "description": "Soigne les altérations de status"
@@ -375,41 +578,43 @@
         "target": "ally",
         "name": "Vie",
         "element": "Sacré",
-        "cost": 3,
+        "mpCost": 3,
+        "hpCost": 0,
         "power": null,
         "hp": 5,
-        "status": null,
         "description": "Ranime un allié KO avec quelques points de vie"
     },
     {
         "target": "ally",
         "name": "Vie +",
         "element": "Sacré",
-        "cost": 4,
+        "mpCost": 4,
+        "hpCost": 0,
         "power": null,
         "hp": 12,
-        "status": null,
         "description": "Ranime un allié KO avec la moitié de ses points de vie"
     },
     {
         "target": "ally",
         "name": "Vie X",
         "element": "Sacré",
-        "cost": 5,
+        "mpCost": 5,
+        "hpCost": 0,
         "power": null,
         "hp": 20,
-        "status": null,
         "description": "Ranime un allié KO avec beaucoup de points de vie"
     },
     {
         "target": "enemy",
         "name": "Dissipation",
-        "element": null,
-        "cost": 2,
+        "element": "",
+        "mpCost": 2,
+        "hpCost": 0,
         "power": null,
         "hp": null,
         "status": {
             "name": "Dissipation",
+            "statusType": "boon",
             "nbTurnEffect": null
         },
         "description": "Dissipe les statuts d'une cible"
@@ -418,11 +623,13 @@
         "target": "ally",
         "name": "Barrière",
         "element": "Sacré",
-        "cost": 1,
+        "mpCost": 1,
+        "hpCost": 0,
         "power": null,
         "hp": null,
         "status": {
             "name": "Barrière",
+            "statusType": "boon",
             "nbTurnEffect": 3
         },
         "description": "Protège des altérations de statuts pendant 3 tours"
@@ -431,10 +638,10 @@
         "target": "enemy",
         "name": "Sidéral",
         "element": "Sacré",
-        "cost": 4,
+        "mpCost": 4,
+        "hpCost": 0,
         "power": 15,
         "hp": null,
-        "status": null,
         "description": "Invoque une colonne de lumière divine sur la cible"
     }
 ]

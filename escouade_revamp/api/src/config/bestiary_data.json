@@ -306,9 +306,7 @@
     "immunity": [
       "Glace"
     ],
-    "resistance": [
-      "Feu"
-    ],
+    "resistance": [],
     "attack": ["Glacier", "Explosion"],
     "atk": [
       3,
@@ -363,7 +361,7 @@
     "resistance": [
       "Foudre"
     ],
-    "attack": ["Tremblement", "Explosion"],
+    "attack": ["Seisme", "Explosion"],
     "atk": [
       3,
       4,

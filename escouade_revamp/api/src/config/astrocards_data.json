@@ -1,0 +1,91 @@
+[
+    {
+        "name": "La Balance",
+        "description": "Octroie un bonus de Dextérité de 2. Octroie un sceau Soleil",
+        "bonus": {
+            "strength": 0,
+            "dexterity": 2,
+            "endurance": 0,
+            "mana": 0,
+            "intelligence": 0,
+            "perception": 0,
+            "charisma": 0
+        },
+        "isAce": false,
+        "sigil": "solar"
+    },
+    {
+        "name": "La Flèche",
+        "description": "Octroie un bonus de portée de 2. Octroie un sceau Lune",
+        "status": {
+            "name": "La Flèche",
+            "statusType": "boon",
+            "nbTurnEffect": null,
+            "description": "Octroie un bonus de portée de 2"
+        },
+        "isAce": false,
+        "sigil": "moon"
+    },
+    {
+        "name": "L'Epieu",
+        "description": "Octroie un bonus de Force de 2. Octroie un sceau Etoile",
+        "bonus": {
+            "strength": 2,
+            "dexterity": 0,
+            "endurance": 0,
+            "mana": 0,
+            "intelligence": 0,
+            "perception": 0,
+            "charisma": 0
+        },
+        "isAce": false,
+        "sigil": "stellar"
+    },
+    {
+        "name": "Le Tronc",
+        "description": "Execute une réplique du sort Soin +. Octroie un sceau Soleil",
+        "isAce": false,
+        "sigil": "solar"
+    },
+    {
+        "name": "L'Aiguière",
+        "description": "Octroie un bonus de Mana de 2. Octroie un sceau Lune",
+        "bonus": {
+            "strength": 0,
+            "dexterity": 0,
+            "endurance": 0,
+            "mana": 2,
+            "intelligence": 0,
+            "perception": 0,
+            "charisma": 0
+        },
+        "isAce": false,
+        "sigil": "moon"
+    },
+    {
+        "name": "La Tour",
+        "description": "Octroie un bonus d'Intelligence de 2. Octroie un sceau Etoile",
+        "bonus": {
+            "strength": 0,
+            "dexterity": 0,
+            "endurance": 0,
+            "mana": 0,
+            "intelligence": 2,
+            "perception": 0,
+            "charisma": 0
+        },
+        "isAce": false,
+        "sigil": "stellar"
+    },
+    {
+        "name": "Le Roi des couronnes",
+        "description": "Effectue une attaque magique de zone non élémentaire d'une intensité variable",
+        "power": 20,
+        "isAce": true
+    },
+    {
+        "name": "La Reine des couronnes",
+        "description": "Effectue un soin d'équipe d'une intensité variable",
+        "isAce": true
+    }
+]
