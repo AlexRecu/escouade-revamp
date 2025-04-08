@@ -1,0 +1,82 @@
+{
+    "hubs": [
+      {
+        "name": "Auberge du matin",
+        "connectedZones": ["Forêt"],
+        "services": {
+          "shop": true,
+          "inn": true,
+          "church": false,
+          "questBoard": false
+        }
+      },
+      {
+        "name": "Qual-Mastrech",
+        "connectedZones": ["Canyon", "Chateau", "Tour", "Grotte"],
+        "services": {
+          "shop": true,
+          "inn": true,
+          "church": true,
+          "questBoard": true
+        }
+      },
+      {
+        "name": "Qual-Chen",
+        "connectedZones": ["Terre Gelée"],
+        "services": {
+          "shop": false,
+          "inn": true,
+          "church": true,
+          "questBoard": true
+        }
+      },
+      {
+        "name": "Qual-Far",
+        "connectedZones": [],
+        "services": {
+          "shop": true,
+          "inn": true,
+          "church": true,
+          "questBoard": true
+        }
+      }
+    ],
+    "zones": [
+      {
+        "name": "Forêt",
+        "level": 1
+      },
+      {
+        "name": "Canyon",
+        "level": 3
+      },
+      {
+        "name": "Chateau",
+        "level": 4
+      },
+      {
+        "name": "Tour",
+        "level": 2
+      },
+      {
+        "name": "Grotte",
+        "level": 2
+      },
+      {
+        "name": "Terre Gelée",
+        "level": 5
+      }
+    ],
+    "connections": [
+      ["Auberge du matin", "Forêt"],
+      ["Forêt", "Qual-Mastrech"],
+      ["Qual-Mastrech", "Canyon"],
+      ["Qual-Mastrech", "Chateau"],
+      ["Qual-Mastrech", "Tour"],
+      ["Qual-Mastrech", "Grotte"],
+      ["Canyon", "Qual-Chen"],
+      ["Qual-Chen", "Terre Gelée"],
+      ["Terre Gelée", "Qual-Far"]
+    ]
+  }
+  

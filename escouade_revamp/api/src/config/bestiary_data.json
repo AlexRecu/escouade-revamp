@@ -1,6 +1,7 @@
 [
   {
     "name": "Frelon",
+    "rank": 1,
     "type": "Physique",
     "weakness": [
       "Feu"
@@ -45,12 +46,13 @@
       "cave": 0.00,
       "tower": 0.00,
       "castle": 0.00,
-      "gorge": 0.00,
+      "canyon": 0.00,
       "frozenEarth": 0.00
     }
   },
   {
     "name": "Gobelin",
+    "rank": 1,
     "type": "Physique",
     "weakness": [],
     "immunity": [],
@@ -95,12 +97,13 @@
       "cave": 0.00,
       "tower": 0.00,
       "castle": 14.55,
-      "gorge": 13.45,
+      "canyon": 13.45,
       "frozenEarth": 0.00
     }
   },
   {
     "name": "Veuve noire",
+    "rank": 1,
     "type": "Physique",
     "weakness": [
       "Feu"
@@ -145,12 +148,13 @@
       "cave": 13.39,
       "tower": 0.00,
       "castle": 0.00,
-      "gorge": 0.00,
+      "canyon": 0.00,
       "frozenEarth": 0.00
     }
   },
   {
     "name": "Loup",
+    "rank": 1,
     "type": "Physique",
     "weakness": [],
     "immunity": [],
@@ -193,12 +197,13 @@
       "cave": 0.00,
       "tower": 0.00,
       "castle": 0.00,
-      "gorge": 0.00,
+      "canyon": 0.00,
       "frozenEarth": 12.97
     }
   },
   {
     "name": "Vautour",
+    "rank": 1,
     "type": "Physique",
     "weakness": [],
     "immunity": [],
@@ -241,12 +246,13 @@
       "cave": 0.00,
       "tower": 0.00,
       "castle": 0.00,
-      "gorge": 10.76,
+      "canyon": 10.76,
       "frozenEarth": 0.00
     }
   },
   {
     "name": "Bombo Feu",
+    "rank": 2,
     "type": "Magique",
     "weakness": [
       "Glace"
@@ -293,12 +299,13 @@
       "cave": 0.00,
       "tower": 12.77,
       "castle": 0.00,
-      "gorge": 14.35,
+      "canyon": 14.35,
       "frozenEarth": 0.00
     }
   },
   {
     "name": "Bombo Glace",
+    "rank": 2,
     "type": "Magique",
     "weakness": [
       "Feu"
@@ -345,12 +352,13 @@
       "cave": 0.00,
       "tower": 12.77,
       "castle": 0.00,
-      "gorge": 0.00,
+      "canyon": 0.00,
       "frozenEarth": 17.30
     }
   },
   {
     "name": "Bombo Terre",
+    "rank": 2,
     "type": "Magique",
     "weakness": [
       "Air"
@@ -399,12 +407,13 @@
       "cave": 14.29,
       "tower": 12.77,
       "castle": 0.00,
-      "gorge": 14.35,
+      "canyon": 14.35,
       "frozenEarth": 0.00
     }
   },
   {
     "name": "Bombo Air",
+    "rank": 2,
     "type": "Magique",
     "weakness": [
       "Foudre"
@@ -453,12 +462,13 @@
       "cave": 0.00,
       "tower": 12.77,
       "castle": 15.52,
-      "gorge": 0.00,
+      "canyon": 0.00,
       "frozenEarth": 0.00
     }
   },
   {
     "name": "Bombo Foudre",
+    "rank": 2,
     "type": "Magique",
     "weakness": [
       "Terre"
@@ -507,12 +517,13 @@
       "cave": 0.00,
       "tower": 12.77,
       "castle": 15.52,
-      "gorge": 0.00,
+      "canyon": 0.00,
       "frozenEarth": 17.30
     }
   },
   {
     "name": "Cendre Bombo",
+    "rank": 2,
     "type": "Magique",
     "weakness": [
       "Ténèbres"
@@ -559,12 +570,13 @@
       "cave": 14.29,
       "tower": 0.00,
       "castle": 0.00,
-      "gorge": 0.00,
+      "canyon": 0.00,
       "frozenEarth": 0.00
     }
   },
   {
     "name": "Mage gobelin",
+    "rank": 2,
     "type": "Magique",
     "weakness": [],
     "immunity": [],
@@ -609,12 +621,13 @@
       "cave": 14.29,
       "tower": 0.00,
       "castle": 0.00,
-      "gorge": 0.00,
+      "canyon": 0.00,
       "frozenEarth": 0.00
     }
   },
   {
     "name": "Lézard ailé",
+    "rank": 2,
     "type": "Physique",
     "weakness": [
       "Air",
@@ -662,12 +675,13 @@
       "cave": 0.00,
       "tower": 0.00,
       "castle": 0.00,
-      "gorge": 11.96,
+      "canyon": 11.96,
       "frozenEarth": 14.42
     }
   },
   {
     "name": "Ahriman",
+    "rank": 1,
     "type": "Magique",
     "weakness": [],
     "immunity": [],
@@ -710,12 +724,13 @@
       "cave": 5.95,
       "tower": 0.00,
       "castle": 0.00,
-      "gorge": 0.00,
+      "canyon": 0.00,
       "frozenEarth": 0.00
     }
   },
   {
     "name": "Dragonnet",
+    "rank": 2,
     "type": "Physique",
     "weakness": [],
     "immunity": [],
@@ -758,12 +773,13 @@
       "cave": 0.00,
       "tower": 0.00,
       "castle": 7.76,
-      "gorge": 7.18,
+      "canyon": 7.18,
       "frozenEarth": 0.00
     }
   },
   {
     "name": "Bandit",
+    "rank": 2,
     "type": "Physique",
     "weakness": [
       "Feu"
@@ -808,12 +824,13 @@
       "cave": 0.00,
       "tower": 0.00,
       "castle": 0.00,
-      "gorge": 7.18,
+      "canyon": 7.18,
       "frozenEarth": 8.65
     }
   },
   {
     "name": "Troll",
+    "rank": 4,
     "type": "Physique",
     "weakness": [
       "Feu"
@@ -858,12 +875,13 @@
       "cave": 10.72,
       "tower": 9.58,
       "castle": 11.64,
-      "gorge": 0.00,
+      "canyon": 0.00,
       "frozenEarth": 0.00
     }
   },
   {
     "name": "Coeurl",
+    "rank": 3,
     "type": "Physique",
     "weakness": [
       "Feu"
@@ -908,12 +926,13 @@
       "cave": 0.00,
       "tower": 0.00,
       "castle": 0.00,
-      "gorge": 8.07,
+      "canyon": 8.07,
       "frozenEarth": 9.73
     }
   },
   {
     "name": "Chevalier mort vivant",
+    "rank": 3,
     "type": "Physique",
     "weakness": [
       "Feu",
@@ -961,12 +980,13 @@
       "cave": 11.46,
       "tower": 11.30,
       "castle": 12.23,
-      "gorge": 0.00,
+      "canyon": 0.00,
       "frozenEarth": 0.00
     }
   },
   {
     "name": "Garde dragon",
+    "rank": 3,
     "type": "Physique",
     "weakness": [
       "Glace",
@@ -1015,12 +1035,13 @@
       "cave": 0.00,
       "tower": 4.49,
       "castle": 5.46,
-      "gorge": 0.00,
+      "canyon": 0.00,
       "frozenEarth": 0.00
     }
   },
   {
     "name": "Yéti",
+    "rank": 3,
     "type": "Magique",
     "weakness": [
       "Feu"
@@ -1067,12 +1088,13 @@
       "cave": 0.00,
       "tower": 0.00,
       "castle": 0.00,
-      "gorge": 0.00,
+      "canyon": 0.00,
       "frozenEarth": 6.08
     }
   },
   {
     "name": "Griffon",
+    "rank": 3,
     "type": "Physique",
     "weakness": [
       "Foudre"
@@ -1119,12 +1141,13 @@
       "cave": 0.00,
       "tower": 0.00,
       "castle": 4.85,
-      "gorge": 4.49,
+      "canyon": 4.49,
       "frozenEarth": 0.00
     }
   },
   {
     "name": "Ours élastique",
+    "rank": 4,
     "type": "Physique",
     "weakness": [
       "Feu"
@@ -1169,12 +1192,13 @@
       "cave": 0.00,
       "tower": 0.00,
       "castle": 0.00,
-      "gorge": 0.00,
+      "canyon": 0.00,
       "frozenEarth": 0.00
     }
   },
   {
     "name": "Dullahan",
+    "rank": 3,
     "type": "Physique",
     "weakness": [
       "Feu",
@@ -1222,12 +1246,13 @@
       "cave": 4.02,
       "tower": 3.59,
       "castle": 4.36,
-      "gorge": 0.00,
+      "canyon": 0.00,
       "frozenEarth": 0.00
     }
   },
   {
     "name": "Brûleur",
+    "rank": 3,
     "type": "Physique",
     "weakness": [
       "Glace"
@@ -1274,12 +1299,13 @@
       "cave": 3.09,
       "tower": 2.76,
       "castle": 3.36,
-      "gorge": 3.11,
+      "canyon": 3.11,
       "frozenEarth": 3.74
     }
   },
   {
     "name": "Chimère",
+    "rank": 4,
     "type": "Magique",
     "weakness": [
       "Terre"
@@ -1328,12 +1354,13 @@
       "cave": 0.00,
       "tower": 0.00,
       "castle": 0.00,
-      "gorge": 0.00,
+      "canyon": 0.00,
       "frozenEarth": 4.33
     }
   },
   {
     "name": "Géant de fer",
+    "rank": 4,
     "type": "Physique",
     "weakness": [
       "Foudre",
@@ -1383,12 +1410,13 @@
       "cave": 2.86,
       "tower": 2.55,
       "castle": 0.00,
-      "gorge": 2.87,
+      "canyon": 2.87,
       "frozenEarth": 0.00
     }
   },
   {
     "name": "Dragon squelette",
+    "rank": 4,
     "type": "Physique",
     "weakness": [
       "Feu",
@@ -1436,12 +1464,13 @@
       "cave": 2.38,
       "tower": 0.00,
       "castle": 0.00,
-      "gorge": 0.00,
+      "canyon": 0.00,
       "frozenEarth": 0.00
     }
   },
   {
     "name": "Dragon rouge",
+    "rank": 5,
     "type": "Magique",
     "weakness": [
       "Glace"
@@ -1488,12 +1517,13 @@
       "cave": 0.00,
       "tower": 0.00,
       "castle": 0.00,
-      "gorge": 0.00,
+      "canyon": 0.00,
       "frozenEarth": 2.24
     }
   },
   {
     "name": "Dragon bleu",
+    "rank": 5,
     "type": "Magique",
     "weakness": [
       "Foudre"
@@ -1540,12 +1570,13 @@
       "cave": 0.00,
       "tower": 0.00,
       "castle": 0.00,
-      "gorge": 0.00,
+      "canyon": 0.00,
       "frozenEarth": 2.70
     }
   },
   {
     "name": "Dragon de glace",
+    "rank": 6,
     "type": "Magique",
     "weakness": [
       "Feu"
@@ -1590,12 +1621,13 @@
       "cave": 0.00,
       "tower": 0.00,
       "castle": 0.00,
-      "gorge": 0.00,
+      "canyon": 0.00,
       "frozenEarth": 2.78
     }
   },
   {
     "name": "???",
+    "rank": 6,
     "type": "Physique",
     "weakness": [
       "???"
@@ -1644,12 +1676,13 @@
       "cave": 0.00,
       "tower": 0.00,
       "castle": 1.00,
-      "gorge": 0.00,
+      "canyon": 0.00,
       "frozenEarth": 0.00
     }
   },
   {
     "name": "Teddy Bear",
+    "rank": 0,
     "type": "Magique",
     "weakness": [],
     "immunity": [],
@@ -1692,7 +1725,7 @@
       "cave": 0.01,
       "tower": 0.01,
       "castle": 0.01,
-      "gorge": 0.01,
+      "canyon": 0.01,
       "frozenEarth": 0.01
     }
   }

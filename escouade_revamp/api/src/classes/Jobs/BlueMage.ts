@@ -10,7 +10,7 @@ import { Unit } from "../UnitTypes/Unit";
 
 
 export class BlueMage extends Job {
-    monstronomicon = new Monstronomicon("BM_Monstronomicon_" + IdGenerator.generate());
+    monstronomicon = new Monstronomicon("BM_Monstronomicon_" + IdGenerator.generateId());
     private _trancePoints?: number;
 
     constructor() {
@@ -119,7 +119,7 @@ export class BlueMage extends Job {
 
             let targetSkills: string[] = [];
             if (target instanceof Monster) {
-                targetSkills = target.monsterSkills.map(skill => skill.name);
+                targetSkills = target.monsterSkills.map(skill => skill);
             }
             if (target instanceof Character) {
                 targetSkills = [...target.getAvailableAbilities().map(skill => skill.name), ...target.getAvailableSpells().map(spell => spell.name)];

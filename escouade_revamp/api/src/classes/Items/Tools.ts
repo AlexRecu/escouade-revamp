@@ -28,11 +28,11 @@ export class Tools extends Item {
         };
     
         if (!(toolName in toolData)) {
-            throw new Error("Outil inconnu : " + toolName);
+            throw new Error(`Tools.craft : Tool '${toolName}' is unknown`);
         }
     
         const { description, element, target, power, status } = toolData[toolName];
-        return new Tools("Tools_" + toolName + "_" + IdGenerator.generate(), toolName, description, element, target as "enemy" | "ally" | "self", power, status as Status);
+        return new Tools("Tools_" + toolName + "_" + IdGenerator.generateId(), toolName, description, element, target as "enemy" | "ally" | "self", power, status as Status);
     }
 }
 

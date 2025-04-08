@@ -3,9 +3,7 @@ import { Monster } from "../../src/classes/UnitTypes/Monster";
 import { Unit } from "../../src/classes/UnitTypes/Unit";
 import { Skill } from "../../src/classes/Types";
 import { Monk } from "../../src/classes/Jobs/Monk";
-import { Weapon } from "../../src/classes/Items/Weapon";
-import { Knuckles } from "../../src/classes/Items/Knuckles";
-
+import { Weapon, Knuckles} from "../../src/classes/Items/Weapon";
 
 describe("Monk Class Tests", () => {
     let monk: Character;
@@ -15,8 +13,7 @@ describe("Monk Class Tests", () => {
     beforeEach(() => {
         weapon = new Knuckles("1","Bandage","",0,0,2,"");
         monk = new Character("1", "TestMonk", 'Hero', { row: 0, col: 0 }, 10, 10, [], 10, 10, 10, 10, new Monk(), weapon, null);
-        enemy = new Monster("2", 1, "Enemy1", { row: 1, col: 1 }, [], [], [1], [20], [100], [100], 1);
-        
+        enemy = new Monster("Frelon", { row: 1, col: 1 }, 'Enemy', 2);        
     });
 
     test("Monk initializes with correct stats", () => {
@@ -37,19 +34,19 @@ describe("Monk Class Tests", () => {
     });
 
     test("Skill Concentration restores MP", () => {
-        monk.useAbility("Concentration", [monk]);
+        monk.useCharacterAbility("Concentration", [monk]);
         expect(monk.currentMp).toBe(Math.min(13, monk.maxMp));
     });
 
     test("Skill Frappe Chi deals correct damage", () => {
-        const log = monk.useAbility("Frappe Chi", [enemy]);
+        const log = monk.useCharacterAbility("Frappe Chi", [enemy]);
         expect(log).toContain("TestMonk utilise Frappe Chi sur "+enemy.name);
         expect(enemy.currentHp).toBeLessThan(20);
     });
 
     test("Skill Mantra heals based on endurance", () => {
         monk.currentHp = 10;
-        monk.useAbility("Mantra", [monk]);
+        monk.useCharacterAbility("Mantra", [monk]);
         expect(monk.currentHp).toBe(10 + monk.stats.endurance);
     });
 
@@ -64,13 +61,13 @@ describe("Monk Class Tests", () => {
 
     test("Skill Frappe karmique deals damage based on missing HP", () => {
         monk.currentHp = 1;
-        const log = monk.useAbility("Frappe karmique", [enemy]);
+        const log = monk.useCharacterAbility("Frappe karmique", [enemy]);
         expect(log).toContain("TestMonk utilise Frappe karmique sur "+enemy.name);
     });
 
     test("Skill Ruée de coups performs two attacks", () => {
         enemy.currentHp = 40;
-        const log = monk.useAbility("Ruée de coups", [enemy]);
+        const log = monk.useCharacterAbility("Ruée de coups", [enemy]);
         expect(log).toContain("TestMonk utilise Ruée de coups sur "+enemy.name);
         expect(enemy.currentHp).toBe(0);
     });
@@ -78,7 +75,7 @@ describe("Monk Class Tests", () => {
     test("Skill Chakra applies Dissipation status", () => {
         const ally = new Character("2", "Ally", 'Hero', { row: 1, col: 1 }, 30, 30, [{name:"Poison", statusType: "curse" ,nbTurnEffect: null}], 10, 10, 10, 10, new Monk(), null, null);
         
-        monk.useAbility("Chakra", [ally]);
+        monk.useCharacterAbility("Chakra", [ally]);
         expect(ally.status).toStrictEqual([]);
     });
 });

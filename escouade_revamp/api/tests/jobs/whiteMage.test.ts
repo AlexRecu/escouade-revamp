@@ -3,17 +3,18 @@ import { WhiteMage } from "../../src/classes/Jobs/WhiteMage";
 import { Spell } from "../../src/classes/Types";
 import { Character } from "../../src/classes/UnitTypes/Character";
 import { Monster } from "../../src/classes/UnitTypes/Monster";
+import { Unit } from "../../src/classes/UnitTypes/Unit";
 import { manageStatusAfterPhase, manageStatusBeforePhase } from "../../src/utils/StatusUtils";
 
 describe("White Mage Spell Tests", () => {
     let whiteMage: Character;
     let ally: Character;
-    let enemy: Monster;
+    let enemy: Unit;
 
     beforeEach(() => {
         whiteMage = new Character("WM1", "TestWhiteMage", 'Hero', { row: 0, col: 0 }, new WhiteMage(), null, null); 
         ally = new Character("W2", "Ally", 'Hero', { row: 3, col: 1 }, new Warrior(), null, null);
-        enemy = new Monster("M1", 1,"Enemy1", { row: 1, col: 1 }, [], [], [1], [20], [100], [100], 1, [],["Sacré"]);
+        enemy = new Monster(1,"Enemy1", 'Enemy', 1, { row: 1, col: 1 }, [], [], [1], [20], [100], [100], [],["Sacré"], [],[]);
     });
 
     test("Warrior initializes with correct stats", () => {
@@ -59,7 +60,9 @@ describe("White Mage Spell Tests", () => {
         const lumenIndex: number = spells.findIndex(spell=> spell.name === "Lumen");
         whiteMage.useSpellFromName("Lumen", enemy, 6, 1);
         expect(enemy.currentHp).toBeLessThan(20); // Vérifie que des dégâts ont été appliqués
-        const enemy2 = new Monster("M2", 1,"Zombie1", { row: 1, col: 1 }, [], [], [1], [100], [100], [100], 1, [],["Sacré"]);
+        // const enemy2 = new Monster("M2", 1,"Zombie1", { row: 1, col: 1 }, [], [], [1], [100], [100], [100], 1, [],["Sacré"]);
+        const enemy2 = new Monster("Chevalier mort vivant", { row: 1, col: 1 }, 'Enemy', 2);
+        enemy2.currentHp = 100;
         const log = whiteMage.useSpellFromName("Lumen", enemy2, 6, 1);
         expect(log).toContain("C'est super efficace !");
         expect(enemy2.currentHp).toBe(44);

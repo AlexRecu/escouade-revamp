@@ -17,7 +17,9 @@ describe("Thief Class Tests", () => {
 
     beforeEach(() => {
         thief = new Character("1", "TestThief", 'Hero', { row: 0, col: 0 }, 30, 30, [], 10, 10, 10, 10, new Thief(), weapon, null);
-        enemy = new Monster("1", 1, "Enemy1", { row: 7, col: 7 }, [], [], [1], [20], [100], [100], 1, [potion,potionP]);
+        enemy = new Monster("Frelon", { row: 7, col: 7 }, 'Enemy', 2);
+        enemy.bag.push(potion, potionP);
+        enemy.currentHp = 20;
     });
 
     test("Thief initializes with correct stats", () => {
@@ -39,11 +41,11 @@ describe("Thief Class Tests", () => {
     });
 
     test("Skill Vol steals random item from target's bag and use it", () => {
-        let log = thief.useAbility("Vol", [enemy]);
+        let log = thief.useCharacterAbility("Vol", [enemy]);
         expect(log).toContain("TestThief utilise Vol sur "+enemy.name);
         expect(thief.currentAp).toBe(9);
         
-        expect(thief.bag.length).toBe(1);
+        expect(thief.bag.length).toBe(2);
         expect(enemy.bag.length).toBe(1);
         let stolenObject = thief.bag.find(item => item.name === "Potion");
         if(stolenObject){
@@ -62,7 +64,7 @@ describe("Thief Class Tests", () => {
     });
 
     test("Skill Pas de l'ombre warps thief behind target and boost critical rate", () => {
-        const log = thief.useAbility("Pas de l'ombre", [thief, enemy]);
+        const log = thief.useCharacterAbility("Pas de l'ombre", [thief, enemy]);
         expect(log).toContain("TestThief disparaît comme une ombre");
         expect(log).toContain("TestThief utilise Pas de l'ombre");
         expect(thief.currentMp).toBe(9);
@@ -71,7 +73,7 @@ describe("Thief Class Tests", () => {
     });
 
     test("Is in range", () => {
-        const enemy2 = new Monster("2",1, "Enemy2", { row: 1, col: 1 }, [], [], [1], [100], [100], [100], 1);
+        const enemy2 = new Monster("Frelon", { row: 1, col: 1 }, 'Enemy', 2);
         const distance = Math.max(
             Math.abs(enemy2.position.row - thief.position.row),
             Math.abs(enemy2.position.col - thief.position.col)
@@ -87,7 +89,7 @@ describe("Thief Class Tests", () => {
         );
         const attackRange = thief.job.skills.find((recordLevelSkill) => recordLevelSkill.skill.name === "Frappe empoisonnée")?.skill.range ?? 100;
         expect(distance).toBeGreaterThan(attackRange);
-        const log = thief.useAbility("Frappe empoisonnée", [thief, enemy]);
+        const log = thief.useCharacterAbility("Frappe empoisonnée", [thief, enemy]);
         expect(log).toContain("Aucune cible valide à 1 case(s) pour Frappe empoisonnée.");
     });
 
@@ -105,16 +107,18 @@ describe("Thief Class Tests", () => {
     });
 
     test("Thief do critical attack on roll 5 with status Crit+ and damage X2", () => {
-        thief.useAbility("Pas de l'ombre", [thief, enemy]);
+        thief.useCharacterAbility("Pas de l'ombre", [thief, enemy]);
         const log = thief.attack(enemy, 5, 2, weapon.weaponStat - 2);
         expect(log).toContain("COUT CRITIQUE ! dégat X2!");
         expect(enemy.currentHp).toBe(0);
     });
 
     test("Thief useAbility Vortex", () => {
-        const enemy2 = new Monster("2",1,"Enemy2", { row: 2, col: 1 }, [], [], [1], [100], [100], [100], 1);
-        const enemy3 = new Monster("3",1, "Enemy3", { row: 1, col: 1 }, [], [], [1], [20], [100], [100], 1);
-        const log = thief.useAbility("Vortex", [enemy, enemy2, enemy3]);
+        const enemy2 = new Monster("Frelon", { row: 2, col: 1 }, 'Enemy', 2);
+        enemy2.currentHp = 100;
+        const enemy3 = new Monster("Frelon", { row: 1, col: 1 }, 'Enemy', 2);
+        enemy3.currentHp = 20;
+        const log = thief.useCharacterAbility("Vortex", [enemy, enemy2, enemy3]);
         expect(log).toContain("TestThief utilise Vortex sur "+enemy2.name+","+enemy3.name);
         expect(thief.currentAp).toBe(8);
         expect(enemy.currentHp).toBe(20);
@@ -123,9 +127,11 @@ describe("Thief Class Tests", () => {
     });
 
     test("Thief useAbility Frappe critique", () => {
-        const enemy2 = new Monster("2", 1, "Enemy2", { row: 1, col: 1 }, [], [], [1], [100], [100], [100], 1);
-        const enemy3 = new Monster("3", 1, "Enemy3", { row: 2, col: 1 }, [], [], [1], [20], [100], [100], 1);
-        const log = thief.useAbility("Frappe critique", [enemy,enemy2,enemy3]);
+        const enemy2 = new Monster("Frelon", { row: 1, col: 1 }, 'Enemy', 2);
+        enemy2.currentHp = 100;
+        const enemy3 = new Monster("Frelon", { row: 2, col: 1 }, 'Enemy', 2);
+        enemy3.currentHp = 20;
+        const log = thief.useCharacterAbility("Frappe critique", [enemy,enemy2,enemy3]);
         expect(log).toContain("TestThief utilise Frappe critique sur "+enemy2.name);
         expect(enemy.currentHp).toBe(20);
         expect(enemy2.currentHp).toBe(76);

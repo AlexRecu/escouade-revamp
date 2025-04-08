@@ -11,9 +11,6 @@ class TestUnit extends Unit {
     useSpellFromName(spellName: string, target: Unit, roll: number, critRoll: number) {
         return [`Lance ${spellName} sur ${target.name}`];
     }
-    useAbility(skillName: string, allUnits: Unit []) {
-        return [`Utilise ${skillName}`];
-    }
     useItem(item: Item, target: Unit) {
         return [`Utilise ${item.name} sur ${target.name}`];
     }

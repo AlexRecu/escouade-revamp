@@ -1,5 +1,7 @@
 import { Job } from "./Job";
 import { Statistics } from "../Types";
+import { Sword } from "../Items/Weapon";
+import { IdGenerator } from "../../utils/IdGeneratorUtils";
 
 export class Warrior extends Job {
     demonToken: number = 0;
@@ -9,7 +11,7 @@ export class Warrior extends Job {
             "Guerrier",
             "Classe équilibrée pour les combats longs, il peut défendre ses alliés",
             ['epee', 'katana', 'lance', 'marteau', 'masse'],
-            [],
+            [new Sword("W_startEpeeDeFer"+IdGenerator.generateId(), "Épée en fer", "Une lame robuste en fer, usée par d'innombrables batailles. Elle incarne la simplicité et la résilience des guerriers endurcis.", 200, 1, 2, "")],
             50,
             [
                 {

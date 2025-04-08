@@ -1,4 +1,6 @@
+import { IdGenerator } from "../../utils/IdGeneratorUtils";
 import { Tools } from "../Items/Tools";
+import { Dagger } from "../Items/Weapon";
 import { Statistics } from "../Types";
 import { Job } from "./Job";
 
@@ -11,7 +13,7 @@ export class Thief extends Job {
             "Voleur",
             "Classe orientée sur la dextérité et les coups critiques",
             ['dague', 'katana', 'arc'],
-            [],
+            [new Dagger("Thf_startDagger_"+IdGenerator.generateId(), "Dague en fer", "Une dague en fer, simple mais efficace.", 100, 1, 2, "", null)],
             0,
             [
                 {

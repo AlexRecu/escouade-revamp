@@ -4,9 +4,9 @@ export type Evolution = {
     name: string,
     requirements: Requirement,
     specialAbility: string,
-    bonuses : Statistics,
-    skills : { level: number; skill: Skill }[],
-    spells:  { level: number; spell: string}[]
+    bonuses: Statistics,
+    skills: { level: number; skill: Skill }[],
+    spells: { level: number; spell: string }[]
 };
 
 export type Requirement = {
@@ -40,37 +40,37 @@ export type Skill = {
 };
 
 export type EonSkill = {
-        name: string,
-        description: string,
-        tp: number,
-        formula: string,
-        type: string,
-        range: number,
-        power: number | null
+    name: string,
+    description: string,
+    tp: number,
+    formula: string,
+    type: string,
+    range: number,
+    power: number | null
 };
 
 export class Spell {
-   target: 'ally' | 'self' | 'enemy';
-   name: string;
-   element: string;
-   mpCost: number | null;
-   hpCost: number | null;
-   power: number | null;
-   hp: number | null;
-   status?: Status;
-   description: string;
+    target: 'ally' | 'self' | 'enemy';
+    name: string;
+    element: string;
+    mpCost: number | null;
+    hpCost: number | null;
+    power: number | null;
+    hp: number | null;
+    status?: Status;
+    description: string;
 
-   constructor(name: string, description: string, target: 'ally' | 'self' | 'enemy', element: string, mpCost: number | null, hpCost: number | null, hp: number | null, power: number | null, status?: Status){
-    this.name = name;
-    this.description = description;
-    this.element = element;
-    this.target = target;
-    this.power = power;
-    this.mpCost = mpCost;
-    this.hpCost = hpCost;
-    this.hp = hp;
-    this.status = status;
-   }
+    constructor(name: string, description: string, target: 'ally' | 'self' | 'enemy', element: string, mpCost: number | null, hpCost: number | null, hp: number | null, power: number | null, status?: Status) {
+        this.name = name;
+        this.description = description;
+        this.element = element;
+        this.target = target;
+        this.power = power;
+        this.mpCost = mpCost;
+        this.hpCost = hpCost;
+        this.hp = hp;
+        this.status = status;
+    }
 };
 
 export type Position = {
@@ -103,3 +103,15 @@ export type AstroCard = {
 };
 
 export type Element = "Feu" | "Glace" | "Foudre" | "Air" | "Terre" | "Ténèbre" | "Sacré" | "";
+
+export interface MonsterSpawnRate {
+    monsterName: string;
+    rate: number; // entre 0 et 1, total de la liste = 1
+}
+
+export type HubServices = {
+    shop: boolean;
+    inn: boolean;
+    church: boolean;
+    questBoard: boolean;
+};

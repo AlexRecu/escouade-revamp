@@ -2,6 +2,7 @@ import { Job } from "./Job";
 import { Statistics } from "../Types";
 import { Scepter } from "../Items/Weapon";
 import { Demon } from "../UnitTypes/Demon";
+import { IdGenerator } from "../../utils/IdGeneratorUtils";
 
 export class BlackMage extends Job {
     pactsLeft = 1;
@@ -12,7 +13,7 @@ export class BlackMage extends Job {
             "Mage Noir",
             "Classe qui compense sa faible résistance par de la magie de offensive",
             ['dague', 'sceptre'],
-            [new Scepter("BM_startBatonDeMage", "Bâton de mage", "Un bâton simple mais puissant, taillé dans le bois de l'arbre ancestral. Il canalise la magie comme un lien entre le mage et les arcanes.", 200, 1, 2, "")],
+            [new Scepter("BlkM_startBatonDeMage_"+IdGenerator.generateId(), "Bâton de mage", "Un bâton simple mais puissant, taillé dans le bois de l'arbre ancestral. Il canalise la magie comme un lien entre le mage et les arcanes.", 200, 1, 2, "")],
             10,
             [],
             [

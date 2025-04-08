@@ -1,5 +1,5 @@
 import { Job } from "../Jobs/Job";
-import { EonSkill, Evolution, Position, Skill, Spell, Statistics } from "../Types";
+import { Evolution, Position, Skill, Spell, Statistics } from "../Types";
 import { Status } from "../Status";
 import { Unit } from "./Unit";
 import { Weapon } from "../Items/Weapon";
@@ -8,7 +8,7 @@ import spellData from '../../config/spells_data.json'; // Charger le fichier JSO
 import { Consumable } from "../Items/Consumable";
 import { Tools } from "../Items/Tools";
 import { Thief } from "../Jobs/Thief";
-import { calculateDamageMultiplier, getValidTargets, messageDamageMultiplier } from "../../utils/DamageUtils";
+import { calculateDamageMultiplier, messageDamageMultiplier } from "../../utils/DamageUtils";
 import { applyStatus } from "../../utils/StatusUtils";
 
 export class Character extends Unit {
@@ -23,16 +23,16 @@ export class Character extends Unit {
     protected leftHand: Weapon | null;
     private spellsMap: Map<string, Spell> = new Map();
 
-    constructor(id: string, name: string, type: "Hero" | "Enemy", position: Position, classe: Job, rightHand: Weapon | null, leftHand: Weapon | null, items?: Item[]);
-    constructor(id: string, name: string, type: "Hero" | "Enemy", position: Position, classe: Job, status: Status[], rightHand: Weapon | null, leftHand: Weapon | null, items?: Item[]);
-    constructor(id: string, name: string, type: "Hero" | "Enemy", position: Position, currentHp: number, maxHp: number, status: Status[], currentMp: number, maxMp: number, currentAp: number, maxAp: number, classe: Job, rightHand: Weapon | null, leftHand: Weapon | null, items?: Item[]);
-    constructor(id: string, name: string, type: "Hero" | "Enemy", position: Position, arg1: number | Job | Statistics, arg2?: number | Status[] | Weapon | Statistics | null, arg3?: Status[] | Weapon | null, arg4?: number | Item[] | Weapon | null, arg5?: number | Item[], arg6?: number, arg7?: number, arg8?: Job | Weapon | null, arg9?: Weapon | Item[] | null, arg10?: Item[] | Weapon | null, arg11?: Item[], arg12?: number) {
+    constructor(id: string, name: string, type: 'Hero' | 'Enemy', position: Position, classe: Job, rightHand: Weapon | null, leftHand: Weapon | null, items?: Item[]);
+    constructor(id: string, name: string, type: 'Hero' | 'Enemy', position: Position, classe: Job, status: Status[], rightHand: Weapon | null, leftHand: Weapon | null, items?: Item[]);
+    constructor(id: string, name: string, type: 'Hero' | 'Enemy', position: Position, currentHp: number, maxHp: number, status: Status[], currentMp: number, maxMp: number, currentAp: number, maxAp: number, classe: Job, rightHand: Weapon | null, leftHand: Weapon | null, items?: Item[]);
+    constructor(id: string, name: string, type: 'Hero' | 'Enemy', position: Position, arg1: number | Job | Statistics, arg2?: number | Status[] | Weapon | Statistics | null, arg3?: Status[] | Weapon | null, arg4?: number | Item[] | Weapon | null, arg5?: number | Item[], arg6?: number, arg7?: number, arg8?: Job | Weapon | null, arg9?: Weapon | Item[] | null, arg10?: Item[] | Weapon | null, arg11?: Item[], arg12?: number) {
         if (arg1 instanceof Job) {
             // 🟢 Cas où `arg1` est un `Job`
             const classe = arg1;
             const stats = (arg2 && typeof arg2 === "object" && "strength" in arg2) ? (arg2 as Statistics) : classe.defaultStats; // ✅ Vérification correcte
             const items = (arg5 as Item[]) ?? classe.startItems;
-    
+
             super(
                 id,
                 name,
@@ -43,25 +43,25 @@ export class Character extends Unit {
                 [],
                 items
             );
-    
-            this.rightHand = (arg3 as Weapon) ?? (classe.startItems.find((item) => item instanceof Weapon) as Weapon);
+
+            this.rightHand = (arg3 as Weapon) ?? items.length > 0 ? (classe.startItems.find((item) => item instanceof Weapon) as Weapon) : null;
             this.leftHand = (arg4 as Weapon) ?? null;
-    
+
             this.currentMp = stats.mana + 10;
             this.maxMp = stats.mana + 10;
             this.currentAp = 10;
             this.maxAp = 10;
             this.job = classe;
             this.stats = stats;
-        } 
+        }
         else if (typeof arg1 === "object" && "strength" in arg1) {
             // 🟢 Cas où `arg1` est un `Statistics` (nouvelle surcharge)
             const stats = arg1 as Statistics;
             const classe = arg8 as Job;
             const items = (arg11 as Item[]) ?? classe.startItems;
-    
+
             super(id, name, type, position, stats.endurance + 10, stats.endurance + 10, arg3 as Status[], items);
-    
+
             this.currentMp = stats.mana + 10;
             this.maxMp = stats.mana + 10;
             this.currentAp = arg6 as number;
@@ -70,16 +70,16 @@ export class Character extends Unit {
             this.job.jobLevel = arg12 as number;
             this.characterLevel = arg12 as number;
             this.stats = stats;
-            this.rightHand = (arg9 as Weapon) ?? (classe.startItems.find((item) => item instanceof Weapon) as Weapon);
+            this.rightHand = arg9 ? (arg9 as Weapon) : items.length > 0 ? (classe.startItems.find((item) => item instanceof Weapon) as Weapon) : null;
             this.leftHand = (arg10 as Weapon) ?? null;
-        } 
+        }
         else {
             // 🟢 Cas où `arg1` est un `number` (initialisation complète)
             const classe = arg8 as Job;
             const items = (arg11 as Item[]) ?? classe.startItems;
-    
+
             super(id, name, type, position, arg1, arg2 as number, arg3 as Status[], items);
-    
+
             this.currentMp = arg4 as number;
             this.maxMp = arg5 as number;
             this.currentAp = arg6 as number;
@@ -88,16 +88,14 @@ export class Character extends Unit {
             this.job.jobLevel = arg12 as number;
             this.characterLevel = arg12 as number;
             this.stats = classe.defaultStats;
-            this.rightHand = (arg9 as Weapon) ?? (classe.startItems.find((item) => item instanceof Weapon) as Weapon);
+            this.rightHand = arg9 ? (arg9 as Weapon) : items.length > 0 ? (classe.startItems.find((item) => item instanceof Weapon) as Weapon) : null;
             this.leftHand = (arg10 as Weapon) ?? null;
         }
-    
+
         spellData.forEach((spell: any) => {
             this.spellsMap.set(spell.name, spell as Spell);
         });
     }
-    
-    
 
     private calculateCritThreshold(): number {
         return 6 - this.status.reduce((acc, status) => acc + (status.name === "Crit+" ? 1 : status.name === "Crit++" ? 2 : 0), 0) - (this.job.name === "Ninja" ? 1 : 0);
@@ -273,6 +271,14 @@ export class Character extends Unit {
     }
 
     /**
+     * Retourne l'arme équipée en main droite
+     * @returns 
+     */
+    getRightHand(): Weapon | null {
+        return this.rightHand;
+    }
+
+    /**
      * Permet de s'équiper de l'arme choisie en main gauche
      * 
      * @param weapon null si déséquipé
@@ -282,16 +288,25 @@ export class Character extends Unit {
             if (this.rightHand && this.job.specialAbility.startsWith("Double Armement")) {
                 this.leftHand = weapon;
             } else if (this.rightHand) {
-                //Si il a une arme en main droite
+                //Si il a une arme en main droite on échange
                 this.leftHand = weapon;
                 this.rightHand = null;
             } else {
-                throw new Error("Oups, yé pa encole tlaité si cas");
+                throw new Error("Character.equipLeftHand : TODO Oups, yé pa encole tlaité si cas");
             }
         } else {
             throw new Error(`Cannot equip this type of weapon ${weapon.type} only ${this.job.weapons}`);
         }
     }
+
+    /**
+     * Retourne l'arme équipée en main gauche
+     * @returns 
+     */
+    getLeftHand(): Weapon | null {
+        return this.leftHand;
+    }
+
 
     /**
      * Renvoie la liste des compétences utilisables en fonction du niveau du lanceur
@@ -310,8 +325,8 @@ export class Character extends Unit {
     getAvailableSpells(): Spell[] {
         const spellNames = this.job.getAvailableSpells();
         return spellNames
-        .map(name => this.spellsMap.get(name))
-        .filter(spell => spell !== undefined) as Spell[];
+            .map(name => this.spellsMap.get(name))
+            .filter(spell => spell !== undefined) as Spell[];
     }
 
     /**
@@ -320,7 +335,7 @@ export class Character extends Unit {
      * @param allUnits 
      * @returns Le log de toutes les actions effectuées
      */
-    useAbility(skillName: string, allUnits: Unit[]): string[] {
+    useCharacterAbility(skillName: string, allUnits: Unit[]): string[] {
         let resultArray: string[] = [];
         const recordLevelSkill = this.job.skills.find(s => s.skill.name === skillName);
 
@@ -329,14 +344,6 @@ export class Character extends Unit {
             return resultArray;
         }
 
-        // Déterminer les cibles valides
-        let targets = getValidTargets(this, recordLevelSkill.skill, allUnits);
-        if (targets.length === 0) {
-            resultArray.push(`Aucune cible valide à ${recordLevelSkill.skill.range} case(s) pour ${recordLevelSkill.skill.name}.`);
-            return resultArray;
-        }
-
-        // Gestion du coût
         if (this.currentAp < recordLevelSkill.skill.apCost) {
             resultArray.push("Pas assez d'AP");
             return resultArray;
@@ -345,65 +352,11 @@ export class Character extends Unit {
             resultArray.push("Pas assez de MP");
             return resultArray;
         }
-        if (this.currentHp - recordLevelSkill.skill.hpCost < 1) {
-            resultArray.push("Pas assez de PV pour utiliser cette compétence !");
-            return resultArray;
-        }
         this.currentAp -= recordLevelSkill.skill.apCost;
         this.currentMp -= recordLevelSkill.skill.mpCost;
-        this.currentHp -= recordLevelSkill.skill.hpCost;
 
-        recordLevelSkill.skill.target !== 'self' ?
-            resultArray.push(`${this.name} utilise ${recordLevelSkill.skill.name} sur ${targets.map(unit => unit.name)}`) :
-            resultArray.push(`${this.name} utilise ${recordLevelSkill.skill.name}`);
 
-        for (const target of targets) {
-            if (recordLevelSkill.skill.status.length > 0) {
-                for (const statut of recordLevelSkill.skill.status) {
-                    applyStatus(this, statut, target, recordLevelSkill.skill.roll ? Math.floor(Math.random() * 6) + 1 : 6, resultArray);
-                }
-            }
-            if (recordLevelSkill.skill.roll > 0) {
-                const rollResult = Math.floor(Math.random() * 6) + 1;
-                if (rollResult < recordLevelSkill.skill.roll) {
-                    resultArray.push(`${this.name} échoue à utiliser ${recordLevelSkill.skill.name}.`);
-                    return resultArray;
-                }
-            }
-
-            if (recordLevelSkill.skill.formula && recordLevelSkill.skill.formula !== "") {
-                try {
-                    this.executeFormula(recordLevelSkill.skill, target, allUnits, resultArray);
-                } catch (error) {
-                    resultArray.push("Erreur dans l'exécution de la compétence");
-                    return resultArray;
-                }
-            }
-        }
-
-        return resultArray;
-    }
-
-    /**
-     * Evalue la formule de calcul d'une compétence
-     * @param formula 
-     * @param target 
-     */
-    private executeFormula(skill: Skill | EonSkill, target: Unit, allUnits: Unit[], resultArray: string[]): void {
-        const context = {
-            user: this,
-            target: target,
-            allUnits: allUnits
-        };
-
-        const safeFormula = skill.formula.replace(/this\./g, "context.user.").replace(/target\./g, "context.target.").replace(/allUnits\./g, "context.allUnits.");
-
-        try {
-            eval(safeFormula);
-        } catch (error) {
-            resultArray.push("Erreur lors de l'exécution de la formule: " + error);
-            console.error("Erreur lors de l'exécution de la formule: ", error);
-        }
+        return this.useAbility(recordLevelSkill.skill, allUnits);
     }
 
     /**
@@ -463,8 +416,8 @@ export class Character extends Unit {
                 target.position = postionBuffer;
                 if (this === target) {
                     resultArray.push(`${this.name} se protège`);
-                } else { 
-                    resultArray.push(`${this.name} protège ${target.name}`); 
+                } else {
+                    resultArray.push(`${this.name} protège ${target.name}`);
                 }
                 protect = true;
             }
@@ -488,7 +441,7 @@ export class Character extends Unit {
             this.stats.perception += evolvedJob.bonuses.perception;
             this.stats.charisma += evolvedJob.bonuses.charisma;
         } else {
-            throw new Error("Cette évolution ne peut avoir lieu")
+            throw new Error("Character.evolveJob : This evolution cannot happen");
         }
         return resultArray;
     }

@@ -73,7 +73,7 @@ describe("Demon Class", () => {
 
     test("should use spell correctly", () => {
         const spell = spellData.find(s => s.name === "Glacier X") as Spell;
-        if (!spell) throw new Error("Spell not found");
+        if (!spell) throw new Error("demon.test('should use spell correctly') : Spell not found");
 
         let result = demon.useSpell(spell, target, 6);
         

@@ -46,7 +46,7 @@ export class ActionManager {
                     break;
 
                 case "skill":
-                    resultArray.push(...unit.useAbility(extra.skill.name as string, targets));
+                    resultArray.push(...unit.useCharacterAbility(extra.skill.name as string, targets));
                     break;
 
                 // Ninja

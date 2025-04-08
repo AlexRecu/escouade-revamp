@@ -27,7 +27,7 @@ export class Demon extends Unit {
                 charisma: 0
             }
         }else{
-            throw new Error("Impossible d'invoquer ce démon");
+            throw new Error("Demon.constructor : Cannot invoke such demon");
         }
     }
 
@@ -118,9 +118,7 @@ export class Demon extends Unit {
         target.currentHp = Math.max(target.currentHp - damage, 0);
         return resultArray;
     }
-    useAbility(skillName: string, allUnits: Unit[]): string[] {
-        throw new Error("Method not implemented.");
-    }
+
     useItem(item: Item, target: Unit): string[] {
         throw new Error("Method not implemented.");
     }

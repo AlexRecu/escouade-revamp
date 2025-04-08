@@ -21,7 +21,7 @@ export class Eon extends Unit {
             this.element = eon.element;
             this.skills = eon.skills;
         } else {
-            throw new Error("Impossible d'invoquer cet éon");
+            throw new Error("Eon.constructor : Cannot invoke this eon");
         }
     }
 
@@ -34,7 +34,7 @@ export class Eon extends Unit {
         throw new Error("Method not implemented.");
     }
 
-    useAbility(skillName: string, allUnits: Unit[]): string[] {
+    useEonAbility(skillName: string, allUnits: Unit[]): string[] {
         let resultArray: string[] = [];
         let damage = 0;
         const skill: EonSkill = this.skills.find(skill => skill.name === skillName) as EonSkill;
@@ -50,7 +50,9 @@ export class Eon extends Unit {
                     target: target,
                     allUnits: allUnits
                 };
+        
                 const safeFormula = skill.formula.replace(/this\./g, "context.user.").replace(/target\./g, "context.target.").replace(/allUnits\./g, "context.allUnits.");
+        
                 try {
                     eval(safeFormula);
                 } catch (error) {
@@ -66,7 +68,7 @@ export class Eon extends Unit {
                 resultArray.push(`${target.name} perd ${damage}PV`);
             } else {
                 //no skillpower and empty formula
-                throw new Error("Eon:useAbility No skill.power and empty formula for skill:"+skillName);
+                throw new Error("Eon:useAbility : No skill.power and empty formula for skill:"+skillName);
             } 
             target.currentHp = Math.max(target.currentHp - damage, 0);
         }

@@ -1,7 +1,9 @@
 import { findAvailablePositions, findPathDijkstra, getAdjacentPositions, isAdjacentToGoal, isOccupied, whoOccupies } from "../../utils/PositionUtils";
 import { Item } from "../Items/Item";
-import { Position } from "../Types";
+import { EonSkill, Position, Skill } from "../Types";
 import { Status } from "../Status";
+import { getValidTargets } from "../../utils/DamageUtils";
+import { applyStatus } from "../../utils/StatusUtils";
 
 export abstract class Unit {
     id: string;
@@ -98,7 +100,7 @@ export abstract class Unit {
             ) === 1
         );
 
-        if (closestPositions.length === 0){
+        if (closestPositions.length === 0) {
             let minDistanceFromCurrent = Math.min(
                 ...adjacentPositions.map(pos => Math.max(
                     Math.abs(pos.row - this.position.row),
@@ -111,9 +113,9 @@ export abstract class Unit {
                     Math.abs(pos.col - this.position.col)
                 ) === minDistanceFromCurrent
             );
-            if (closestPositions.length === 0){
+            if (closestPositions.length === 0) {
                 return null
-            } ;
+            };
         }
 
         // Étape 2 : Sélectionner la position qui minimise la distance à la cible
@@ -142,22 +144,22 @@ export abstract class Unit {
     moveTowards(target: Position, movementRange: number, units: Unit[]) {
         // Stop si on est déjà sur la position d'arrivée
         if (this.position.row === target.row && this.position.col === target.col) return;
-    
+
         // Si la cible est occupée, trouver une position adjacente libre
         const closestPosition = isOccupied(target, units) ? this.findClosestAdjacent(target, units) : target;
         if (!closestPosition) return;
-    
+
         // Utiliser le Dijkstra pour trouver le chemin le plus court
         const path = findPathDijkstra(this.position, closestPosition, units);
-        
+
         if (path.length === 0) return; // Aucun chemin trouvé
-    
+
         // Se déplacer en suivant le chemin trouvé, mais dans la limite du movementRange
         const steps = Math.min(movementRange, path.length);
         this.position = path[steps - 1]; // Dernière position atteignable dans la limite du mouvement
-    
+
         return path.slice(0, steps); // Retourne le chemin suivi
-    }    
+    }
 
     /**
      * Fuis l'unité de @movementRange cases dans la direction opposée de la position @target
@@ -213,15 +215,83 @@ export abstract class Unit {
     abstract useSpellFromName(spellName: string, target: Unit, roll: number, critRoll: number): string[];
     /**
      * Utilise une compétence depuis son nom
-     * @param skillName 
+     * @param skill 
      * @param allUnits 
      * @returns Le log de toutes les actions effectuées
      */
-    abstract useAbility(skillName: string, allUnits: Unit[]): string[];
+    useAbility(skill: Skill, allUnits: Unit[]): string[] {
+        let resultArray: string[] = [];
+
+        // Déterminer les cibles valides
+        let targets = getValidTargets(this, skill, allUnits);
+        if (targets.length === 0) {
+            resultArray.push(`Aucune cible valide à ${skill.range} case(s) pour ${skill.name}.`);
+            return resultArray;
+        }
+
+        if (this.currentHp - skill.hpCost < 1) {
+            resultArray.push("Pas assez de PV pour utiliser cette compétence !");
+            return resultArray;
+        }
+        this.currentHp -= skill.hpCost;
+
+        skill.target !== 'self' ?
+            resultArray.push(`${this.name} utilise ${skill.name} sur ${targets.map(unit => unit.name)}`) :
+            resultArray.push(`${this.name} utilise ${skill.name}`);
+
+        for (const target of targets) {
+            if (skill.status.length > 0) {
+                for (const statut of skill.status) {
+                    applyStatus(this, statut, target, skill.roll ? Math.floor(Math.random() * 6) + 1 : 6, resultArray);
+                }
+            }
+            if (skill.roll > 0) {
+                const rollResult = Math.floor(Math.random() * 6) + 1;
+                if (rollResult < skill.roll) {
+                    resultArray.push(`${this.name} échoue à utiliser ${skill.name}.`);
+                    return resultArray;
+                }
+            }
+
+            if (skill.formula && skill.formula !== "") {
+                try {
+                    this.executeFormula(skill, target, allUnits, resultArray);
+                } catch (error) {
+                    resultArray.push("Erreur dans l'exécution de la compétence");
+                    return resultArray;
+                }
+            }
+        }
+
+        return resultArray;
+    };
+
+    /**
+         * Evalue la formule de calcul d'une compétence
+         * @param formula 
+         * @param target 
+         */
+    protected executeFormula(skill: Skill | EonSkill, target: Unit, allUnits: Unit[], resultArray: string[]): void {
+        const context = {
+            user: this,
+            target: target,
+            allUnits: allUnits
+        };
+
+        const safeFormula = skill.formula.replace(/this\./g, "context.user.").replace(/target\./g, "context.target.").replace(/allUnits\./g, "context.allUnits.");
+
+        try {
+            eval(safeFormula);
+        } catch (error) {
+            resultArray.push("Erreur lors de l'exécution de la formule: " + error);
+            console.error("Erreur lors de l'exécution de la formule: ", error);
+        }
+    }
+
     /**
      * Utilise un objet de type Consumable ou Tools sur une cible
      * @param item 
      * @param target 
      */
-    abstract useItem(item: Item, target: Unit): string[];     
+    abstract useItem(item: Item, target: Unit): string[];
 };
