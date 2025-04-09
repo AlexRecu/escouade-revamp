@@ -1,14 +1,19 @@
+import { Position } from "../Types";
 import { Character } from "../UnitTypes/Character";
 
 export class Campfire {
+  id: string;
   locationName: string;
+  position?: Position;
   restoredHealthPercentage: number;
   restoredManaPercentage: number;
   isUsed: boolean;
   usedAt?: Date;
 
-  constructor(locationName: string, restoredHealth = 0.5, restoredMana = 0.5) {
+  constructor(id: string, locationName: string, position?: Position, restoredHealth = 0.5, restoredMana = 0.5) {
+    this.id = id;
     this.locationName = locationName;
+    this.position = position;
     this.restoredHealthPercentage = restoredHealth;
     this.restoredManaPercentage = restoredMana;
     this.isUsed = false;

@@ -1,4 +1,4 @@
-import { CharacterModel, CharacterDocument } from "../models/character.model";
+import { CharacterModel, CharacterDocument } from "../../models/character.model";
 
 export class CharacterService {
   // Récupérer tous les personnages d'un joueur

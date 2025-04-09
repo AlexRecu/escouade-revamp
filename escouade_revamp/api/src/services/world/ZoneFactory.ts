@@ -1,10 +1,10 @@
 import { Campfire } from "../../classes/Progression/Campfire";
 import { MonsterSpawnRate } from "../../classes/Types";
 import { ZoneType, Zone } from "../../classes/World/Zone";
-import bestiary from "../../config/bestiary_data.json";
 import { IdGenerator } from "../../utils/IdGeneratorUtils";
 import { getRandomZoneType, getSpawnRatesForZoneType, randomSeed, seededRandom } from "../../utils/RandomUtils";
-import { calculateEncounterRate, generateCampfires, generateZoneName, zoneTypes } from "../../utils/ZoneUtils";
+import { DungeonFloor, generateTileMapWithFeatures } from "../../utils/TileMapGeneratorUtils";
+import { calculateEncounterRate, generateZoneName } from "../../utils/ZoneUtils";
 
 export class ZoneFactory {
     // 🎲 Liste possible de types pour génération aléatoire
@@ -24,12 +24,17 @@ export class ZoneFactory {
                 ? `${params.parentDungeonName} E.${params.floor}`
                 : generateZoneName(type, seed));
 
+        const id = IdGenerator.generate(name);
+        const { tileMap, startTile, endTile, campfires: campfireTiles } = generateTileMapWithFeatures(seed ?? params.zoneLevel);
+
         const spawnRates: MonsterSpawnRate[] = getSpawnRatesForZoneType(type);
         const encounterRate = calculateEncounterRate(spawnRates);
-        const checkpoints: Campfire[] = generateCampfires(seed);
-
+        const checkpoints: Campfire[] = campfireTiles.map(
+            (tile, index) => new Campfire(`Campfire_${id}-#${index}`,`Feu de camp #${index}`,tile)
+        );
+        
         return new Zone(
-            IdGenerator.generate(name),
+            id,
             name,
             type,
             params.zoneLevel,
@@ -38,7 +43,11 @@ export class ZoneFactory {
             checkpoints,
             seed,
             params.parentDungeonName,
-            params.floor
+            params.floor,
+            tileMap,
+            startTile, 
+            endTile,
+            campfireTiles
         );
     }
 

@@ -11,7 +11,7 @@ export function seededRandom(seed?: number): () => number {
     };
 }
 
-export function randomSeed(seed?: number): number{
+export function randomSeed(seed?: number): number {
     return seededRandom(seed)();
 }
 
@@ -35,4 +35,9 @@ export function getSpawnRatesForZoneType(type: ZoneType): MonsterSpawnRate[] {
     }
 
     return rates;
+}
+
+export function pickRandomItems<T>(array: T[], count: number, rand = Math.random): T[] {
+    const shuffled = [...array].sort(() => rand() - 0.5);
+    return shuffled.slice(0, count);
 }

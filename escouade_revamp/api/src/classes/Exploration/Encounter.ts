@@ -1,5 +1,3 @@
-// src/classes/World/Encounter.ts
-
 import { Monster } from "../UnitTypes/Monster";
 import { Position } from "../Types";
 import { generateMonsterGroup } from "../../services/dungeon/EncounterGenerator";

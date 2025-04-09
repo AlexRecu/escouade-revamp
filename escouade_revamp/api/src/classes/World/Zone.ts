@@ -2,7 +2,7 @@
 
 import { Encounter } from "../Exploration/Encounter";
 import { Campfire } from "../Progression/Campfire";
-import { MonsterSpawnRate } from "../Types";
+import { MonsterSpawnRate, Position } from "../Types";
 
 export type ZoneType = "Forest" | "Cave" | "Tower" | "Castle" | "Canyon" | "FrozenLand";
 
@@ -17,6 +17,10 @@ export class Zone {
   seed: number; // Pour génération pseudo-aléatoire stable si besoin
   parentDungeonName?: string;
   floor?: number;
+  tileMap?: boolean[][];
+  startTile?: Position;
+  endTile?: Position;
+  campfires?: Position[];
 
   constructor(
     id: string,
@@ -28,7 +32,11 @@ export class Zone {
     checkpoints: Campfire[] = [],
     seed: number = Math.floor(Math.random() * 10000),
     parentDungeonName?: string,
-    floor?: number
+    floor?: number,
+    tileMap?: boolean[][],
+    startTile?: Position,
+    endTile?: Position,
+    campfires?: Position[]
   ) {
     this.id = id;
     this.name = name;
@@ -40,6 +48,10 @@ export class Zone {
     this.seed = seed;
     this.parentDungeonName = parentDungeonName;
     this.floor = floor;
+    this.tileMap = tileMap;
+    this.startTile = startTile;
+    this.endTile = endTile;
+    this.campfires = campfires;
   }
 
   /**
