@@ -127,7 +127,7 @@ export function findPathDijkstra(start: Position, goal: Position, units: Unit[])
     let currentPos: Position | null = goal;
     while (currentPos) {
         path.push(currentPos);
-        const key:string = `${currentPos.row},${currentPos.col}`;
+        const key: string = `${currentPos.row},${currentPos.col}`;
         currentPos = cameFrom.get(key) || null;
     }
 
@@ -146,7 +146,7 @@ export function whoOccupies(pos: Position, units: Unit[]): Unit | undefined {
 }
 
 /**
- * Génère une position aléatoire non occupée sur le plateau
+ * Génère une position aléatoire pour un monstre qui n'est pas occupée sur le plateau
  * (les lignes 0 et 1 sont réservées aux alliés, donc exclues)
  * 
  * @param {Unit[]} units Liste des unités actuelles sur le plateau
@@ -170,4 +170,20 @@ export function getRandomAvailablePosition(units: Unit[]): Position | null {
 
     const randomIndex = Math.floor(Math.random() * possiblePositions.length);
     return possiblePositions[randomIndex];
+}
+
+/**
+ * Permet de générer la liste des positions valides pour les monstres en début de combat
+ */
+export function getAvailableMonsterPositions(): Position[] {
+    const possiblePositions: Position[] = [];
+
+    // On liste toutes les positions disponibles entre les lignes 2 et 7
+    for (let row = 2; row <= 7; row++) {
+        for (let col = 0; col <= 7; col++) {
+            possiblePositions.push({ row, col });
+        }
+    }
+
+    return possiblePositions;
 }

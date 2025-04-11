@@ -1,5 +1,6 @@
 // src/classes/World/Zone.ts
 
+import { weightedRandomChoice } from "../../utils/RandomUtils";
 import { Encounter } from "../Exploration/Encounter";
 import { Campfire } from "../Progression/Campfire";
 import { MonsterSpawnRate, Position } from "../Types";
@@ -64,15 +65,33 @@ export class Zone {
   /**
    * Choisit aléatoirement un monstre selon les taux définis
    */
-  rollForEncounter(): string {
-    const roll = Math.random();
-    let cumulative = 0;
-    for (let spawn of this.spawnRates) {
-      cumulative += spawn.rate;
-      if (roll <= cumulative) return spawn.monsterName;
+  rollForEncounter(teamSize: number = 1): string[] {
+    const min = 1;
+    const max = 6;
+  
+    // Génère un nombre de monstres suivant une Gaussienne autour de teamSize (avec sigma ≈ 1.2)
+    const gaussianRandom = (): number => {
+      const mean = teamSize;
+      const stdDev = 1.2;
+      let u = 0, v = 0;
+      while (u === 0) u = Math.random(); // [0,1) exclu 0
+      while (v === 0) v = Math.random();
+      const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+      const raw = Math.round(mean + z * stdDev);
+      return Math.max(min, Math.min(max, raw));
+    };
+  
+    const monsterCount = gaussianRandom();
+  
+    const names: string[] = [];
+    for (let i = 0; i < monsterCount; i++) {
+      const monsters = this.spawnRates.map((s) => s.monsterName);
+      const weights = this.spawnRates.map((s) => s.rate);
+      const monster = weightedRandomChoice(monsters, weights);
+      names.push(monster);
     }
-    // fallback au dernier
-    return this.spawnRates[this.spawnRates.length - 1].monsterName;
+  
+    return names;
   }
 
   /**
