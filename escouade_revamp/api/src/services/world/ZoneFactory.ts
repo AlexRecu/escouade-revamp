@@ -42,12 +42,12 @@ export class ZoneFactory {
             encounterRate,
             checkpoints,
             seed,
-            params.parentDungeonName,
-            params.floor,
+            params.floor || 0,
             tileMap,
             startTile, 
             endTile,
-            campfireTiles
+            campfireTiles,
+            params.parentDungeonName
         );
     }
 

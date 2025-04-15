@@ -17,11 +17,11 @@ export class Zone {
   checkpoints: Campfire[];
   seed: number; // Pour génération pseudo-aléatoire stable si besoin
   parentDungeonName?: string;
-  floor?: number;
-  tileMap?: boolean[][];
-  startTile?: Position;
-  endTile?: Position;
-  campfires?: Position[];
+  floor: number;
+  tileMap: boolean[][];
+  startTile: Position;
+  endTile: Position;
+  campfires: Position[];
 
   constructor(
     id: string,
@@ -32,12 +32,12 @@ export class Zone {
     encounterRate: number,
     checkpoints: Campfire[] = [],
     seed: number = Math.floor(Math.random() * 10000),
-    parentDungeonName?: string,
-    floor?: number,
-    tileMap?: boolean[][],
-    startTile?: Position,
-    endTile?: Position,
-    campfires?: Position[]
+    floor: number,
+    tileMap: boolean[][],
+    startTile: Position,
+    endTile: Position,
+    campfires: Position[],
+    parentDungeonName?: string
   ) {
     this.id = id;
     this.name = name;
