@@ -1,14 +1,17 @@
 // src/classes/Exploration/Party.ts
 import { Character } from "../UnitTypes/Character";
 import { Position } from "../Types";
+import { IdGenerator } from "../../utils/IdGeneratorUtils";
 
 export class Party {
+  id: string;
   members: Character[];
   position: Position; // Position actuelle du groupe dans la zone
   visitedTiles: Set<string>; // Historique des positions explorées
   defeatedEnemies: number = 0;
 
-  constructor(members: Character[], startPosition: Position) {
+  constructor(id: string, members: Character[], startPosition: Position) {
+    this.id = id ?? IdGenerator.generate("Party");
     this.members = members;
     this.position = startPosition;
     this.visitedTiles = new Set();

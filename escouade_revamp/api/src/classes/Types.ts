@@ -23,21 +23,40 @@ export type Statistics = {
     charisma: number
 };
 
-export type Skill = {
-    name: string,
-    formula: string,
-    target: 'ally' | 'self' | 'enemy',
-    type: 'single' | 'multi',
-    move: number | 0,
-    range: number,
-    apCost: number,
-    mpCost: number,
-    hpCost: number,
-    roll: number,
-    status: Status[],
-    element: string,
-    description: string
+export class Skill {
+    name: string;
+    formula: string;
+    target: 'ally' | 'self' | 'enemy';
+    type: 'single' | 'multi';
+    move: number | 0;
+    range: number;
+    apCost: number;
+    mpCost: number;
+    hpCost: number;
+    roll: number;
+    status: Status[];
+    element: string;
+    description: string;
+    
+    constructor(name: string, formula: string, target: 'ally' | 'self' | 'enemy', type: 'single' | 'multi', move: number | 0, range: number, apCost: number, mpCost: number, hpCost: number, roll: number, status: Status[], element: string, description: string){
+        this.name = name;
+        this.formula = formula;
+        this.target = target;
+        this.type = type;
+        this.move = move;
+        this.range = range;
+        this.apCost = apCost;
+        this.mpCost = mpCost;
+        this.hpCost = hpCost;
+        this.roll = roll;
+        this.status = status;
+        this.element = element;
+        this.description = description;
+    }
+
 };
+
+export class Combo extends Skill{};
 
 export type EonSkill = {
     name: string,

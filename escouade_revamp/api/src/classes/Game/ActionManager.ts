@@ -1,4 +1,7 @@
 import { Item } from "../Items/Item";
+import { Tools } from "../Items/Tools";
+import { Character } from "../UnitTypes/Character";
+import { Eon } from "../UnitTypes/Eon";
 import { Unit } from "../UnitTypes/Unit";
 
 
@@ -46,13 +49,14 @@ export class ActionManager {
                     break;
 
                 case "skill":
-                    resultArray.push(...unit.useCharacterAbility(extra.skill.name as string, targets));
+                    if(unit instanceof Eon) resultArray.push(...unit.useEonAbility(extra.skill.name as string, targets));
+                    if(unit instanceof Character)resultArray.push(...unit.useCharacterAbility(extra.skill.name as string, targets));
                     break;
 
                 // Ninja
-                // case "tool":
-                //     resultArray.push(...unit.useTool(extra.tool as Tool, targets[0], extra.roll, extra.critRoll, extra.bonus).join("\n"));
-                //     break;
+                case "tool":
+                     resultArray.push(...unit.useItem(extra.tool as Tools, targets[0]).join("\n"));
+                     break;
 
                 case "item":
                     resultArray.push(...unit.useItem(extra.item as Item, targets[0]));
