@@ -1,12 +1,12 @@
 // src/services/exploration/ExplorationStorage.ts
 import fs from "fs";
 import path from "path";
-import { ExplorationState } from "../classes/Exploration/ExplorationState";
+import { ExplorationState } from "../../classes/Exploration/ExplorationState";
 
 // Mémoire temporaire de session (à terme, remplacer par Redis, etc.)
 const sessionCache = new Map<string, ExplorationState>();
 
-export class SaveModel {
+export class ExplorationStorage {
   private static readonly SAVE_DIR = path.join(__dirname, "../../../data/saves");
 
   /**

@@ -5,8 +5,8 @@ import { ExplorationState } from "../../classes/Exploration/ExplorationState";
 import { Party } from "../../classes/Exploration/Party";
 import { Campfire } from "../../classes/Progression/Campfire";
 import { Character } from "../../classes/UnitTypes/Character";
-import { SaveModel } from "../../models/save.model";
-import { ExplorationSessionManager } from "../progression/ExplorationSessionManager";
+import { SaveModel } from "../exploration/ExplorationStorage";
+import { ExplorationSessionManager } from "../game/ExplorationSessionManager";
 
 const SAVE_DIR = path.resolve("saves");
 

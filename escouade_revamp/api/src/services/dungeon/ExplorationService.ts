@@ -3,8 +3,8 @@ import { Party } from "../../classes/Exploration/Party";
 import { Position } from "../../classes/Types";
 import { Character } from "../../classes/UnitTypes/Character";
 import { Zone } from "../../classes/World/Zone";
-import { SaveModel } from "../../models/save.model";
-import { ExplorationSessionManager } from "../progression/ExplorationSessionManager";
+import { ExplorationStorage } from "../exploration/ExplorationStorage";
+import { ExplorationSessionManager } from "../game/ExplorationSessionManager";
 import { CampfireService } from "./CampfireService";
 import fs from "fs";
 import path from "path";
@@ -63,7 +63,7 @@ export class ExplorationService {
       if (!state) return;
   
       state.savedAt = new Date();
-      await SaveModel.saveState(partyId, state); //partyId ou playerId ?
+      await ExplorationStorage.saveState(partyId, state); //partyId ou playerId ?
     }
 
     /**
@@ -91,7 +91,7 @@ export class ExplorationService {
      * Charge un état d’exploration sauvegardé
      */
     static async loadExplorationState(partyId: string): Promise<ExplorationState | null> {
-      const loadedState = await SaveModel.loadState(partyId);
+      const loadedState = await ExplorationStorage.loadState(partyId);
       if (loadedState) {
         this.sessionCache.set(partyId, loadedState);
       }

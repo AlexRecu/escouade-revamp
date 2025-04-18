@@ -27,4 +27,8 @@ export class CharacterService {
     const result = await CharacterModel.findByIdAndDelete(characterId).exec();
     return result !== null;
   }
+
+  getCharactersInParty(partyId: string): Promise<CharacterDocument[]> {
+    return CharacterModel.find({ party: partyId }).populate("rightHand leftHand").exec();
+  }
 }
