@@ -1,3 +1,105 @@
+# 🇬🇧 English version
+# 🎮 RPG Base Project
+
+Hello there, developer 👋  
+Looking for a **solid starting point for building an RPG**?  
+This repository is here for you! 🚀  
+
+It provides a well-structured architecture to keep things clean and scalable, separating **API & Frontend**, while making it easy to expand your project.
+
+---
+
+## 📂 Project Structure
+
+```
+
+Api
+├─ src
+│  ├─ classes
+│  │  ├─ Items (Consumables, Weapons, …)
+│  │  ├─ Jobs (WhiteMage, Warrior, Thief, …)
+│  │  └─ UnitTypes (Unit, Character, Monster, …)
+│  ├─ config        # JSON files with initial data (minimize DB requests)
+│  ├─ controllers   # Controller Layer
+│  ├─ middleware
+│  ├─ models        # DAO Layer
+│  ├─ routes
+│  ├─ services      # Service Layer
+│  └─ utils         # Utility functions & static classes
+│
+├─ tests
+│  ├─ jobs
+│  └─ unitTypes
+│
+└─ Front
+
+````
+---
+
+## 🛠️ Technologies & Concepts
+
+- **Layered architecture** (Controllers, Services, DAO, Utils)  
+- **RPG entities management**: Jobs, Items, Characters, Monsters  
+- **Config with JSON files** to reduce database requests  
+- **Unit tests** for reliable development  
+- **API / Front separation** for a full application structure  
+
+---
+
+## 🚀 Getting Started
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/your-username/your-project.git
+
+
+2. **Install dependencies**
+
+   ```bash
+   cd Api
+   npm install
+   ```
+
+3. **Run the server**
+
+   ```bash
+   npm run start
+   ```
+
+4. **Run tests**
+
+   ```bash
+   npm run test
+   ```
+
+---
+
+## 📌 Roadmap
+
+* [ ] Advanced inventory system (stacking items, rarity, etc.)
+* [ ] Quest system implementation
+* [ ] Frontend UI development
+* [ ] API endpoints documentation
+
+---
+
+## 🤝 Contributing
+
+Contributions are **welcome**! 🎉
+Feel free to suggest ideas, open issues, or submit pull requests.
+
+---
+
+## 📜 License
+
+This project is distributed under the **MIT License**.
+You are free to use, modify, and share it.
+
+---
+
+# 🇫🇷 French Version
+
+
 # 🎮 RPG Base Project
 
 Hello you, développeur ou développeuse 👋  
