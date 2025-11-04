@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getCharactersByPlayer, getCharacterById, createCharacter, updateCharacter, deleteCharacter } from "../controllers/characterController";
+import { getCharactersByPlayer, getCharacterById, createCharacter, updateCharacter, deleteCharacter } from "../controllers/character.controller";
 import { authMiddleware } from '../middleware/authMiddleware';
 
 const router = Router()

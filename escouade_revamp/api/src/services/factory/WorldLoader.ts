@@ -21,10 +21,10 @@ export class WorldLoader {
     static async generate(seed?: number): Promise<WorldMap> {
         const worldMap = new WorldMap();
         const hubs: Hub[] = [
-            new Hub(IdGenerator.generate("Hub"), "Auberge du Matin"),
-            new Hub(IdGenerator.generate("Hub"), "Qual-Mastrech"),
-            new Hub(IdGenerator.generate("Hub"), "Qual-Chen"),
-            new Hub(IdGenerator.generate("Hub"), "Qual-Far")
+            new Hub(IdGenerator.generate("Hub"), HUB_NAMES[0]),
+            new Hub(IdGenerator.generate("Hub"), HUB_NAMES[1]),
+            new Hub(IdGenerator.generate("Hub"), HUB_NAMES[2]),
+            new Hub(IdGenerator.generate("Hub"), HUB_NAMES[3])
         ];
 
         hubs.forEach(hub => worldMap.nodes.push(hub));

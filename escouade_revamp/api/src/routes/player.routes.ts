@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { buildBuilding } from '../controllers/playerController'
+import { buildBuilding } from '../controllers/player.controller'
 import { authMiddleware } from '../middleware/authMiddleware'
  
 const router = Router()
