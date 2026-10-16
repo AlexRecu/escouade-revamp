@@ -100,3 +100,52 @@ export type GameState = {
   };
   shop: ShopItem[];
 };
+
+// ── Exploration des donjons (mode déplacement) ─────────────────────────────
+
+/** Résumé d'un membre de l'équipe dans la vue donjon. */
+export type DungeonMember = {
+  id: string;
+  name: string;
+  job: string;
+  hp: number;
+  maxHp: number;
+  mp: number;
+  maxMp: number;
+  isDead: boolean;
+};
+
+/** Feu de camp présent sur la grille. */
+export type DungeonCampfire = {
+  row: number;
+  col: number;
+  used: boolean;
+};
+
+/** État d'exploration renvoyé par le serveur après chaque action de donjon. */
+export type ExplorationState = {
+  dungeonId: string;
+  dungeonName: string;
+  biome: string;
+  zoneLevel: number;
+  floor: number;
+  totalFloors: number;
+  completed: boolean;
+  /** Grille : true = praticable, false = mur. */
+  tileMap: boolean[][];
+  position: { row: number; col: number };
+  startTile: { row: number; col: number };
+  endTile: { row: number; col: number };
+  campfires: DungeonCampfire[];
+  visited: { row: number; col: number }[];
+  activeCampfire: {
+    location: string;
+    used: boolean;
+    restoredHp: number;
+    restoredMp: number;
+  } | null;
+  party: {
+    gold: number;
+    members: DungeonMember[];
+  };
+};

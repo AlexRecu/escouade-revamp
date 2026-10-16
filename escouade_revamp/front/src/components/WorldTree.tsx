@@ -13,8 +13,8 @@ type Props = {
   /** Hub courant (position de l'équipe) — le cercle blanc suit cette position. */
   currentHubId: string | null;
   onEnterHub: (hub: Hub) => void;
-  /** Termine une zone (démo) → révèle les villes connectées + monte worldLevel. */
-  onCompleteZone: (zoneId: string) => void;
+  /** Entre dans un donjon (exploration) → régénère la map + mode déplacement. */
+  onEnterDungeon: (dungeonId: string) => void;
 };
 
 const HUB_COLOR = '#c9a227';
@@ -32,7 +32,7 @@ export default function WorldTree({
   seenMonsters,
   currentHubId,
   onEnterHub,
-  onCompleteZone,
+  onEnterDungeon,
 }: Props) {
   const [debugMode, setDebugMode] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -183,7 +183,7 @@ export default function WorldTree({
                 level={effectiveLevel(selectedNode.id)}
                 completed={completedZones.has(selectedNode.id)}
                 seenMonsters={seenMonsters}
-                onComplete={() => onCompleteZone(selectedNode.id)}
+                onEnter={() => onEnterDungeon(selectedNode.id)}
               />
             )
           ) : (
@@ -225,13 +225,13 @@ function DungeonPanel({
   level,
   completed,
   seenMonsters,
-  onComplete,
+  onEnter,
 }: {
   dungeon: Dungeon;
   level: number;
   completed: boolean;
   seenMonsters: Set<string>;
-  onComplete: () => void;
+  onEnter: () => void;
 }) {
   // Le nombre d'étages augmente avec la difficulté : 2 + niveau.
   const floors = 2 + level;
@@ -253,9 +253,12 @@ function DungeonPanel({
           </li>
         ))}
       </ul>
-      <p className="hint">L'exploration des donjons sera branchée prochainement.</p>
-      <button className="node-panel-btn" onClick={onComplete} disabled={completed}>
-        {completed ? 'Zone terminée' : 'Terminer (démo)'}
+      <p className="hint">
+        La map est régénérée à chaque entrée. Déplacez-vous aux flèches (ou
+        ZQSD) pour atteindre la sortie.
+      </p>
+      <button className="node-panel-btn" onClick={onEnter}>
+        {completed ? 'Re-entrer dans le donjon' : 'Entrer dans le donjon'}
       </button>
     </div>
   );

@@ -4,11 +4,15 @@ import { getToken, getUsername, clearSession } from './api/auth';
 import type { WorldSummary, Hub } from './types/world';
 import WorldTree from './components/WorldTree';
 import City from './components/City';
+import DungeonView from './components/DungeonView';
 import AuthScreen from './components/AuthScreen';
 import PartySidebar from './components/PartySidebar';
 import { useGame } from './game/useGame';
 
-type View = { name: 'world' } | { name: 'city'; hub: Hub };
+type View =
+  | { name: 'world' }
+  | { name: 'city'; hub: Hub }
+  | { name: 'dungeon'; dungeonId: string };
 
 function App() {
   // Session (JWT) : null = pas connecté → écran d'auth.
@@ -21,7 +25,7 @@ function App() {
 
   // Partie temps réel (socket) : levée ici pour que l'équipe soit visible
   // sur la mappemonde ET en ville (colonne latérale permanente).
-  const { state, logs: gameLogs, connected, actions } = useGame();
+  const { state, logs: gameLogs, connected, actions, exploration } = useGame();
 
   // **Source de vérité** : le niveau du monde, les zones terminées et le
   // bestiaire viennent de l'état serveur (state.party), pas d'un état local.
@@ -70,10 +74,19 @@ function App() {
     <div className="app">
       <header className="app-header">
         <h1>ESCOUADE</h1>
-        <span className="subtitle">Mode ville — point-and-clic</span>
+        <span className="subtitle">
+          {view.name === 'dungeon'
+            ? 'Exploration de donjon'
+            : 'Mode ville — point-and-clic'}
+        </span>
         <span className="spacer" />
         {view.name === 'city' && (
           <span className="subtitle">📍 {view.hub.name}</span>
+        )}
+        {view.name === 'dungeon' && exploration && (
+          <span className="subtitle">
+            ⚔️ {exploration.dungeonName} — Étage {exploration.floor}/{exploration.totalFloors}
+          </span>
         )}
         <span className="subtitle">👤 {user}</span>
         <button className="logout" onClick={logout}>Déconnexion</button>
@@ -97,13 +110,11 @@ function App() {
                 actions.changeHub(hub.id);
                 setView({ name: 'city', hub });
               }}
-              onCompleteZone={(zoneId) => {
-                // Idempotent : ne monte le niveau qu'une fois par zone.
-                if (completedZones.has(zoneId)) return;
-                // Le serveur est la source de vérité : il marque la zone
-                // complétée, monte worldLevel, alimente le bestiaire et
-                // renvoie l'état (boutique filtrée, mappemonde, sidebar).
-                actions.completeZone(zoneId);
+              onEnterDungeon={(dungeonId) => {
+                // Entre dans le donjon : le serveur régénère la map (nouveau
+                // seed) et renvoie l'état d'exploration via `exploration:state`.
+                actions.explorationEnter(dungeonId);
+                setView({ name: 'dungeon', dungeonId });
               }}
             />
           )}
@@ -115,6 +126,22 @@ function App() {
               gameLogs={gameLogs}
               actions={actions}
             />
+          )}
+          {view.name === 'dungeon' && (
+            exploration ? (
+              <DungeonView
+                exploration={exploration}
+                logs={gameLogs}
+                onMove={(dir) => actions.explorationMove(dir)}
+                onRest={() => actions.explorationRest()}
+                onExit={() => {
+                  actions.explorationExit();
+                  setView({ name: 'world' });
+                }}
+              />
+            ) : (
+              <div className="worldmap">Entrée dans le donjon…</div>
+            )
           )}
         </main>
       </div>

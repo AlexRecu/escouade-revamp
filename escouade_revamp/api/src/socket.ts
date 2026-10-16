@@ -1,6 +1,7 @@
 import { Server, Socket } from 'socket.io';
 import { authMiddlewareSocket } from './middleware/authMiddleware';
 import { HubSessionService } from './services/Hub/HubSessionService';
+import { ExplorationSessionService, Direction } from './services/dungeon/ExplorationSessionService';
 
 /**
  * Câblage Socket.IO du mode ville (temps réel).
@@ -80,9 +81,36 @@ export const initializeSocket = (io: Server) => {
       socket.emit('hub:log', { logs: ['Vous quittez la ville.'] });
     });
 
+    // ── Exploration des donjons (mode déplacement) ──────────────────────────
+    // Exécute une action d'exploration et renvoie l'état de la grille au
+    // client via `exploration:state` (+ logs via `exploration:log`).
+    const replyExploration = async (action: () => Promise<any>) => {
+      try {
+        const result = await action();
+        if (result && result.state) socket.emit('exploration:state', { state: result.state });
+        if (result && result.logs) socket.emit('exploration:log', { logs: result.logs });
+      } catch (err: any) {
+        socket.emit('error', { message: err?.message ?? 'Erreur inconnue' });
+      }
+    };
+
+    socket.on('exploration:enter', (data: { dungeonId: string }) =>
+      replyExploration(async () => ({ state: await ExplorationSessionService.enterDungeon(playerId, data.dungeonId) }))
+    );
+    socket.on('exploration:move', (data: { direction: Direction }) =>
+      replyExploration(() => ExplorationSessionService.move(playerId, data.direction))
+    );
+    socket.on('exploration:rest', () =>
+      replyExploration(() => ExplorationSessionService.restAtCampfire(playerId))
+    );
+    socket.on('exploration:exit', () =>
+      replyExploration(async () => ({ logs: (await ExplorationSessionService.exitDungeon(playerId)).logs }))
+    );
+
     socket.on('disconnect', () => {
-      // Libère la session en mémoire (l'état est déjà persisté).
+      // Libère les sessions en mémoire (l'état est déjà persisté).
       HubSessionService.leave(playerId);
+      ExplorationSessionService.exitDungeon(playerId).catch(() => {});
       console.log(`🔌 Joueur déconnecté : ${playerId}`);
     });
   });

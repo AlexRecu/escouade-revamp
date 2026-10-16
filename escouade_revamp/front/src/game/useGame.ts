@@ -1,7 +1,7 @@
 // Hook de partie : gère la connexion Socket.IO et l'état de session (temps réel).
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { GameState } from '../types/game';
+import type { GameState, ExplorationState } from '../types/game';
 import {
   connectSocket,
   disconnectSocket,
@@ -16,9 +16,16 @@ import {
   hubCompleteZone,
   hubChangeHub,
   hubLeave,
+  explorationEnter,
+  explorationMove,
+  explorationRest,
+  explorationExit,
+  type ExplorationDirection,
   onState,
   onLog,
   onError,
+  onExplorationState,
+  onExplorationLog,
 } from '../api/socket';
 
 export type GameActions = {
@@ -33,6 +40,11 @@ export type GameActions = {
   completeZone: (zoneId: string) => void;
   changeHub: (hubId: string) => void;
   leave: () => void;
+  // Exploration des donjons.
+  explorationEnter: (dungeonId: string) => void;
+  explorationMove: (direction: ExplorationDirection) => void;
+  explorationRest: () => void;
+  explorationExit: () => void;
 };
 
 export type UseGame = {
@@ -40,6 +52,8 @@ export type UseGame = {
   logs: string[];
   connected: boolean;
   actions: GameActions;
+  /** État d'exploration courant (null si l'équipe n'est pas dans un donjon). */
+  exploration: ExplorationState | null;
 };
 
 /**
@@ -51,6 +65,7 @@ export function useGame(): UseGame {
   const [state, setState] = useState<GameState | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
   const [connected, setConnected] = useState(false);
+  const [exploration, setExploration] = useState<ExplorationState | null>(null);
   const joinedRef = useRef(false);
 
   const pushLogs = useCallback((newLogs: string[]) => {
@@ -65,6 +80,8 @@ export function useGame(): UseGame {
     onState((s) => setState(s));
     onLog(pushLogs);
     onError((msg) => pushLogs([`⚠️ ${msg}`]));
+    onExplorationState((s) => setExploration(s));
+    onExplorationLog(pushLogs);
 
     // Rejoint la ville courante une fois connecté.
     const onConnect = () => {
@@ -94,7 +111,11 @@ export function useGame(): UseGame {
     completeZone: hubCompleteZone,
     changeHub: hubChangeHub,
     leave: hubLeave,
+    explorationEnter,
+    explorationMove,
+    explorationRest,
+    explorationExit,
   };
 
-  return { state, logs, connected, actions };
+  return { state, logs, connected, actions, exploration };
 }

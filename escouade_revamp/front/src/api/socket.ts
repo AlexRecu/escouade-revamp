@@ -2,7 +2,7 @@
 
 import { io, Socket } from 'socket.io-client';
 import { getToken } from './auth';
-import type { GameState } from '../types/game';
+import type { GameState, ExplorationState } from '../types/game';
 
 let socket: Socket | null = null;
 
@@ -43,6 +43,19 @@ export const hubChangeHub = (hubId: string): void => { socket?.emit('hub:changeH
 export const hubCompleteZone = (zoneId: string): void => { socket?.emit('hub:completeZone', { zoneId }); };
 export const hubLeave = (): void => { socket?.emit('hub:leave', {}); };
 
+// ── Exploration des donjons (client → serveur) ─────────────────────────────
+
+export type ExplorationDirection = 'north' | 'south' | 'east' | 'west';
+
+export const explorationEnter = (dungeonId: string): void => {
+  socket?.emit('exploration:enter', { dungeonId });
+};
+export const explorationMove = (direction: ExplorationDirection): void => {
+  socket?.emit('exploration:move', { direction });
+};
+export const explorationRest = (): void => { socket?.emit('exploration:rest', {}); };
+export const explorationExit = (): void => { socket?.emit('exploration:exit', {}); };
+
 // ── Abonnements (serveur → client) ─────────────────────────────────────────
 
 export function onState(cb: (state: GameState) => void): void {
@@ -59,4 +72,14 @@ export function onQuests(cb: (quests: unknown[]) => void): void {
 
 export function onError(cb: (message: string) => void): void {
   socket?.on('error', ({ message }: { message: string }) => cb(message));
+}
+
+// ── Abonnements exploration (serveur → client) ─────────────────────────────
+
+export function onExplorationState(cb: (state: ExplorationState) => void): void {
+  socket?.on('exploration:state', ({ state }: { state: ExplorationState }) => cb(state));
+}
+
+export function onExplorationLog(cb: (logs: string[]) => void): void {
+  socket?.on('exploration:log', ({ logs }: { logs: string[] }) => cb(logs));
 }
