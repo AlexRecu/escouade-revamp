@@ -31,11 +31,19 @@ export class AIService {
     }
 
     /**
-     * Fait agir un monstre : se déplace vers le héros le plus proche puis
-     * l'attaque (ou utilise une de ses compétences si disponible).
+     * Fait agir un monstre : se déplace vers sa cible puis l'attaque (ou
+     * utilise une de ses compétences si disponible).
+     *
+     * Choix de la cible : un héros sous **Provoque** (`isTargeted = true`)
+     * attire toute l'attention des ennemis → il est ciblé en priorité, même
+     * s'il n'est pas le plus proche. Sinon, l'ennemi vise le héros le plus
+     * proche (comportement par défaut).
      */
     executeEnemyAction(monster: Monster): void {
-        const target = monster.getClosestUnit("Hero", this.state.units);
+        const provoked = this.state.aliveHeroes.find(
+            (u) => u instanceof Character && u.isTargeted
+        );
+        const target = provoked ?? monster.getClosestUnit("Hero", this.state.units);
         if (!target) return;
 
         // Se rapprocher de la cible (déplacement dépendant de la classe).
