@@ -4,9 +4,11 @@ export type Evolution = {
     name: string,
     requirements: Requirement,
     specialAbility: string,
-    bonuses : Statistics,
-    skills : { level: number; skill: Skill }[],
-    spells:  { level: number; spell: string}[]
+    bonuses: Statistics,
+    skills: { level: number; skill: Skill }[],
+    spells: { level: number; spell: string }[],
+    /** Bonus d'AP maximum accordé par l'évolution (ex. Samouraï : +2 AP). */
+    apBonus?: number
 };
 
 export type Requirement = {
@@ -40,43 +42,46 @@ export type Skill = {
 };
 
 export type EonSkill = {
-        name: string,
-        description: string,
-        tp: number,
-        formula: string,
-        type: string,
-        range: number,
-        power: number | null
+    name: string,
+    description: string,
+    tp: number,
+    formula: string,
+    type: string,
+    range: number,
+    power: number | null
 };
 
 export class Spell {
-   target: 'ally' | 'self' | 'enemy';
-   name: string;
-   element: string;
-   mpCost: number | null;
-   hpCost: number | null;
-   power: number | null;
-   hp: number | null;
-   status?: Status;
-   description: string;
+    target: 'ally' | 'self' | 'enemy';
+    name: string;
+    element: string;
+    mpCost: number | null;
+    hpCost: number | null;
+    power: number | null;
+    hp: number | null;
+    status?: Status;
+    description: string;
 
-   constructor(name: string, description: string, target: 'ally' | 'self' | 'enemy', element: string, mpCost: number | null, hpCost: number | null, hp: number | null, power: number | null, status?: Status){
-    this.name = name;
-    this.description = description;
-    this.element = element;
-    this.target = target;
-    this.power = power;
-    this.mpCost = mpCost;
-    this.hpCost = hpCost;
-    this.hp = hp;
-    this.status = status;
-   }
+    constructor(name: string, description: string, target: 'ally' | 'self' | 'enemy', element: string, mpCost: number | null, hpCost: number | null, hp: number | null, power: number | null, status?: Status) {
+        this.name = name;
+        this.description = description;
+        this.element = element;
+        this.target = target;
+        this.power = power;
+        this.mpCost = mpCost;
+        this.hpCost = hpCost;
+        this.hp = hp;
+        this.status = status;
+    }
 };
 
 export type Position = {
     row: number,
     col: number
 };
+
+/** Mode de difficulté de la partie (easy = wipe à la ville, hard = game over). */
+export type Difficulty = "easy" | "hard";
 
 export type MonsterAttack = {
     name: string,
@@ -103,3 +108,38 @@ export type AstroCard = {
 };
 
 export type Element = "Feu" | "Glace" | "Foudre" | "Air" | "Terre" | "Ténèbre" | "Sacré" | "";
+
+export interface MonsterSpawnRate {
+    monsterName: string;
+    rate: number; // entre 0 et 1, total de la liste = 1
+}
+
+export type HubServices = {
+    shop: boolean;
+    inn: boolean;
+    church: boolean;
+    questBoard: boolean;
+};
+
+/** Bâtiment de ville (un service ancré sur une case précise). */
+export type HubBuilding = {
+    service: keyof HubServices;
+    row: number;
+    col: number;
+};
+
+/**
+ * Layout d'une ville (mode point-and-clic).
+ *
+ * La ville est une **grille de tuiles** (comme les zones) : `true` = case
+ * marchable, `false` = bloquée. Les bâtiments (services) sont ancrés sur des
+ * cases précises, et `exit` est la case de sortie vers les donjons.
+ * Le déplacement du personnage est géré au front (pathfinding + interpolation).
+ */
+export type HubLayout = {
+    size: { rows: number; cols: number };
+    tileMap: boolean[][];
+    startTile: Position;
+    buildings: HubBuilding[];
+    exit: { row: number; col: number; label: string };
+};

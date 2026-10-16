@@ -1,0 +1,70 @@
+# Stack de développement Escouade : MongoDB + API + Front (Vite HMR).
+#
+#   Lancement : docker compose up --build
+#   Arrêt     : docker compose down          (garde les données mongo)
+#   Reset DB  : docker compose down -v       (supprime le volume mongo-data)
+#
+# Les valeurs de dev (MONGO_USER, MONGO_PASS, JWT_SECRET) viennent du fichier
+# `.env` à la racine (créé automatiquement lu par docker compose).
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: escouade-mongo
+    ports:
+      # Même port que windows-db.bat → le dev natif (hors Docker) reste compatible.
+      - "27027:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASS}
+      MONGO_INITDB_DATABASE: escouade
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  backend:
+    build: ./api
+    container_name: escouade-backend
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: local
+      # Réseau interne Docker : le service mongo est joignable sous le nom "mongo".
+      MONGODB_URI: mongodb://${MONGO_USER}:${MONGO_PASS}@mongo:27017/
+      MONGODB_DB: escouade
+      JWT_SECRET: ${JWT_SECRET}
+      LOCAL_API: /api
+    volumes:
+      # Code source monté pour le HMR (ts-node-dev --respawn).
+      # node_modules vient de l'image (pas monté → cohérent avec le conteneur).
+      - ./api/src:/app/src
+      - ./api/tsconfig.json:/app/tsconfig.json
+    command: npm run dev
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  frontend:
+    build: ./front
+    container_name: escouade-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      # Le proxy Vite pointe vers le service backend (réseau interne Docker).
+      API_PROXY_TARGET: http://backend:5000
+    volumes:
+      # Code source monté pour le HMR (Vite).
+      - ./front/src:/app/src
+      - ./front/index.html:/app/index.html
+      - ./front/vite.config.ts:/app/vite.config.ts
+    command: npm run dev -- --host
+    depends_on:
+      - backend
+
+volumes:
+  mongo-data:

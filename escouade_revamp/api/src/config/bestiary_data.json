@@ -1,6 +1,7 @@
 [
   {
     "name": "Frelon",
+    "rank": 1,
     "type": "Physique",
     "weakness": [
       "Feu"
@@ -51,6 +52,7 @@
   },
   {
     "name": "Gobelin",
+    "rank": 1,
     "type": "Physique",
     "weakness": [],
     "immunity": [],
@@ -101,6 +103,7 @@
   },
   {
     "name": "Veuve noire",
+    "rank": 1,
     "type": "Physique",
     "weakness": [
       "Feu"
@@ -151,6 +154,7 @@
   },
   {
     "name": "Loup",
+    "rank": 1,
     "type": "Physique",
     "weakness": [],
     "immunity": [],
@@ -199,6 +203,7 @@
   },
   {
     "name": "Vautour",
+    "rank": 1,
     "type": "Physique",
     "weakness": [],
     "immunity": [],
@@ -247,6 +252,7 @@
   },
   {
     "name": "Bombo Feu",
+    "rank": 2,
     "type": "Magique",
     "weakness": [
       "Glace"
@@ -299,6 +305,7 @@
   },
   {
     "name": "Bombo Glace",
+    "rank": 2,
     "type": "Magique",
     "weakness": [
       "Feu"
@@ -351,6 +358,7 @@
   },
   {
     "name": "Bombo Terre",
+    "rank": 2,
     "type": "Magique",
     "weakness": [
       "Air"
@@ -405,6 +413,7 @@
   },
   {
     "name": "Bombo Air",
+    "rank": 2,
     "type": "Magique",
     "weakness": [
       "Foudre"
@@ -459,6 +468,7 @@
   },
   {
     "name": "Bombo Foudre",
+    "rank": 2,
     "type": "Magique",
     "weakness": [
       "Terre"
@@ -513,6 +523,7 @@
   },
   {
     "name": "Cendre Bombo",
+    "rank": 2,
     "type": "Magique",
     "weakness": [
       "Ténèbres"
@@ -565,6 +576,7 @@
   },
   {
     "name": "Mage gobelin",
+    "rank": 2,
     "type": "Magique",
     "weakness": [],
     "immunity": [],
@@ -615,6 +627,7 @@
   },
   {
     "name": "Lézard ailé",
+    "rank": 2,
     "type": "Physique",
     "weakness": [
       "Air",
@@ -668,6 +681,7 @@
   },
   {
     "name": "Ahriman",
+    "rank": 1,
     "type": "Magique",
     "weakness": [],
     "immunity": [],
@@ -716,6 +730,7 @@
   },
   {
     "name": "Dragonnet",
+    "rank": 2,
     "type": "Physique",
     "weakness": [],
     "immunity": [],
@@ -764,6 +779,7 @@
   },
   {
     "name": "Bandit",
+    "rank": 2,
     "type": "Physique",
     "weakness": [
       "Feu"
@@ -814,6 +830,7 @@
   },
   {
     "name": "Troll",
+    "rank": 4,
     "type": "Physique",
     "weakness": [
       "Feu"
@@ -864,6 +881,7 @@
   },
   {
     "name": "Coeurl",
+    "rank": 3,
     "type": "Physique",
     "weakness": [
       "Feu"
@@ -914,6 +932,7 @@
   },
   {
     "name": "Chevalier mort vivant",
+    "rank": 3,
     "type": "Physique",
     "weakness": [
       "Feu",
@@ -967,6 +986,7 @@
   },
   {
     "name": "Garde dragon",
+    "rank": 3,
     "type": "Physique",
     "weakness": [
       "Glace",
@@ -1021,6 +1041,7 @@
   },
   {
     "name": "Yéti",
+    "rank": 3,
     "type": "Magique",
     "weakness": [
       "Feu"
@@ -1073,6 +1094,7 @@
   },
   {
     "name": "Griffon",
+    "rank": 3,
     "type": "Physique",
     "weakness": [
       "Foudre"
@@ -1125,6 +1147,7 @@
   },
   {
     "name": "Ours élastique",
+    "rank": 4,
     "type": "Physique",
     "weakness": [
       "Feu"
@@ -1175,6 +1198,7 @@
   },
   {
     "name": "Dullahan",
+    "rank": 3,
     "type": "Physique",
     "weakness": [
       "Feu",
@@ -1228,6 +1252,7 @@
   },
   {
     "name": "Brûleur",
+    "rank": 3,
     "type": "Physique",
     "weakness": [
       "Glace"
@@ -1280,6 +1305,7 @@
   },
   {
     "name": "Chimère",
+    "rank": 4,
     "type": "Magique",
     "weakness": [
       "Terre"
@@ -1334,6 +1360,7 @@
   },
   {
     "name": "Géant de fer",
+    "rank": 4,
     "type": "Physique",
     "weakness": [
       "Foudre",
@@ -1389,6 +1416,7 @@
   },
   {
     "name": "Dragon squelette",
+    "rank": 4,
     "type": "Physique",
     "weakness": [
       "Feu",
@@ -1442,6 +1470,7 @@
   },
   {
     "name": "Dragon rouge",
+    "rank": 5,
     "type": "Magique",
     "weakness": [
       "Glace"
@@ -1494,6 +1523,7 @@
   },
   {
     "name": "Dragon bleu",
+    "rank": 5,
     "type": "Magique",
     "weakness": [
       "Foudre"
@@ -1546,6 +1576,7 @@
   },
   {
     "name": "Dragon de glace",
+    "rank": 6,
     "type": "Magique",
     "weakness": [
       "Feu"
@@ -1596,6 +1627,7 @@
   },
   {
     "name": "???",
+    "rank": 6,
     "type": "Physique",
     "weakness": [
       "???"
@@ -1650,6 +1682,7 @@
   },
   {
     "name": "Teddy Bear",
+    "rank": 0,
     "type": "Magique",
     "weakness": [],
     "immunity": [],

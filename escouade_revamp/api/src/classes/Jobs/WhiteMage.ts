@@ -64,6 +64,7 @@ export class WhiteMage extends Job {
                     ]
                 },
                 {
+                    // (testé : tests/jobs/astrologer.test.ts — tirage, arcanes, sceaux, playCard)
                     name: "Astromancien",
                     requirements: {
                         level: 20
@@ -79,7 +80,8 @@ export class WhiteMage extends Job {
                         charisma: 0
                     },
                     skills: [
-                        { level: 20, skill: {         name: "Tirage",
+                        { level: 20, skill: {         
+                                name: "Tirage",
                                 formula: "this.job.drawCard();", 
                                 target: 'self',
                                 type: "single",
@@ -303,6 +305,10 @@ export class WhiteMage extends Job {
     exaltation(target: Character) {
         const exaltationIndex = target.status.findIndex(statut => statut.name === "Exaltation")
         if (exaltationIndex !== -1) {
+            // Le statut est déjà actif : on rafraîchit sa durée (sans ré-incrémenter les stats).
+            target.status[exaltationIndex].nbTurnEffect = 3;
+        } else {
+            // Premier usage : on incrémente toutes les stats et on applique le statut (3 tours).
             target.stats.strength++;
             target.stats.dexterity++;
             target.stats.endurance++;
@@ -311,8 +317,6 @@ export class WhiteMage extends Job {
             target.stats.perception++;
             target.stats.charisma++;
             target.status.push({ name: "Exaltation", nbTurnEffect: 3 });
-        } else {
-            target.status[exaltationIndex].nbTurnEffect = 3;
         }
     }
 
@@ -339,9 +343,11 @@ export class WhiteMage extends Job {
             } else if (card.status) { // La Flèche
                 const statusIndex = target.status.findIndex(statut => statut.name === card.status?.name)
                 if (statusIndex !== -1) {
-                    target.status.push(card.status);
-                } else {
+                    // Le statut est déjà actif : on rafraîchit sa durée.
                     target.status[statusIndex].nbTurnEffect = card.status.nbTurnEffect;
+                } else {
+                    // Premier usage : on applique le statut.
+                    target.status.push(card.status);
                 }
             } else if (!card.isAce) { //Le Tronc
                 target.currentHp = Math.min(target.currentHp + 7, target.maxHp);
@@ -367,8 +373,9 @@ export class WhiteMage extends Job {
                 }
             });
             const kingDamage = (Math.pow(card.power, 2) / 2) * damageMultiplier;
+            const cardLog: string[] = [];
             for (const enemy of allUnits.filter(unit => unit.type === "Enemy")) {
-                enemy.currentHp = Math.max(enemy.currentHp - kingDamage, 0);
+                enemy.applyDamage(kingDamage, cardLog);
             }
             this.resetSigils();
         } else { // La Reine des couronnes

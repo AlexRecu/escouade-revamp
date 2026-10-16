@@ -3,6 +3,7 @@ import { Status } from "../../src/classes/Status";
 import { Unit } from "../../src/classes/UnitTypes/Unit";
 import { manageStatusBeforePhase, manageStatusAfterPhase, applyStatus } from "../../src/utils/StatusUtils";
 import { calculateDamageMultiplier } from "../../src/utils/DamageUtils"
+import { Skill } from "../../src/classes/Types";
 
 class TestUnit extends Unit {
     attack(target: Unit, roll: number, critRoll = 0, bonus = 0) {
@@ -11,8 +12,11 @@ class TestUnit extends Unit {
     useSpellFromName(spellName: string, target: Unit, roll: number, critRoll: number) {
         return [`Lance ${spellName} sur ${target.name}`];
     }
-    useAbility(skillName: string, allUnits: Unit []) {
-        return [`Utilise ${skillName}`];
+    useAbility(skill: Skill, allUnits: Unit []) {
+        return [`Utilise ${skill.name}`];
+    }
+    useAbilityByName(name: string, allUnits: Unit []) {
+        return [`Utilise ${name}`];
     }
     useItem(item: Item, target: Unit) {
         return [`Utilise ${item.name} sur ${target.name}`];

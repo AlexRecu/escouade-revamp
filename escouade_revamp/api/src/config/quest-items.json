@@ -1,0 +1,19 @@
+{
+  "items": [
+    {
+      "name": "Embarcation",
+      "description": "La barque du pêcheur, nécessaire pour accéder au lac.",
+      "quest": "quest_peche_miraculeuse"
+    },
+    {
+      "name": "Clef de voyance",
+      "description": "La clef qui ouvre la salle de voyance du château.",
+      "quest": "quest_voies_seigneur"
+    },
+    {
+      "name": "Cœur de sang",
+      "description": "Le cœur de sang, nécessaire au rituel qui ouvre la porte de sang de la caverne.",
+      "quest": "quest_porte_sang"
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "quests": [
+    {
+      "id": "quest_peche_miraculeuse",
+      "name": "Une pêche miraculeuse",
+      "giver": {
+        "npc": "Pêcheur",
+        "hub": "Qual-Chen",
+        "dialogue": "Le lac est hanté, mon ami. Quelque chose se cache sous l'eau... Aidez-moi à comprendre."
+      },
+      "steps": [
+        { "id": "s1", "type": "talk", "target": "Qual-Chen", "text": "Parler aux PNJ de Qual-Chen sur le mal qui hante le lac" },
+        { "id": "s2", "type": "retrieve", "target": "Embarcation", "text": "Récupérer l'embarcation du pêcheur" },
+        { "id": "s3", "type": "goTo", "target": "Lac de Qual-Chen", "text": "Aller pêcher au lac" }
+      ],
+      "reward": {
+        "demon": "Mateus, le Corrompu",
+        "gold": 0,
+        "xp": 0,
+        "text": "Mateus le corrompu rejoint l'équipe."
+      },
+      "availability": { "requiresJob": "Démoniste" }
+    },
+    {
+      "id": "quest_kidnappeur",
+      "name": "Trouvez le kidnappeur",
+      "giver": {
+        "npc": "Franny",
+        "hub": "Qual-Mastrech",
+        "dialogue": "Ma sœur a disparu dans les bois... S'il vous plaît, trouvez le coupable."
+      },
+      "steps": [
+        { "id": "s1", "type": "talk", "target": "Franny", "text": "Parler à Franny dans le quartier des vents à Qual-Mastrech" },
+        { "id": "s2", "type": "goTo", "target": "Forêt des soupirs", "text": "Retrouver la sœur de Franny dans la forêt" },
+        { "id": "s3", "type": "defeat", "target": "Adrammelech, le Grand Courroux", "text": "Affronter le kidnappeur (Adrammelech) dans la forêt" }
+      ],
+      "reward": {
+        "demon": "Adrammelech, le Grand Courroux",
+        "gold": 0,
+        "xp": 0,
+        "text": "Adrammelech, le Grand Courroux, rejoint l'équipe."
+      },
+      "availability": { "requiresJob": "Démoniste" }
+    },
+    {
+      "id": "quest_voies_seigneur",
+      "name": "Les voies du seigneur sont impénétrables",
+      "giver": {
+        "npc": "Voyante",
+        "hub": "Qual-Mastrech",
+        "dialogue": "Les voies du seigneur sont impénétrables. La salle de voyance du château détient la réponse."
+      },
+      "steps": [
+        { "id": "s1", "type": "talk", "target": "Voyante", "text": "Parler à la voyante pour obtenir la clef de la salle de voyance" },
+        { "id": "s2", "type": "retrieve", "target": "Clef de voyance", "text": "Récupérer la clef de la salle de voyance" },
+        { "id": "s3", "type": "goTo", "target": "Château Déchu", "text": "Utiliser la clef pour ouvrir la salle de voyance au château" }
+      ],
+      "reward": {
+        "demon": "Ultima, le Grand Séraphin",
+        "gold": 0,
+        "xp": 0,
+        "text": "Ultima, le Grand Séraphin, rejoint l'équipe."
+      },
+      "availability": { "requiresDemons": ["Mateus, le Corrompu", "Bélias, le Titan", "Adrammelech, le Grand Courroux", "Hashmal, le Grand Ordonnateur"] }
+    }
+  ]
+}

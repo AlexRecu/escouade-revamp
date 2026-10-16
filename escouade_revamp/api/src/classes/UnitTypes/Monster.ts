@@ -2,28 +2,72 @@ import { Item } from "../Items/Item";
 import { MonsterAttack, Position, Skill, Spell } from "../Types";
 import { Status } from "../Status";
 import { Unit } from "../UnitTypes/Unit";
+import bestiary from "../../config/bestiary_data.json";
+import { IdGenerator } from "../../utils/IdGeneratorUtils";
+import skillData from "../../config/blueMage_skills_data.json";
 
 export class Monster extends Unit {
-    rank: number;
-    monsterSkills: MonsterAttack[];
-    atk: number;
-    xp: number;
-    gold: number;
+    rank!: number;
+    monsterSkills!: string[];
+    atk!: number;
+    xp!: number;
+    gold!: number;
 
-    constructor(id: string, rank: number, name: string, position: Position, status: Status[], monsterSkills: MonsterAttack[], atk: number[], pv: number[], xp: number[], gold: number[], zoneLevel: number, items?: Item[], weakness: string[] = [], resistance: string[] = [], immunity: string[] = []) {
-        super(id ?? null, name ?? null, 'Enemy', position ?? null, pv[zoneLevel - 1], pv[zoneLevel - 1], status ?? [], items ?? []);
-        this.rank = rank;
-        this.monsterSkills = monsterSkills ?? [];
-        this.atk = atk[zoneLevel - 1];
-        this.xp = xp[zoneLevel - 1];
-        this.gold = gold[zoneLevel - 1];
-        this.weakness = weakness;
-        this.resistance = resistance;
-        this.immunity = immunity;
+    constructor(name: string, position: Position, type: 'Hero' | 'Enemy', zoneLevel: number);
+    constructor(rank: number, name: string, type: 'Hero' | 'Enemy', zoneLevel: number, position: Position, status: Status[], monsterSkills: string[], atk: number[], pv: number[], xp: number[], gold: number[], items: Item[], weakness: string[], resistance: string[], immunity: string[])
+    constructor(arg1: number | string, arg2: string | Position, arg3: 'Hero' | 'Enemy', zoneLevel: number, position?: Position, status?: Status[], monsterSkills?: string[], atk?: number[], pv?: number[], xp?: number[], gold?: number[], items?: Item[], weakness?: string[], resistance?: string[], immunity?: string[]) {
+        if (typeof arg1 === "string") {
+            // => constructor(name: string, position: Position, type: ...)
+            const name = arg1;
+            const position = arg2 as Position;
+            const type = arg3 as 'Hero' | 'Enemy';
+            const monster = bestiary.find(m => m.name === name);
+            if (monster) {
+                super(IdGenerator.generate(monster.name), monster.name, type, position, monster.pv[zoneLevel - 1], monster.pv[zoneLevel - 1], status ?? [], items ?? []);
+                this.rank = monster.rank;
+                this.monsterSkills = monster.attack ?? [];
+                this.atk = monster.atk[zoneLevel - 1];
+                this.xp = monster.xp[zoneLevel - 1];
+                this.gold = monster.gold[zoneLevel - 1];
+                this.weakness = monster.weakness ?? [];
+                this.resistance = monster.resistance ?? [];
+                this.immunity = monster.immunity ?? [];
+            }
+        } else {
+            // => constructor(rank: number, name: string, type: ..., ...)
+            const rank = arg1 as number;
+            const name = arg2 as string;
+            const type = arg3 as 'Hero' | 'Enemy';
+            super(IdGenerator.generate(name), name, type, position!, pv ? pv[zoneLevel - 1] : 10000, pv ? pv[zoneLevel - 1] : 10000, status ?? [], items ?? []);
+            this.rank = rank;
+            this.monsterSkills = monsterSkills ?? [];
+            this.atk = atk ? atk[zoneLevel - 1] : 0;
+            this.xp = xp ? xp[zoneLevel - 1] : 10000;
+            this.gold = gold ? gold[zoneLevel - 1] : 10000;
+            this.weakness = weakness ?? [];
+            this.resistance = resistance ?? [];
+            this.immunity = immunity ?? [];
+        }
     }
 
     attack(target: Unit, roll: number, critRoll: number | 0): string[] {
-        return [];
+        let resultArray: string[] = [];
+        let damage: number = 0;
+        resultArray.push(`${this.name} attaque ${target.name}`);
+        if (roll > 1) {
+            damage = this.atk;
+            if (roll = 6) {
+                resultArray.push(`COUP CRITIQUE !`);
+                damage *= 2;
+            }
+            resultArray.push(`${target.name} subit ${damage} de dommage`);
+            target.applyDamage(damage, resultArray);
+
+            if (target.isDead()) resultArray.push(`${target.name} est KO ...`);
+        } else {
+            resultArray.push(`${this.name} rate son attaque`);
+        }
+        return resultArray;
     };
     useSpellFromName(spellName: string, target: Unit, roll: number, critRoll: number): string[] {
         throw new Error("Method not implemented.");
@@ -31,7 +75,32 @@ export class Monster extends Unit {
     useItem(item: Item, target: Unit): string[] {
         throw new Error("Method not implemented.");
     }
-    useAbility(skillName: string, allUnits: Unit[]): string[] {
-        throw new Error("A Monster cannot use Skill.");
+    /**
+     * Utilise une compétence de monstre depuis son nom (résolue dans le registre
+     * partagé — le même objet Skill que celui qu'un Mage bleu peut apprendre).
+     * @param name Le nom de la compétence
+     * @param allUnits Le contexte de toutes les unités
+     * @returns Le log de toutes les actions effectuées
+     */
+    useAbilityByName(name: string, allUnits: Unit[]): string[] {
+        const skill = skillData.find(s => s.name === name) as Skill;
+        if (!skill) {
+            return ["Compétence introuvable."];
+        }
+        return this.useAbility(skill, allUnits);
     }
+
+    /**
+     * Utilise une compétence de monstre aléatoire (choix parmi monsterSkills).
+     * @param allUnits Le contexte de toutes les unités
+     * @returns Le log de toutes les actions effectuées
+     */
+    useRandomAbility(allUnits: Unit[]): string[] {
+        if (this.monsterSkills.length === 0) {
+            return ["Aucune compétence à utiliser."];
+        }
+        const skillName = this.monsterSkills[Math.floor(Math.random() * this.monsterSkills.length)];
+        return this.useAbilityByName(skillName, allUnits);
+    }
+
 }

@@ -16,7 +16,7 @@
                 "name":"Cyclone écarlate",
                 "description": "Attaque magique de feu",
                 "tp": 3,
-                "formula": "",
+                "formula": "const damage = Math.round(Math.pow(this.stats.intelligence + skill.power, 2) / 2 * damageMultiplier); const actual = target.applyDamage(damage, resultArray); resultArray.push(target.name + ' perd ' + actual + 'PV');",
                 "type": "multi",
                 "range": 0,
                 "power": 4
@@ -25,7 +25,7 @@
                 "name":"Onde incendiaire",
                 "description": "Attaque magique de feu monocible (3) Erige une barrière qui bloque les dégâts au tour suivant",
                 "tp": 2,
-                "formula": "",
+                "formula": "const damage = Math.round(Math.pow(this.stats.intelligence + skill.power, 2) / 2 * damageMultiplier); const actual = target.applyDamage(damage, resultArray); resultArray.push(target.name + ' perd ' + actual + 'PV'); this.damageBlocked = true; resultArray.push(this.name + ' érige une barrière qui bloque les dégâts au tour suivant.');",
                 "type": "single",
                 "range": 4,
                 "power": 3
@@ -34,7 +34,7 @@
                 "name":"Feu résurrecteur",
                 "description": "Attaque magique de feu (AOE) (11) et applique un Soin + sur les alliés",
                 "tp": 10,
-                "formula": "",
+                "formula": "const damage = Math.round(Math.pow(this.stats.intelligence + skill.power, 2) / 2 * damageMultiplier); target.currentHp = Math.max(target.currentHp - damage, 0); resultArray.push(target.name + ' perd ' + damage + 'PV'); if (!this.healAppliedThisUse) { this.healAppliedThisUse = true; for (const ally of allUnits) { if (ally.type === this.type && !ally.isDead()) { ally.currentHp = Math.min(ally.maxHp, ally.currentHp + 7); resultArray.push(ally.name + ' récupère 7PV (Soin +)'); } } }",
                 "type": "multi",
                 "range": 0,
                 "power": 11
@@ -58,7 +58,7 @@
                 "name":"Rapacité",
                 "description": "Attaque magique de vent",
                 "tp": 2,
-                "formula": "",
+                "formula": "const damage = Math.round(Math.pow(this.stats.intelligence + skill.power, 2) / 2 * damageMultiplier); const actual = target.applyDamage(damage, resultArray); resultArray.push(target.name + ' perd ' + actual + 'PV');",
                 "type": "multi",
                 "range": 1,
                 "power": 2
@@ -67,7 +67,7 @@
                 "name":"Virevolte captivante",
                 "description": "Attaque magique de vent monocible (3) Erige une barrière qui bloque les dégâts au tour suivant",
                 "tp": 3,
-                "formula": "",
+                "formula": "const damage = Math.round(Math.pow(this.stats.intelligence + skill.power, 2) / 2 * damageMultiplier); const actual = target.applyDamage(damage, resultArray); resultArray.push(target.name + ' perd ' + actual + 'PV'); this.damageBlocked = true; resultArray.push(this.name + ' érige une barrière qui bloque les dégâts au tour suivant.');",
                 "type": "single",
                 "range": 1,
                 "power": 4
@@ -76,7 +76,7 @@
                 "name":"Rafale aérienne",
                 "description": "Attaque magique de vent (AOE) (11) et applique un Soin + sur les alliés",
                 "tp": 10,
-                "formula": "",
+                "formula": "const damage = Math.round(Math.pow(this.stats.intelligence + skill.power, 2) / 2 * damageMultiplier); const actual = target.applyDamage(damage, resultArray); resultArray.push(target.name + ' perd ' + actual + 'PV'); if (!this.healAppliedThisUse) { this.healAppliedThisUse = true; for (const ally of allUnits) { if (ally.type === this.type && !ally.isDead()) { ally.currentHp = Math.min(ally.maxHp, ally.currentHp + 7); resultArray.push(ally.name + ' récupère 7PV (Soin +)'); } } }",
                 "type": "multi",
                 "range": 0,
                 "power": 10
@@ -118,7 +118,7 @@
                 "name":"Foudre du jugement",
                 "description": "Attaque magique de foudre (AOE)",
                 "tp": 10,
-                "formula": "",
+                "formula": "const damage = Math.round(Math.pow(this.stats.intelligence + skill.power, 2) / 2 * damageMultiplier); const actual = target.applyDamage(damage, resultArray); resultArray.push(target.name + ' perd ' + actual + 'PV');",
                 "type": "multi",
                 "range": 0,
                 "power": 12
@@ -133,16 +133,17 @@
                 "name":"Blocage de Titan",
                 "description": "Bloque les dégâts reçus à la fin du tour",
                 "tp": 1,
-                "formula": "",
+                "formula": "this.damageBlocked = true; resultArray.push(this.name + ' bloque les degats subis avant son prochain tour.');",
+                "target": "self",
                 "type": "single",
                 "range": 0,
                 "power": null
             },
             {
                 "name":"Crochet tellurique",
-                "description": "Attaque magique de terre",
+                "description": "Attaque magique de terre (AOE) (4)",
                 "tp": 4,
-                "formula": "",
+                "formula": "const damage = Math.round(Math.pow(this.stats.intelligence + skill.power, 2) / 2 * damageMultiplier); const actual = target.applyDamage(damage, resultArray); resultArray.push(target.name + ' perd ' + actual + 'PV');",
                 "type": "multi",
                 "range": 0,
                 "power": 4
@@ -151,7 +152,7 @@
                 "name":"Tumulte",
                 "description": "Attaque magique de terre monocible (3)",
                 "tp": 3,
-                "formula": "",
+                "formula": "const damage = Math.round(Math.pow(this.stats.intelligence + skill.power, 2) / 2 * damageMultiplier); const actual = target.applyDamage(damage, resultArray); resultArray.push(target.name + ' perd ' + actual + 'PV');",
                 "type": "single",
                 "range": 4,
                 "power": 3
@@ -226,8 +227,9 @@
                 "name":"Prestesse pérenne",
                 "description": "Annule les dégâts du tour précédent",
                 "tp": 0.5,
-                "formula": "TODO: c'est compliqué",
-                "type": "multi",
+                "formula": "const healed = this.hpAtTurnStart - target.currentHp; if (healed > 0) { target.currentHp = this.hpAtTurnStart; resultArray.push('Prestesse pérenne : ' + target.name + ' annule ' + healed + ' dégâts du tour précédent.'); } else { resultArray.push('Prestesse pérenne : aucun dégât à annuler.'); }",
+                "target": "self",
+                "type": "single",
                 "range": 0,
                 "power": null
             },
@@ -235,7 +237,7 @@
                 "name":"Danse des lames",
                 "description": "Attaque de ténèbres (AOE)",
                 "tp": 2,
-                "formula": "",
+                "formula": "const damage = Math.round(Math.pow(this.stats.intelligence + skill.power, 2) / 2 * damageMultiplier); const actual = target.applyDamage(damage, resultArray); resultArray.push(target.name + ' perd ' + actual + 'PV');",
                 "type": "multi",
                 "range": 0,
                 "power": 7
@@ -244,7 +246,7 @@
                 "name":"Zantetsuken",
                 "description": "Attaque magique de ténèbres (AOE)",
                 "tp": 10,
-                "formula": "",
+                "formula": "const damage = Math.round(Math.pow(this.stats.intelligence + skill.power, 2) / 2 * damageMultiplier); const actual = target.applyDamage(damage, resultArray); resultArray.push(target.name + ' perd ' + actual + 'PV');",
                 "type": "multi",
                 "range": 0,
                 "power": 15

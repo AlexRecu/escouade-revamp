@@ -183,6 +183,10 @@ export function manageStatusAfterPhase(unit: Unit): string[] {
                     unit.currentHp = Math.min(unit.maxHp, unit.currentHp + 5);
                     resultArray.push(`${unit.name} récupère 5 PV grâce à Grâce X.`);
                     break;
+                case "Bunshin":
+                    // Le clone persiste jusqu'à ce qu'il encaisse une attaque (nbTurnEffect null)
+                    newStatusList.push(status);
+                    break;
             }
             // Gestion de la durée du statut
             if (status.nbTurnEffect !== null) {

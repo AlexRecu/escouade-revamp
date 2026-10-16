@@ -2,15 +2,17 @@ import { Job } from "./Job";
 import { Statistics } from "../Types";
 import { Monster } from "../UnitTypes/Monster";
 import { Character } from "../UnitTypes/Character";
+import { Eon } from "../UnitTypes/Eon";
 import spellData from '../../config/spells_data.json'; // Charger le fichier JSON
 import skillData from '../../config/blueMage_skills_data.json'; // Charger le fichier JSON
+import eonData from '../../config/eons_data.json'; // Charger le fichier JSON
 import { Monstronomicon } from "../Items/Monstronomicon";
 import { IdGenerator } from "../../utils/IdGeneratorUtils";
 import { Unit } from "../UnitTypes/Unit";
 
 
 export class BlueMage extends Job {
-    monstronomicon = new Monstronomicon("BM_Monstronomicon_" + IdGenerator.generate());
+    monstronomicon = new Monstronomicon("BM_Monstronomicon_" + IdGenerator.generateId());
     private _trancePoints?: number;
 
     constructor() {
@@ -119,7 +121,8 @@ export class BlueMage extends Job {
 
             let targetSkills: string[] = [];
             if (target instanceof Monster) {
-                targetSkills = target.monsterSkills.map(skill => skill.name);
+                // monsterSkills est déjà un tableau de noms de compétences (string[])
+                targetSkills = [...target.monsterSkills];
             }
             if (target instanceof Character) {
                 targetSkills = [...target.getAvailableAbilities().map(skill => skill.name), ...target.getAvailableSpells().map(spell => spell.name)];
@@ -183,7 +186,49 @@ export class BlueMage extends Job {
     set trancePoints(tp: number){
         this._trancePoints = tp;
     }
-    
+
+    /** Eon actuellement invoqué sur le terrain (actif en combat). */
+    activeEon: Eon | null = null;
+
+    /**
+     * Renvoie la liste des Eons invocables (tous les Eons du bestiaire).
+     * L'Invocateur peut invoquer n'importe quel Eon (pas de pacte requis,
+     * contrairement aux démons). Le joueur sélectionne ensuite l'Eon à
+     * invoquer via `summonEon`.
+     * @returns Les noms des Eons invocables.
+     */
+    listEon(): string[] {
+        return eonData.map((eon) => eon.name);
+    }
+
+    /**
+     * Invoque un Eon **à la place de l'Invocateur** (cf. livret : "la créature
+     * est possédée par le lanceur"). L'Eon est créé à la position du lanceur,
+     * avec les stats de l'invocateur (dégâts basés sur son Intelligence) et
+     * 10 points de transe (TP).
+     *
+     * Mécanique (mode coopératif) : contrairement au démon (autonome), l'Eon
+     * est **piloté par le joueur** — il ne peut sélectionner que les actions
+     * de l'Eon (via `useAbilityByName`), pas ses sorts/compétences habituels.
+     * L'invocation se termine si l'invocateur n'a plus de PV ou de TP.
+     *
+     * Le swap sur la grille (retirer l'Invocateur, placer l'Eon) est géré par
+     * la couche combat qui reçoit l'Eon renvoyé.
+     *
+     * @param eonName Nom exact de l'Eon à invoquer (cf. `listEon`).
+     * @param caster L'Invocateur qui lance l'appel.
+     * @returns L'Eon invoqué.
+     */
+    summonEon(eonName: string, caster: Character): Eon {
+        const eonDef = eonData.find((eon) => eon.name === eonName);
+        if (!eonDef) {
+            throw new Error(`BlueMage.summonEon : Eon inconnu "${eonName}"`);
+        }
+        const eon = new Eon(caster, eonName);
+        this.activeEon = eon;
+        return eon;
+    }
+
     pattern(): string[] {
         //scan
         //apprentissage

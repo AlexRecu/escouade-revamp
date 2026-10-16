@@ -1,0 +1,272 @@
+[
+  {
+    "name": "Mort",
+    "statusType": "curse",
+    "icon": "💀",
+    "description": "20 % de chance de tuer la cible instantanément.",
+    "nbTurnEffect": null,
+    "counterItem": null,
+    "sources": ["Sort : Mort"]
+  },
+  {
+    "name": "Supplice",
+    "statusType": "curse",
+    "icon": "⚖️",
+    "description": "Si le jet est un 6, la cible meurt instantanément ; sinon elle est empoisonnée.",
+    "nbTurnEffect": null,
+    "counterItem": null,
+    "sources": ["Sort : Supplice"]
+  },
+  {
+    "name": "Poison",
+    "statusType": "curse",
+    "icon": "☠️",
+    "description": "Inflige des dégâts de poison à la fin de chaque tour (1/16 des PV max).",
+    "nbTurnEffect": null,
+    "counterItem": "Antidote universel",
+    "sources": ["Sort : Toxine", "Arme : Orochi", "Compétence : Voleur"]
+  },
+  {
+    "name": "Sommeil",
+    "statusType": "curse",
+    "icon": "💤",
+    "description": "La cible ne peut effectuer aucune action.",
+    "nbTurnEffect": 2,
+    "counterItem": null,
+    "sources": ["Sort : Morphée"]
+  },
+  {
+    "name": "Fossile",
+    "statusType": "curse",
+    "icon": "🪨",
+    "description": "La cible est figée et ne peut pas agir.",
+    "nbTurnEffect": null,
+    "counterItem": "Sérum",
+    "sources": []
+  },
+  {
+    "name": "Mutisme",
+    "statusType": "curse",
+    "icon": "🤐",
+    "description": "La cible ne peut plus lancer de magie.",
+    "nbTurnEffect": 5,
+    "counterItem": "Sérum",
+    "sources": ["Sort : Mutisme"]
+  },
+  {
+    "name": "Paralysie",
+    "statusType": "curse",
+    "icon": "🦴",
+    "description": "La cible a 30 % de chances d'être paralysée (ne peut pas agir) et 50 % de chances de se libérer.",
+    "nbTurnEffect": null,
+    "counterItem": "Sérum",
+    "sources": []
+  },
+  {
+    "name": "Aveuglement",
+    "statusType": "curse",
+    "icon": "🙈",
+    "description": "Réduit la précision de la cible (×0,7).",
+    "nbTurnEffect": null,
+    "counterItem": "Sérum",
+    "sources": ["Arme : Arc Assassin"]
+  },
+  {
+    "name": "Confusion",
+    "statusType": "curse",
+    "icon": "💫",
+    "description": "La cible est confusée et risque de se blesser elle-même.",
+    "nbTurnEffect": 2,
+    "counterItem": "Sérum",
+    "sources": ["Sort : Fièvre"]
+  },
+  {
+    "name": "Provoque",
+    "statusType": "curse",
+    "icon": "😵‍💫",
+    "description": "La cible attire toute l'attention des ennemis.",
+    "nbTurnEffect": 5,
+    "counterItem": null,
+    "sources": ["Compétence : Guerrier (Cri de guerre)"]
+  },
+  {
+    "name": "Saignée",
+    "statusType": "curse",
+    "icon": "🩸",
+    "description": "Draine 20 % des PV de la cible à chaque application (soin partiel pour l'attaquant).",
+    "nbTurnEffect": null,
+    "counterItem": null,
+    "sources": ["Sort : Saignée", "Arme : Épée Sanguine"]
+  },
+  {
+    "name": "Célérité",
+    "statusType": "boon",
+    "icon": "⚡",
+    "description": "Octroie une action supplémentaire ce tour.",
+    "nbTurnEffect": 3,
+    "counterItem": null,
+    "sources": ["Sort : Célérité"]
+  },
+  {
+    "name": "Fureur",
+    "statusType": "boon",
+    "icon": "🔥",
+    "description": "Augmente la Force de 2 (oblige une attaque normale).",
+    "nbTurnEffect": 2,
+    "counterItem": null,
+    "sources": ["Sort : Fureur"]
+  },
+  {
+    "name": "Rage",
+    "statusType": "boon",
+    "icon": "😡",
+    "description": "Augmente la Force de 1 (oblige une attaque normale).",
+    "nbTurnEffect": 2,
+    "counterItem": null,
+    "sources": ["Sort : Rage"]
+  },
+  {
+    "name": "Grâce",
+    "statusType": "boon",
+    "icon": "✨",
+    "description": "Rend 2 PV à la fin de chaque tour.",
+    "nbTurnEffect": 3,
+    "counterItem": null,
+    "sources": ["Sort : Grâce"]
+  },
+  {
+    "name": "Grâce +",
+    "statusType": "boon",
+    "icon": "✨",
+    "description": "Rend 4 PV à la fin de chaque tour.",
+    "nbTurnEffect": 4,
+    "counterItem": null,
+    "sources": ["Sort : Grâce +"]
+  },
+  {
+    "name": "Grâce X",
+    "statusType": "boon",
+    "icon": "✨",
+    "description": "Rend 5 PV à la fin de chaque tour.",
+    "nbTurnEffect": 5,
+    "counterItem": null,
+    "sources": ["Sort : Grâce X"]
+  },
+  {
+    "name": "Esuna",
+    "statusType": "boon",
+    "icon": "🧹",
+    "description": "Dissipe tous les malus de la cible.",
+    "nbTurnEffect": null,
+    "counterItem": null,
+    "sources": ["Sort : Esuna", "Arme : Caducée"]
+  },
+  {
+    "name": "Dissipation",
+    "statusType": "boon",
+    "icon": "🌀",
+    "description": "Enlève le dernier statut de la cible.",
+    "nbTurnEffect": null,
+    "counterItem": null,
+    "sources": ["Sort : Dissipation", "Compétence : Moine"]
+  },
+  {
+    "name": "Barrière",
+    "statusType": "boon",
+    "icon": "🛡️",
+    "description": "Protège la cible des altérations de statut pendant sa durée.",
+    "nbTurnEffect": 3,
+    "counterItem": null,
+    "sources": ["Sort : Barrière"]
+  },
+  {
+    "name": "Bunshin",
+    "statusType": "boon",
+    "icon": "👥",
+    "description": "Un clone encaisse la prochaine attaque à la place de la cible.",
+    "nbTurnEffect": null,
+    "counterItem": null,
+    "sources": ["Compétence : Moine"]
+  },
+  {
+    "name": "Crit+",
+    "statusType": "boon",
+    "icon": "🎯",
+    "description": "Augmente la probabilité de coup critique.",
+    "nbTurnEffect": 2,
+    "counterItem": null,
+    "sources": ["Arme : Arc d'Artemis", "Compétence : Voleur"]
+  },
+  {
+    "name": "Crit++",
+    "statusType": "boon",
+    "icon": "🎯🎯",
+    "description": "Augmente fortement la probabilité de coup critique.",
+    "nbTurnEffect": 2,
+    "counterItem": null,
+    "sources": ["Compétence : Moine, Voleur"]
+  },
+  {
+    "name": "Argent+",
+    "statusType": "boon",
+    "icon": "💰",
+    "description": "Augmente l'or gagné.",
+    "nbTurnEffect": null,
+    "counterItem": null,
+    "sources": ["Arme : Bâton doré"]
+  },
+  {
+    "name": "Foi",
+    "statusType": "boon",
+    "icon": "🙏",
+    "description": "Renforce les sorts de soin.",
+    "nbTurnEffect": null,
+    "counterItem": null,
+    "sources": ["Arme : Sceptre de la foi"]
+  },
+  {
+    "name": "Immunité magie",
+    "statusType": "boon",
+    "icon": "🔮",
+    "description": "La cible est immunisée contre la magie.",
+    "nbTurnEffect": null,
+    "counterItem": null,
+    "sources": ["Arme : Épée Runique"]
+  },
+  {
+    "name": "No roll",
+    "statusType": "boon",
+    "icon": "🏹",
+    "description": "L'attaque ne peut pas être manquée (touche toujours).",
+    "nbTurnEffect": null,
+    "counterItem": null,
+    "sources": ["Arme : Arc elfique"]
+  },
+  {
+    "name": "Bouclier Impénétrable",
+    "statusType": "boon",
+    "icon": "🛡️",
+    "description": "Protège le porteur et ses alliés pendant 3 tours.",
+    "nbTurnEffect": 3,
+    "counterItem": null,
+    "sources": ["Compétence : Guerrier (Bouclier impénétrable)"]
+  },
+  {
+    "name": "Exaltation",
+    "statusType": "boon",
+    "icon": "🌟",
+    "description": "Augmente les statistiques du porteur pendant 3 tours.",
+    "nbTurnEffect": 3,
+    "counterItem": null,
+    "sources": ["Compétence : Astromancien (Exaltation)"]
+  },
+  {
+    "name": "Renvoi",
+    "statusType": "curse",
+    "icon": "🚪",
+    "description": "Met fin au combat (fuite forcée).",
+    "nbTurnEffect": null,
+    "counterItem": null,
+    "sources": ["Sort : Renvoi"]
+  }
+]

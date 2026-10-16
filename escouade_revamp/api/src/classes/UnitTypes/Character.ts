@@ -2,17 +2,20 @@ import { Job } from "../Jobs/Job";
 import { EonSkill, Evolution, Position, Skill, Spell, Statistics } from "../Types";
 import { Status } from "../Status";
 import { Unit } from "./Unit";
-import { Weapon } from "../Items/Weapon";
+import { Weapon, Shield } from "../Items/Weapon";
 import { Item } from "../Items/Item";
 import spellData from '../../config/spells_data.json'; // Charger le fichier JSON
 import { Consumable } from "../Items/Consumable";
 import { Tools } from "../Items/Tools";
 import { Thief } from "../Jobs/Thief";
-import { calculateDamageMultiplier, getValidTargets, messageDamageMultiplier } from "../../utils/DamageUtils";
+import { Warrior } from "../Jobs/Warrior";
+import { calculateDamageMultiplier, messageDamageMultiplier } from "../../utils/DamageUtils";
 import { applyStatus } from "../../utils/StatusUtils";
 
 export class Character extends Unit {
     characterLevel: number = 1;
+    currentXp: number = 0;
+    gold: number = 0;
     currentMp: number;
     maxMp: number;
     currentAp: number;
@@ -67,8 +70,8 @@ export class Character extends Unit {
             this.currentAp = arg6 as number;
             this.maxAp = arg7 as number;
             this.job = classe;
-            this.job.jobLevel = arg12 as number;
-            this.characterLevel = arg12 as number;
+            this.job.jobLevel = (arg12 as number) ?? 1;
+            this.characterLevel = (arg12 as number) ?? 1;
             this.stats = stats;
             this.rightHand = (arg9 as Weapon) ?? (classe.startItems.find((item) => item instanceof Weapon) as Weapon);
             this.leftHand = (arg10 as Weapon) ?? null;
@@ -85,20 +88,39 @@ export class Character extends Unit {
             this.currentAp = arg6 as number;
             this.maxAp = arg7 as number;
             this.job = classe;
-            this.job.jobLevel = arg12 as number;
-            this.characterLevel = arg12 as number;
+            this.job.jobLevel = (arg12 as number) ?? 1;
+            this.characterLevel = (arg12 as number) ?? 1;
             this.stats = classe.defaultStats;
             this.rightHand = (arg9 as Weapon) ?? (classe.startItems.find((item) => item instanceof Weapon) as Weapon);
             this.leftHand = (arg10 as Weapon) ?? null;
         }
-    
+
+        // Bouclier par défaut : le Guerrier porte un bouclier en main gauche
+        // (objet de classe, non achetable/revendable). Seulement s'il n'a pas
+        // déjà d'arme en main gauche (ex. désérialisation).
+        if (this.job.name === "Guerrier" && !this.leftHand) {
+            this.leftHand = new Shield(
+                "shield_" + id,
+                "Bouclier",
+                "Un bouclier robuste, emblème du Guerrier. Il protège son porteur et ses alliés."
+            );
+        }
+
         spellData.forEach((spell: any) => {
             this.spellsMap.set(spell.name, spell as Spell);
         });
     }
     
     
+    /** Arme en main droite (accès en lecture — le champ est protégé). */
+    get rightHandWeapon(): Weapon | null {
+        return this.rightHand;
+    }
 
+    /** Arme en main gauche (accès en lecture — le champ est protégé). */
+    get leftHandWeapon(): Weapon | null {
+        return this.leftHand;
+    }
     private calculateCritThreshold(): number {
         return 6 - this.status.reduce((acc, status) => acc + (status.name === "Crit+" ? 1 : status.name === "Crit++" ? 2 : 0), 0) - (this.job.name === "Ninja" ? 1 : 0);
     }
@@ -117,6 +139,13 @@ export class Character extends Unit {
             resultArray.push(`COUT CRITIQUE ! dégat X${critRoll}!`);
         }
 
+        // Mode Berserk (Chevalier Noir) : chaque marqueur demonToken ajoute
+        // +10% aux dégâts infligés (livret : 1 + nombre de marqueurs / 10).
+        // Spécifique au Chevalier Noir (pas au Guerrier de base).
+        if (this.job.name === "Chevalier Noir" && (this.job as Warrior).demonToken > 0) {
+            damage *= 1 + (this.job as Warrior).demonToken / 10;
+        }
+
         return damage * calculateDamageMultiplier(this, weapon.element, target);
     }
 
@@ -128,8 +157,8 @@ export class Character extends Unit {
         let mainStat = weapon.mainStat === 'Force' ? this.stats.strength : this.stats.dexterity;
         if (((mainStat + roll + bonus) - weapon.weaponStat) * this.accuracyModifier >= 0 || this.status.some(status => status.name === 'No roll')) {
             let damage = this.calculateDamage(weapon, bonus, roll, critRoll, target, resultArray);
-            target.currentHp = Math.max(target.currentHp - damage, 0);
-            resultArray.push(`${target.name} perd ${damage}PV`);
+            const actualDamage = target.applyDamage(damage, resultArray);
+            resultArray.push(`${target.name} perd ${actualDamage}PV`);
             if (!target.isDead()) {
                 if (weapon.status && weapon.status.chance && Math.random() * 10 <= weapon.status.chance) {
                     applyStatus(this, weapon.status, target, roll, resultArray);
@@ -152,15 +181,26 @@ export class Character extends Unit {
      */
     attack(target: Unit, roll: number, critRoll: number = 0, bonus: number = 0, resultArray: string[] = [`${this.name} attaque ${target.name}`]): string[] {
 
-        if (this.rightHand && this.rightHand.type === 'weapon') {
-            this.handleWeaponAttack(this.rightHand, roll, critRoll, target, bonus, resultArray);
+        // Le clone Bunshin encaisse l'attaque à la place de la cible
+        if (target.consumeBunshin(resultArray)) {
+            return resultArray;
         }
 
-        if (this.leftHand && this.leftHand.type === 'weapon') {
-            this.handleWeaponAttack(this.leftHand, roll, critRoll, target, bonus, resultArray);
+        // Un bouclier (weaponType "bouclier") est un objet **défensif** : il ne
+        // fait pas de dégâts et ne compte pas comme une arme offensive. Sans
+        // arme offensive, le personnage frappe à mains nues.
+        const rightWeapon = this.rightHand && this.rightHand.type === 'weapon' && this.rightHand.weaponType !== 'bouclier' ? this.rightHand : null;
+        const leftWeapon = this.leftHand && this.leftHand.type === 'weapon' && this.leftHand.weaponType !== 'bouclier' ? this.leftHand : null;
+
+        if (rightWeapon) {
+            this.handleWeaponAttack(rightWeapon, roll, critRoll, target, bonus, resultArray);
         }
 
-        if (!this.rightHand && !this.leftHand) {
+        if (leftWeapon) {
+            this.handleWeaponAttack(leftWeapon, roll, critRoll, target, bonus, resultArray);
+        }
+
+        if (!rightWeapon && !leftWeapon) {
             if (roll === 1) {
                 resultArray.push('ECHEC CRITIQUE !');
             } else {
@@ -168,8 +208,8 @@ export class Character extends Unit {
                 if (roll >= this.calculateCritThreshold()) {
                     damage *= critRoll;
                 }
-                target.currentHp = Math.max(target.currentHp - damage, 0);
-                resultArray.push(`${this.name} frappe sa cible à mains nues. ${target.name} perd ${damage}PV !`);
+                const actualDamage = target.applyDamage(damage, resultArray);
+                resultArray.push(`${this.name} frappe sa cible à mains nues. ${target.name} perd ${actualDamage}PV !`);
             }
         }
 
@@ -252,7 +292,7 @@ export class Character extends Unit {
             if (spell.status) {
                 applyStatus(this, spell.status, target, roll, resultArray);
             }
-            target.currentHp = Math.max(target.currentHp - damage, 0);
+            target.applyDamage(damage, resultArray);
         } else {
             resultArray.push("Ce sort n'existe pas");
         }
@@ -264,10 +304,10 @@ export class Character extends Unit {
      * @param weapon null si déséquipé
      */
     equipRightHand(weapon: Weapon | null) {
-        if (this.job.weapons.some((equipable) => weapon?.type === equipable) || weapon === null) {
+        if (this.job.weapons.some((equipable) => weapon?.weaponType === equipable) || weapon === null) {
             this.rightHand = weapon;
         } else {
-            throw new Error(`Cannot equip this type of weapon ${weapon.type} only ${this.job.weapons}`);
+            throw new Error(`Cannot equip this type of weapon ${weapon?.weaponType} only ${this.job.weapons}`);
         }
 
     }
@@ -278,18 +318,20 @@ export class Character extends Unit {
      * @param weapon null si déséquipé
      */
     equipLeftHand(weapon: Weapon | null) {
-        if (this.job.weapons.some((equipable) => weapon?.type === equipable) || weapon === null) {
+        if (this.job.weapons.some((equipable) => weapon?.weaponType === equipable) || weapon === null) {
             if (this.rightHand && this.job.specialAbility.startsWith("Double Armement")) {
+                // Double Armement : on peut tenir une arme en main droite ET une en main gauche
                 this.leftHand = weapon;
             } else if (this.rightHand) {
-                //Si il a une arme en main droite
+                // Sans Double Armement : une seule arme, on la déplace en main gauche
                 this.leftHand = weapon;
                 this.rightHand = null;
             } else {
-                throw new Error("Oups, yé pa encole tlaité si cas");
+                // Main droite vide : on équipe simplement la main gauche (arme ou déséquipement)
+                this.leftHand = weapon;
             }
         } else {
-            throw new Error(`Cannot equip this type of weapon ${weapon.type} only ${this.job.weapons}`);
+            throw new Error(`Cannot equip this type of weapon ${weapon?.weaponType} only ${this.job.weapons}`);
         }
     }
 
@@ -315,95 +357,55 @@ export class Character extends Unit {
     }
 
     /**
-     * Utilise une compétence depuis son nom
-     * @param skillName 
-     * @param allUnits 
+     * Utilise une compétence depuis son nom (résolue dans job.skills : compétences
+     * de classe + compétences apprises, ex. par le Mage bleu).
+     * @param name Le nom de la compétence
+     * @param allUnits Le contexte de toutes les unités
      * @returns Le log de toutes les actions effectuées
      */
-    useAbility(skillName: string, allUnits: Unit[]): string[] {
-        let resultArray: string[] = [];
-        const recordLevelSkill = this.job.skills.find(s => s.skill.name === skillName);
+    useAbilityByName(name: string, allUnits: Unit[]): string[] {
+        const recordLevelSkill = this.job.skills.find(s => s.skill.name === name);
 
         if (!recordLevelSkill) {
-            resultArray.push("Compétence introuvable !");
-            return resultArray;
+            return ["Compétence introuvable !"];
         }
 
-        // Déterminer les cibles valides
-        let targets = getValidTargets(this, recordLevelSkill.skill, allUnits);
-        if (targets.length === 0) {
-            resultArray.push(`Aucune cible valide à ${recordLevelSkill.skill.range} case(s) pour ${recordLevelSkill.skill.name}.`);
-            return resultArray;
-        }
-
-        // Gestion du coût
-        if (this.currentAp < recordLevelSkill.skill.apCost) {
-            resultArray.push("Pas assez d'AP");
-            return resultArray;
-        }
-        if (this.currentMp < recordLevelSkill.skill.mpCost) {
-            resultArray.push("Pas assez de MP");
-            return resultArray;
-        }
-        if (this.currentHp - recordLevelSkill.skill.hpCost < 1) {
-            resultArray.push("Pas assez de PV pour utiliser cette compétence !");
-            return resultArray;
-        }
-        this.currentAp -= recordLevelSkill.skill.apCost;
-        this.currentMp -= recordLevelSkill.skill.mpCost;
-        this.currentHp -= recordLevelSkill.skill.hpCost;
-
-        recordLevelSkill.skill.target !== 'self' ?
-            resultArray.push(`${this.name} utilise ${recordLevelSkill.skill.name} sur ${targets.map(unit => unit.name)}`) :
-            resultArray.push(`${this.name} utilise ${recordLevelSkill.skill.name}`);
-
-        for (const target of targets) {
-            if (recordLevelSkill.skill.status.length > 0) {
-                for (const statut of recordLevelSkill.skill.status) {
-                    applyStatus(this, statut, target, recordLevelSkill.skill.roll ? Math.floor(Math.random() * 6) + 1 : 6, resultArray);
-                }
-            }
-            if (recordLevelSkill.skill.roll > 0) {
-                const rollResult = Math.floor(Math.random() * 6) + 1;
-                if (rollResult < recordLevelSkill.skill.roll) {
-                    resultArray.push(`${this.name} échoue à utiliser ${recordLevelSkill.skill.name}.`);
-                    return resultArray;
-                }
-            }
-
-            if (recordLevelSkill.skill.formula && recordLevelSkill.skill.formula !== "") {
-                try {
-                    this.executeFormula(recordLevelSkill.skill, target, allUnits, resultArray);
-                } catch (error) {
-                    resultArray.push("Erreur dans l'exécution de la compétence");
-                    return resultArray;
-                }
-            }
-        }
-
-        return resultArray;
+        return this.useAbility(recordLevelSkill.skill, allUnits);
     }
 
     /**
-     * Evalue la formule de calcul d'une compétence
-     * @param formula 
-     * @param target 
+     * Exécute un **combo** (passif Bushido du Samouraï) : enchaîne plusieurs
+     * compétences d'AP (Hissatsu) dans l'ordre donné, tant que le personnage
+     * a assez d'AP et que le combat n'est pas terminé.
+     *
+     * C'est ce qui permet au Samouraï d'enchaîner plusieurs Hissatsu en un
+     * seul tour (ex. Gyôten puis Shinten) — chaque compétence consomme son
+     * propre coût d'AP, et l'enchaînement s'arrête dès qu'il n'en reste plus.
+     *
+     * @param combo Noms des compétences à enchaîner (dans l'ordre).
+     * @param allUnits Le contexte de toutes les unités.
+     * @returns Le log de toutes les actions effectuées.
      */
-    private executeFormula(skill: Skill | EonSkill, target: Unit, allUnits: Unit[], resultArray: string[]): void {
-        const context = {
-            user: this,
-            target: target,
-            allUnits: allUnits
-        };
-
-        const safeFormula = skill.formula.replace(/this\./g, "context.user.").replace(/target\./g, "context.target.").replace(/allUnits\./g, "context.allUnits.");
-
-        try {
-            eval(safeFormula);
-        } catch (error) {
-            resultArray.push("Erreur lors de l'exécution de la formule: " + error);
-            console.error("Erreur lors de l'exécution de la formule: ", error);
+    useCombo(combo: string[], allUnits: Unit[]): string[] {
+        const resultArray: string[] = [];
+        for (const name of combo) {
+            if (this.isDead()) {
+                resultArray.push(`${this.name} est KO et ne peut plus enchaîner.`);
+                break;
+            }
+            const recordLevelSkill = this.job.skills.find(s => s.skill.name === name);
+            if (!recordLevelSkill) {
+                resultArray.push(`Compétence introuvable : ${name}.`);
+                continue;
+            }
+            // On n'enchaîne que si le personnage a assez d'AP pour la compétence.
+            if (this.currentAp < recordLevelSkill.skill.apCost) {
+                resultArray.push(`Pas assez d'AP pour enchaîner ${name}.`);
+                break;
+            }
+            resultArray.push(...this.useAbility(recordLevelSkill.skill, allUnits));
         }
+        return resultArray;
     }
 
     /**
@@ -414,11 +416,24 @@ export class Character extends Unit {
         if (item instanceof Consumable) {
             resultArray.push(`${this.name} utilise ${item.name} sur ${target.name}.`);
             if (item.revive && target.isDead()) {
-                target.currentHp = item.hp;
+                // Ranime : à la moitié des PV max (ou montant fixe si défini).
+                target.currentHp = item.hpPercent
+                    ? Math.floor(target.maxHp * item.hpPercent)
+                    : (item.hp || 1);
             } else if (!target.isDead()) {
-                target.currentHp = Math.min(target.currentHp + item.hp, target.maxHp);
+                if (item.fullHeal) {
+                    target.currentHp = target.maxHp;
+                } else if (item.hpPercent) {
+                    target.currentHp = Math.min(target.currentHp + Math.floor(target.maxHp * item.hpPercent), target.maxHp);
+                } else if (item.hp) {
+                    target.currentHp = Math.min(target.currentHp + item.hp, target.maxHp);
+                }
                 if (target instanceof Character) {
-                    target.currentMp = Math.min(target.currentMp + item.mp, target.maxMp);
+                    if (item.fullMp) {
+                        target.currentMp = target.maxMp;
+                    } else if (item.mp) {
+                        target.currentMp = Math.min(target.currentMp + item.mp, target.maxMp);
+                    }
                 }
             } else {
                 resultArray.push(`${target.name} est KO et ne peut recevoir ces soins.`);
@@ -432,8 +447,8 @@ export class Character extends Unit {
                 damage += (Math.pow(item.power, 2) / 2) * damageMultiplier;
                 resultArray.push(messageDamageMultiplier(damageMultiplier));
                 damage = Math.round(damage);
-                target.currentHp = Math.max(target.currentHp - damage, 0);
-                resultArray.push(`${target.name} perd ${damage}PV`);
+                const actualDamage = target.applyDamage(damage, resultArray);
+                resultArray.push(`${target.name} perd ${actualDamage}PV`);
             } if (item.status) {
                 applyStatus(this, item.status, target, 0, resultArray)
             }
@@ -442,8 +457,10 @@ export class Character extends Unit {
     }
 
     /**
-     * TODO protectTarget: Pouvoir utiliser cette fonction pendant le tour d'attaque des ennemis
-     * 
+     * Protection d'un allié (Guerrier/Paladin sous "Bouclier impénétrable").
+     * Appelé par l'IA pendant le tour d'attaque des ennemis (AIService) : le
+     * protecteur se place devant la cible pour encaisser l'attaque à sa place.
+     *
      * Si le personnage n'est pas un Chevalier Noir et est sous le statut "Bouclier impénétrable", on effectue un roll de protection à chaque attaque
      * @param target Cible à protéger
      * @param roll Premier dès lancé
@@ -472,24 +489,105 @@ export class Character extends Unit {
         return protect;
     }
 
+    /**
+     * Déplacement en combat. Règle de base : 1 case/tour.
+     * Pied véloce (Moine évolué en Maître) : déplacement multiplié par la Dextérité.
+     */
+    getMovementRange(): number {
+        if (this.job.specialAbility.startsWith("Pied véloce")) {
+            return Math.max(1, this.stats.dexterity);
+        }
+        return 1;
+    }
+
+    /**
+     * Crée un outil ninja et l'ajoute au sac du personnage (uniquement si le job est Ninja).
+     * @param toolName Nom de l'outil ninja à créer
+     * @returns Le message de résultat
+     */
+    craftNinjaTool(toolName: "Doton" | "Katon" | "Raiton" | "Hyuton" | "Futon" | "Bunshin" | "Shuriken Fuma"): string {
+        if (this.job instanceof Thief) {
+            const tool = this.job.craftTool(toolName);
+            if (tool) {
+                this.bag.push(tool);
+                return `Nouvel outil ninja créé : ${toolName}`;
+            }
+            return `Impossible de créer cet outil ninja : ${toolName} (capacité atteinte)`;
+        }
+        return `Impossible de créer cet outil ninja : ${toolName} (seul un Ninja peut créer des outils)`;
+    }
+
+    /**
+     * Fait évoluer la classe du personnage vers une évolution choisie.
+     *
+     * Conditions (livret) :
+     *  - l'évolution doit exister dans `job.evolutions`,
+     *  - le personnage doit avoir atteint le **niveau requis** (`requirements.level`),
+     *  - le personnage ne doit pas déjà avoir évolué (une seule évolution).
+     *
+     * @param evolutionName Nom de l'évolution (ex. "Démoniste").
+     * @returns Les logs de l'évolution.
+     */
     evolveJob(evolutionName: string): string[] {
-        let resultArray: string[] = [];
-        const evolvedJob: Evolution = this.job.evolutions.find(form => form.name === evolutionName) as Evolution;
-        if (evolvedJob) {
-            if (evolvedJob.skills.length !== 0) this.job.skills.push(...evolvedJob.skills);
-            if (evolvedJob.spells.length !== 0) this.job.spells.push(...evolvedJob.spells);
-            resultArray.push(`${this.name} devient un ${evolvedJob.name}`)
-            this.job.name = evolvedJob.name;
-            this.job.specialAbility = evolvedJob.specialAbility;
-            this.stats.strength += evolvedJob.bonuses.strength;
-            this.stats.dexterity += evolvedJob.bonuses.dexterity;
-            this.stats.intelligence += evolvedJob.bonuses.intelligence;
-            this.stats.mana += evolvedJob.bonuses.mana;
-            this.stats.perception += evolvedJob.bonuses.perception;
-            this.stats.charisma += evolvedJob.bonuses.charisma;
-        } else {
-            throw new Error("Cette évolution ne peut avoir lieu")
+        const resultArray: string[] = [];
+        const evolvedJob: Evolution | undefined = this.job.evolutions.find((form) => form.name === evolutionName);
+
+        if (!evolvedJob) {
+            throw new Error(`Character.evolveJob : évolution inconnue "${evolutionName}"`);
+        }
+        if (this.job.evolvedName) {
+            throw new Error(`Character.evolveJob : ${this.name} a déjà évolué (${this.job.evolvedName})`);
+        }
+        const requiredLevel = evolvedJob.requirements?.level ?? 1;
+        if (this.job.jobLevel < requiredLevel) {
+            throw new Error(`Character.evolveJob : niveau requis ${requiredLevel} (actuel ${this.job.jobLevel})`);
+        }
+
+        if (evolvedJob.skills.length !== 0) this.job.skills.push(...evolvedJob.skills);
+        if (evolvedJob.spells.length !== 0) this.job.spells.push(...evolvedJob.spells);
+        resultArray.push(`${this.name} devient un ${evolvedJob.name}`);
+        this.job.name = evolvedJob.name;
+        this.job.specialAbility = evolvedJob.specialAbility;
+        this.job.evolvedName = evolvedJob.name;
+        this.stats.strength += evolvedJob.bonuses.strength;
+        this.stats.dexterity += evolvedJob.bonuses.dexterity;
+        this.stats.endurance += evolvedJob.bonuses.endurance;
+        this.stats.intelligence += evolvedJob.bonuses.intelligence;
+        this.stats.mana += evolvedJob.bonuses.mana;
+        this.stats.perception += evolvedJob.bonuses.perception;
+        this.stats.charisma += evolvedJob.bonuses.charisma;
+        // Bonus d'AP de l'évolution (ex. Samouraï : +2 AP max).
+        if (evolvedJob.apBonus) {
+            this.maxAp += evolvedJob.apBonus;
+            this.currentAp += evolvedJob.apBonus;
         }
         return resultArray;
+    }
+
+    /**
+     * Renvoie les évolutions **disponibles** pour ce personnage (niveau de
+     * classe atteint, et pas encore évolué). C'est la liste que le front
+     * présente au joueur au moment du choix d'évolution.
+     */
+    availableEvolutions(): Evolution[] {
+        if (this.job.evolvedName) return [];
+        return this.job.evolutions.filter(
+            (e) => this.job.jobLevel >= (e.requirements?.level ?? 1)
+        );
+    }
+
+    /**
+     * Déclenche l'évolution de classe vers l'évolution nommée.
+     *
+     * C'est le point d'entrée du gameplay (appelé par le front / le service de
+     * ville quand le joueur choisit une évolution). Délègue à `evolveJob` qui
+     * vérifie les conditions (évolution connue, niveau requis, pas déjà évolué)
+     * et applique les bonus de stats + compétences/sorts.
+     *
+     * @param evolutionName Nom de l'évolution (ex. "Démoniste", "Samouraï").
+     * @returns Les logs de l'évolution.
+     */
+    evolveTo(evolutionName: string): string[] {
+        return this.evolveJob(evolutionName);
     }
 }

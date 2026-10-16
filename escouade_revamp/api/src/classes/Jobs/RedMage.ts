@@ -61,7 +61,7 @@ export class RedMage extends Job {
                     requirements: {
                         level: 20
                     },
-                    specialAbility: "Bushido : permet d\’utiliser des combos de compétences",
+                    specialAbility: "Bushido : permet d'enchaîner plusieurs compétences d'AP (Hissatsu)",
                     bonuses: {
                         strength: 1,
                         dexterity: 3,
@@ -71,22 +71,112 @@ export class RedMage extends Job {
                         perception: 0,
                         charisma: 0
                     },
-                    skills: [],
-                    spells: [
-                        { level: 20, spell: "Soin +" },
-                        { level: 20, spell: "Combustion" },
-                        { level: 21, spell: "Lumen" },
-                        { level: 21, spell: "Fulguration" },
-                        { level: 24, spell: "Grâce +" },
-                        { level: 24, spell: "Congélation" },
-                        { level: 26, spell: "Soin X" },
-                        { level: 26, spell: "Lumen X" },
-                        { level: 28, spell: "Renvoi" },
-                        { level: 28, spell: "Rocher" },
-                        { level: 28, spell: "Air +" },
-                        { level: 30, spell: "Grâce X" },
-                        { level: 30, spell: "Aérolithe" }
-                    ]
+                    apBonus: 2,
+                    skills: [
+                        {
+                            level: 20, skill: {
+                                name: "Gyôten",
+                                formula: "const pos = this.findClosestAdjacent(target.position, allUnits); if (pos) { this.position = pos; } this.attack(target, 6, 1, 0, resultArray);",
+                                target: 'enemy',
+                                type: "single",
+                                move: 0,
+                                range: 8,
+                                apCost: 1,
+                                mpCost: 0,
+                                hpCost: 0,
+                                roll: 0,
+                                status: [],
+                                element: "",
+                                description: "Se rapproche instantanément d'un ennemi pour l'attaquer"
+                            }
+                        },
+                        {
+                            level: 21, skill: {
+                                name: "Yaten",
+                                formula: "this.attack(target, 6, 1, 0, resultArray); this.moveAwayFrom(target.position, 1, allUnits);",
+                                target: 'enemy',
+                                type: "single",
+                                move: 0,
+                                range: 1,
+                                apCost: 1,
+                                mpCost: 0,
+                                hpCost: 0,
+                                roll: 0,
+                                status: [],
+                                element: "",
+                                description: "Frappe puis s'éloigne d'une case d'un ennemi"
+                            }
+                        },
+                        {
+                            level: 24, skill: {
+                                name: "Shinten",
+                                formula: "this.attack(target, 6, 2, this.stats.strength, resultArray);",
+                                target: 'enemy',
+                                type: "single",
+                                move: 0,
+                                range: 1,
+                                apCost: 1,
+                                mpCost: 0,
+                                hpCost: 0,
+                                roll: 0,
+                                status: [],
+                                element: "",
+                                description: "Attaque puissante sur la cible"
+                            }
+                        },
+                        {
+                            level: 26, skill: {
+                                name: "Kyûten",
+                                formula: "this.attack(target, 6, 1, 0, resultArray);",
+                                target: 'enemy',
+                                type: "multi",
+                                move: 0,
+                                range: 2,
+                                apCost: 1,
+                                mpCost: 0,
+                                hpCost: 0,
+                                roll: 0,
+                                status: [],
+                                element: "",
+                                description: "Attaque circulaire touchant tous les ennemis autour de 2 cases"
+                            }
+                        },
+                        {
+                            level: 28, skill: {
+                                name: "Guren",
+                                formula: "this.attack(target, 6, 1, 0, resultArray);",
+                                target: 'enemy',
+                                type: "multi",
+                                move: 0,
+                                range: 5,
+                                apCost: 1,
+                                mpCost: 0,
+                                hpCost: 0,
+                                roll: 0,
+                                status: [],
+                                element: "",
+                                description: "Attaque en ligne droite sur 5 cases"
+                            }
+                        },
+                        {
+                            level: 30, skill: {
+                                name: "Zeninage",
+                                formula: "const wager = this.gold; this.gold = 0; const damage = Math.round(wager * 0.0001 * target.maxHp); const actual = target.applyDamage(damage, resultArray); resultArray.push(this.name + ' mise ' + wager + ' or en jeu. ' + target.name + ' perd ' + actual + 'PV');",
+                                target: 'enemy',
+                                type: "single",
+                                move: 0,
+                                range: 1,
+                                apCost: 1,
+                                mpCost: 0,
+                                hpCost: 0,
+                                roll: 0,
+                                status: [],
+                                element: "",
+                                description: "Sacrifie son or : dégâts = or mis en jeu × 0,01% des PV de l'adversaire"
+                            }
+                        }
+                    ],
+                    spells: []
                 }
             ]
         );

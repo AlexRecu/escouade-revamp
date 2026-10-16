@@ -78,3 +78,15 @@ export class Sword extends Weapon{
         super(id, name, description, purchasePrice, zoneThreshold, 'epee', 'Force', '', weaponStat, 0, 1, element, status);
     }
 };
+
+/**
+ * Bouclier : objet de classe (main gauche) porté par défaut par le Guerrier.
+ * Il n'est **ni achetable ni revendable** (pas dans `all_items.json`) ; il est
+ * instancié à la création du personnage. `weaponType` = "bouclier" (jamais
+ * dans `job.weapons` → ne peut pas être équipé en main droite).
+ */
+export class Shield extends Weapon {
+    constructor(id: string, name: string, description: string) {
+        super(id, name, description, 0, 0, 'bouclier', 'Force', '', 0, 0, 0, '', null);
+    }
+};

@@ -94,6 +94,10 @@ export function getValidTargets(user: Unit, skill: Skill | EonSkill, allUnits: U
         const targetType = ("target" in skill)? skill.target : 'enemy';
         let validTargets = allUnits.filter(unit => {
 
+            // Les unités remplacées (hors champ, ex. Démoniste invoqué) ne sont
+            // pas ciblables : c'est leur invocation qui est sur le plateau.
+            if (unit.isReplaced) return false;
+
             //cibles à portée
             const distance = Math.max(
                 Math.abs(unit.position.row - user.position.row),

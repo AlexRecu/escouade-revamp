@@ -1,0 +1,8 @@
+node_modules
+dist
+data
+saves
+.env
+.env.local
+jest_all.txt
+check_*.ts

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { CharacterService } from "../services/characterService";
+import { CharacterService } from "../services/Progression/characterService";
 
 const characterService = new CharacterService();
 
@@ -7,7 +7,7 @@ const characterService = new CharacterService();
 export const getCharactersByPlayer = async (req: Request, res: Response): Promise<void> => {
     try {
         const { playerId } = req.params;
-        const characters = await characterService.getCharactersByPlayer(playerId);
+        const characters = await characterService.getCharactersByPlayer(playerId as string);
         res.json(characters);
     } catch (error) {
         res.status(500).json({ error: "Erreur lors de la récupération des personnages." });
@@ -18,7 +18,7 @@ export const getCharactersByPlayer = async (req: Request, res: Response): Promis
 export const getCharacterById = async (req: Request, res: Response): Promise<void> => {
     try {
         const { characterId } = req.params;
-        const character = await characterService.getCharacterById(characterId);
+        const character = await characterService.getCharacterById(characterId as string);
         if (!character) {
             res.status(404).json({ error: "Personnage non trouvé." });
             return;
@@ -43,7 +43,7 @@ export const createCharacter = async (req: Request, res: Response): Promise<void
 export const updateCharacter = async (req: Request, res: Response): Promise<void> => {
     try {
         const { characterId } = req.params;
-        const updatedCharacter = await characterService.updateCharacter(characterId, req.body);
+        const updatedCharacter = await characterService.updateCharacter(characterId as string, req.body);
         if (!updatedCharacter) {
             res.status(404).json({ error: "Personnage non trouvé." });
             return;
@@ -58,7 +58,7 @@ export const updateCharacter = async (req: Request, res: Response): Promise<void
 export const deleteCharacter = async (req: Request, res: Response): Promise<void> => {
     try {
         const { characterId } = req.params;
-        const success = await characterService.deleteCharacter(characterId);
+        const success = await characterService.deleteCharacter(characterId as string);
         if (!success) {
             res.status(404).json({ error: "Personnage non trouvé." });
             return;

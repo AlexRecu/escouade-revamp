@@ -1,0 +1,29 @@
+# Secrets / configuration locale
+.env
+.env.*
+!.env.example
+
+# Artefacts de build TypeScript
+*.tsbuildinfo
+
+# Dépendances & builds
+node_modules/
+dist/
+dist-ssr/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Sauvegardes / données locales
+saves/
+data/
+
+# Éditeurs / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db

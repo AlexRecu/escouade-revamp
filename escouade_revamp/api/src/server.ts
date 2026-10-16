@@ -1,7 +1,12 @@
 import express from 'express';
 import cors from 'cors';
+import swaggerJsdoc from 'swagger-jsdoc';
+import swaggerUi from 'swagger-ui-express';
 import authRoutes from './routes/auth.routes';
 import playerRoutes from './routes/player.routes';
+import saveRoutes from './routes/save.routes';
+import worldRoutes from './routes/world.routes';
+import { swaggerDefinition, swaggerPaths } from './config/swagger';
 import { connectDB } from './db';
 import dotenv from 'dotenv';
 import { Server } from 'http';
@@ -31,6 +36,19 @@ app.use(express.json());
  
 app.use(`${LOCAL_API}/auth`, authRoutes);
 app.use(`${LOCAL_API}/player`, playerRoutes);
+app.use(`${LOCAL_API}/save`, saveRoutes);
+app.use(`${LOCAL_API}/world`, worldRoutes);
+
+// Documentation Swagger UI : agrège les annotations JSDoc des routes avec la
+// définition de base (infos, sécurité JWT, tags) et sert l'interface sur
+// /api-docs. Le spec JSON brut est disponible sur /api-docs.json.
+const swaggerOptions = {
+  definition: swaggerDefinition,
+  apis: swaggerPaths,
+};
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.get('/api-docs.json', (_req, res) => res.json(swaggerSpec));
  
 const startServer = async () => {
   try {

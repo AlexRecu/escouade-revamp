@@ -42,7 +42,8 @@ describe("Demon Class", () => {
         let result = demon.act([target, ally, target2]);
         expect(result[0]).toContain("Mateus, le Corrompu exécute : Congélation");
         expect(demon.currentTurn).toBe(1);
-        expect(result).toContain(target.name+" perd 72PV");
+        // Sort multi-cible : les dégâts sont divisés par 2 par cible (équilibrage)
+        expect(result).toContain(target.name+" perd 36PV");
         expect(target.currentHp).toBe(0);
         result = demon.act([target, ally, target2]);
         expect(result[0]).toContain("Mateus, le Corrompu exécute : Attaque");
@@ -73,7 +74,7 @@ describe("Demon Class", () => {
 
     test("should use spell correctly", () => {
         const spell = spellData.find(s => s.name === "Glacier X") as Spell;
-        if (!spell) throw new Error("Spell not found");
+        if (!spell) throw new Error("demon.test('should use spell correctly') : Spell not found");
 
         let result = demon.useSpell(spell, target, 6);
         

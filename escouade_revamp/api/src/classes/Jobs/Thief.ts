@@ -1,4 +1,6 @@
+import { IdGenerator } from "../../utils/IdGeneratorUtils";
 import { Tools } from "../Items/Tools";
+import { Dagger } from "../Items/Weapon";
 import { Statistics } from "../Types";
 import { Job } from "./Job";
 
@@ -11,8 +13,8 @@ export class Thief extends Job {
             "Voleur",
             "Classe orientée sur la dextérité et les coups critiques",
             ['dague', 'katana', 'arc'],
-            [],
-            0,
+            [new Dagger("Thf_startDagger_"+IdGenerator.generateId(), "Dague en fer", "Une dague en fer, simple mais efficace.", 100, 1, 2, "", null)],
+            50,
             [
                 {
                     level: 1, skill: {
@@ -286,7 +288,7 @@ export class Thief extends Job {
                             }
                         },
                         {
-                            level: 28, skill: //TODO Ninja lvl26 : Trouver comment faire nbToolsCap++ au niveau 26
+                            level: 28, skill: // Au niveau 26, la progression appelle Thief.increaseToolsCap() pour augmenter nbToolsCap
                             {
                                 name: "Jubaku",
                                 formula: ``,
@@ -359,13 +361,27 @@ export class Thief extends Job {
         return this.name === "Ninja"? this._nbToolsCap : undefined;
     }
 
-    craftTool(toolName: "Doton" | "Katon" | "Raiton" | "Hyuton" | "Futon" | "Bunshin" | "Shuriken Fuma"): string{
-        if(this.nbTools && this.nbToolsCap && this.nbTools < this.nbToolsCap){
-            Tools.craft(toolName); // TODO tools.craft(): Tools à mettre dans l'Inventory de la Party de Character ref=PartyId et save dans Mongo?
+    /**
+     * Crée un outil ninja si le ninja n'a pas atteint sa capacité maximale.
+     * @returns L'outil créé, ou `null` si la capacité est atteinte (ou si le job n'est pas Ninja)
+     */
+    craftTool(toolName: "Doton" | "Katon" | "Raiton" | "Hyuton" | "Futon" | "Bunshin" | "Shuriken Fuma"): Tools | null {
+        // nbTools/nbToolsCap sont undefined si le job n'est pas Ninja (cf. getters)
+        if (this.nbTools !== undefined && this.nbToolsCap !== undefined && this.nbTools < this.nbToolsCap) {
+            const tool = Tools.craft(toolName);
             this.nbTools++;
-            return `Nouvel outil ninja créé : ${toolName}`;
-        }else{
-            return `Impossible de créer cet outil ninja : ${toolName}`;
+            return tool;
+        }
+        return null;
+    }
+
+    /**
+     * Augmente la capacité maximale d'outils ninja.
+     * À appeler lorsque le Ninja atteint le niveau 26 (cf. système de progression).
+     */
+    increaseToolsCap(): void {
+        if (this.name === "Ninja") {
+            this._nbToolsCap = (this._nbToolsCap ?? 5) + 1;
         }
     }
 }

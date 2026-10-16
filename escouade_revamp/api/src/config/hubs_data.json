@@ -1,0 +1,116 @@
+{
+  "hubs": [
+    {
+      "name": "Auberge du matin",
+      "size": { "rows": 14, "cols": 14 },
+      "tileMap": [
+        [false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, false, false, false, false, false, false, false, false, false, false, false, false, false]
+      ],
+      "startTile": { "row": 7, "col": 7 },
+      "buildings": [
+        { "service": "shop", "row": 3, "col": 3 },
+        { "service": "inn", "row": 3, "col": 10 },
+        { "service": "church", "row": 10, "col": 3 },
+        { "service": "questBoard", "row": 10, "col": 10 }
+      ],
+      "exit": { "row": 7, "col": 12, "label": "Sortie vers les donjons" }
+    },
+    {
+      "name": "Qual-Mastrech",
+      "size": { "rows": 14, "cols": 14 },
+      "tileMap": [
+        [false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, false, false, false, false, false, false, false, false, false, false, false, false, false]
+      ],
+      "startTile": { "row": 7, "col": 7 },
+      "buildings": [
+        { "service": "shop", "row": 3, "col": 10 },
+        { "service": "inn", "row": 3, "col": 3 },
+        { "service": "church", "row": 10, "col": 10 },
+        { "service": "questBoard", "row": 10, "col": 3 }
+      ],
+      "exit": { "row": 7, "col": 1, "label": "Sortie vers les donjons" }
+    },
+    {
+      "name": "Qual-Chen",
+      "size": { "rows": 14, "cols": 14 },
+      "tileMap": [
+        [false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, false, false, false, false, false, false, false, false, false, false, false, false, false]
+      ],
+      "startTile": { "row": 7, "col": 7 },
+      "buildings": [
+        { "service": "shop", "row": 3, "col": 3 },
+        { "service": "inn", "row": 10, "col": 3 },
+        { "service": "church", "row": 3, "col": 10 },
+        { "service": "questBoard", "row": 10, "col": 10 }
+      ],
+      "exit": { "row": 1, "col": 7, "label": "Sortie vers les donjons" }
+    },
+    {
+      "name": "Qual-Far",
+      "size": { "rows": 14, "cols": 14 },
+      "tileMap": [
+        [false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, false, false, false, false, false, false, false, false, false, false, false, false, false]
+      ],
+      "startTile": { "row": 7, "col": 7 },
+      "buildings": [
+        { "service": "shop", "row": 10, "col": 3 },
+        { "service": "inn", "row": 10, "col": 10 },
+        { "service": "church", "row": 3, "col": 3 },
+        { "service": "questBoard", "row": 3, "col": 10 }
+      ],
+      "exit": { "row": 12, "col": 7, "label": "Sortie vers les donjons" }
+    }
+  ]
+}

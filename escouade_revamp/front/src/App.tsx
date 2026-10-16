@@ -1,35 +1,125 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useEffect, useMemo, useState } from 'react';
+import { fetchWorld } from './api/client';
+import { getToken, getUsername, clearSession } from './api/auth';
+import type { WorldSummary, Hub } from './types/world';
+import WorldTree from './components/WorldTree';
+import City from './components/City';
+import AuthScreen from './components/AuthScreen';
+import PartySidebar from './components/PartySidebar';
+import { useGame } from './game/useGame';
+
+type View = { name: 'world' } | { name: 'city'; hub: Hub };
 
 function App() {
-  const [count, setCount] = useState(0)
+  // Session (JWT) : null = pas connecté → écran d'auth.
+  const [user, setUser] = useState<string | null>(() =>
+    getToken() ? getUsername() : null
+  );
+  const [world, setWorld] = useState<WorldSummary | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [view, setView] = useState<View>({ name: 'world' });
+
+  // Partie temps réel (socket) : levée ici pour que l'équipe soit visible
+  // sur la mappemonde ET en ville (colonne latérale permanente).
+  const { state, logs: gameLogs, connected, actions } = useGame();
+
+  // **Source de vérité** : le niveau du monde, les zones terminées et le
+  // bestiaire viennent de l'état serveur (state.party), pas d'un état local.
+  // C'est ce qui garantit que la boutique (filtrée par worldLevel), la
+  // mappemonde et le bestiaire restent synchronisés — et survivent au
+  // rechargement de la page (persisté côté serveur).
+  const worldLevel = state?.party.worldLevel ?? 0;
+  const completedZones = useMemo(
+    () => new Set(state?.party.completedZones ?? []),
+    [state]
+  );
+  const seenMonsters = useMemo(
+    () => new Set(state?.party.seenMonsters ?? []),
+    [state]
+  );
+  // Hub courant (position de l'équipe) : le cercle blanc de la mappemonde
+  // suit cette position, pas la racine.
+  const currentHubId = state?.hub.id ?? null;
+
+  useEffect(() => {
+    if (!user) return;
+    fetchWorld()
+      .then(setWorld)
+      .catch((e) => setError(e.message));
+  }, [user]);
+
+  const logout = () => {
+    clearSession();
+    setUser(null);
+    setWorld(null);
+    setView({ name: 'world' });
+  };
+
+  // Pas connecté → écran d'authentification.
+  if (!user) {
+    return (
+      <AuthScreen
+        onAuthed={(username) => {
+          setUser(username);
+        }}
+      />
+    );
+  }
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <div className="app">
+      <header className="app-header">
+        <h1>ESCOUADE</h1>
+        <span className="subtitle">Mode ville — point-and-clic</span>
+        <span className="spacer" />
+        {view.name === 'city' && (
+          <span className="subtitle">📍 {view.hub.name}</span>
+        )}
+        <span className="subtitle">👤 {user}</span>
+        <button className="logout" onClick={logout}>Déconnexion</button>
+      </header>
+      <div className="app-body">
+        {/* Colonne latérale permanente : l'équipe (visible partout). */}
+        <PartySidebar state={state} connected={connected} />
+        <main className="app-main">
+          {error && <div className="worldmap">Erreur : {error}</div>}
+          {!world && !error && <div className="worldmap">Chargement du monde…</div>}
+          {world && view.name === 'world' && (
+            <WorldTree
+              world={world}
+              completedZones={completedZones}
+              worldLevel={worldLevel}
+              seenMonsters={seenMonsters}
+              currentHubId={currentHubId}
+              onEnterHub={(hub) => {
+                // Le serveur persiste le hub courant (position de l'équipe) —
+                // c'est ce que le cercle blanc de la mappemonde suit.
+                actions.changeHub(hub.id);
+                setView({ name: 'city', hub });
+              }}
+              onCompleteZone={(zoneId) => {
+                // Idempotent : ne monte le niveau qu'une fois par zone.
+                if (completedZones.has(zoneId)) return;
+                // Le serveur est la source de vérité : il marque la zone
+                // complétée, monte worldLevel, alimente le bestiaire et
+                // renvoie l'état (boutique filtrée, mappemonde, sidebar).
+                actions.completeZone(zoneId);
+              }}
+            />
+          )}
+          {world && view.name === 'city' && (
+            <City
+              hub={view.hub}
+              onBack={() => setView({ name: 'world' })}
+              state={state}
+              gameLogs={gameLogs}
+              actions={actions}
+            />
+          )}
+        </main>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    </div>
+  );
 }
 
-export default App
+export default App;

@@ -144,3 +144,30 @@ export function findPathDijkstra(start: Position, goal: Position, units: Unit[])
 export function whoOccupies(pos: Position, units: Unit[]): Unit | undefined {
     return units.find(unit => unit.position.row === pos.row && unit.position.col === pos.col);
 }
+
+/**
+ * Génère une position aléatoire non occupée sur le plateau
+ * (les lignes 0 et 1 sont réservées aux alliés, donc exclues)
+ * 
+ * @param {Unit[]} units Liste des unités actuelles sur le plateau
+ * @returns {Position | null} Une position disponible ou null si aucune trouvée
+ */
+export function getRandomAvailablePosition(units: Unit[]): Position | null {
+    const possiblePositions: Position[] = [];
+
+    // On liste toutes les positions disponibles entre les lignes 2 et 7
+    for (let row = 2; row <= 7; row++) {
+        for (let col = 0; col <= 7; col++) {
+            const pos = { row, col };
+            if (!isOccupied(pos, units)) {
+                possiblePositions.push(pos);
+            }
+        }
+    }
+
+    // S'il n'y a plus de place sur le plateau on renvoie null
+    if (possiblePositions.length === 0) return null;
+
+    const randomIndex = Math.floor(Math.random() * possiblePositions.length);
+    return possiblePositions[randomIndex];
+}

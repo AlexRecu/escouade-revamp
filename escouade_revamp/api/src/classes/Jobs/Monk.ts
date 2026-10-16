@@ -139,7 +139,7 @@ export class Monk extends Job {
                     requirements: {
                         level: 20
                     },
-                    specialAbility: "Pied véloce : son déplacement en combat est multiplié par sa dextérité", //TODO Pied Véloce: revoir les déplacements pour les baser sur un multiplicateur de 1 pour chaque classe sauf si redéfinit
+                    specialAbility: "Pied véloce : son déplacement en combat est multiplié par sa dextérité", // Géré via Character.getMovementRange()
                     bonuses: {
                         strength: 2,
                         dexterity: 1,

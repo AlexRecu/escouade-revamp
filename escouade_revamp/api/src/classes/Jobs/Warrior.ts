@@ -10,7 +10,7 @@ export class Warrior extends Job {
             "Classe équilibrée pour les combats longs, il peut défendre ses alliés",
             ['epee', 'katana', 'lance', 'marteau', 'masse'],
             [],
-            50,
+            100,
             [
                 {
                     level: 1, skill:
@@ -146,6 +146,7 @@ export class Warrior extends Job {
                     requirements: {
                         level: 20
                     },
+                    // (implémenté : double roll de protection dans Character.protectTarget + AIService.tryProtect)
                     specialAbility: `Protection divine : Double les rolls de protection sous le statut "Bouclier impénétrable"`,
                     bonuses: {
                         strength: 0,
@@ -171,6 +172,7 @@ export class Warrior extends Job {
                     requirements: {
                         level: 20
                     },
+                    // (implémenté : Character.equipLeftHand gère le cas main droite occupée)
                     specialAbility: "Double Armement: Permet de s'équiper d'une arme en main gauche",
                     bonuses: {
                         strength: 2,
@@ -186,6 +188,7 @@ export class Warrior extends Job {
                             level: 21, skill:
                             {
                                 name: "Marque du démon",
+                                // (implémenté : le bonus +10%/token est appliqué dans Character.calculateDamage)
                                 formula: `this.job.demonToken += 2; resultArray.push("Sa frénésie augmente !");`,
                                 target: 'self',
                                 type: "single",
