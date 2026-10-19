@@ -83,3 +83,8 @@ export function onExplorationState(cb: (state: ExplorationState) => void): void 
 export function onExplorationLog(cb: (logs: string[]) => void): void {
   socket?.on('exploration:log', ({ logs }: { logs: string[] }) => cb(logs));
 }
+
+/** Émis quand le donjon est terminé (porte de sortie atteinte) → auto-sortie. */
+export function onExplorationExited(cb: () => void): void {
+  socket?.on('exploration:exited', () => cb());
+}

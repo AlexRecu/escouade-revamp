@@ -1,4 +1,5 @@
 import type { GameState } from '../types/game';
+import { classTokenUrl } from '../utils/tokens';
 
 type Props = {
   state: GameState | null;
@@ -33,6 +34,15 @@ export default function PartySidebar({ state, connected }: Props) {
             {state.party.members.map((m) => (
               <li key={m.id} className={m.isDead ? 'dead' : ''}>
                 <div className="party-head">
+                  <img
+                    className="party-token"
+                    src={classTokenUrl(m.job)}
+                    alt={m.job}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src =
+                        '/assets/tokens/default.png';
+                    }}
+                  />
                   <span>{m.name}</span>
                   <span className="party-job">
                     {m.job} · niv.{m.level}

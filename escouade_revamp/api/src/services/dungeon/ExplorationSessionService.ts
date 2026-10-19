@@ -101,7 +101,7 @@ export class ExplorationSessionService {
   static async move(playerId: string, direction: Direction): Promise<any> {
     const session = this.require(playerId);
     if (session.completed) {
-      return { logs: ["Le donjon est terminé. Quittez-le pour revenir à la mappemonde."], state: this.serialize(session) };
+      return { logs: ["Le donjon est terminé."], state: this.serialize(session), exited: true };
     }
 
     const zone = session.dungeon.levels[session.currentFloor];
@@ -124,9 +124,11 @@ export class ExplorationSessionService {
     );
     session.activeCampfire = camp;
 
-    // Atteinte de la tuile de sortie → étage suivant ou fin de donjon.
+    // Atteinte de la tuile d'arrivée (escalier ou porte de sortie).
     if (to.row === zone.endTile.row && to.col === zone.endTile.col) {
-      if (session.currentFloor < session.dungeon.levels.length - 1) {
+      const isLastFloor = session.currentFloor === session.dungeon.levels.length - 1;
+      if (!isLastFloor) {
+        // Escalier → étage suivant.
         session.currentFloor++;
         const nextZone = session.dungeon.levels[session.currentFloor];
         session.party.moveTo({ ...nextZone.startTile });
@@ -136,12 +138,15 @@ export class ExplorationSessionService {
           state: this.serialize(session),
         };
       }
-      // Dernier étage terminé → donjon complété.
+      // Porte de sortie (dernier étage) → donjon terminé + **auto-sortie**.
       session.completed = true;
       session.party.completeZone(session.dungeon.id);
+      await this.persist(playerId, session);
+      this.sessions.delete(playerId);
       return {
         logs: ["Vous avez atteint la sortie du donjon ! Zone terminée."],
         state: this.serialize(session),
+        exited: true,
       };
     }
 
@@ -171,10 +176,7 @@ export class ExplorationSessionService {
 
     // Persiste l'équipe (la position dans la zone n'a pas d'intérêt : chaque
     // entrée régénère le donjon).
-    const game = await PartyService.loadGame(playerId);
-    if (game) {
-      await PartyService.saveGame(playerId, session.party, session.questSystem, game.currentHubId);
-    }
+    await this.persist(playerId, session);
     this.sessions.delete(playerId);
     return { logs: ["Vous quittez le donjon."] };
   }
@@ -193,6 +195,14 @@ export class ExplorationSessionService {
     return session;
   }
 
+  /** Persiste l'équipe (or, PV, zones complétées) sans changer de ville. */
+  private static async persist(playerId: string, session: DungeonSession): Promise<void> {
+    const game = await PartyService.loadGame(playerId);
+    if (game) {
+      await PartyService.saveGame(playerId, session.party, session.questSystem, game.currentHubId);
+    }
+  }
+
   /** Une case est praticable si elle est dans les bornes et `true` dans la map. */
   private static isWalkable(zone: Zone, pos: Position): boolean {
     const map = zone.tileMap;
@@ -205,6 +215,7 @@ export class ExplorationSessionService {
   /** Sérialise la session pour le front (grille + position + résumé équipe). */
   private static serialize(session: DungeonSession): any {
     const zone = session.dungeon.levels[session.currentFloor];
+    const isLastFloor = session.currentFloor === session.dungeon.levels.length - 1;
     return {
       dungeonId: session.dungeon.id,
       dungeonName: session.dungeon.name,
@@ -218,6 +229,9 @@ export class ExplorationSessionService {
       position: session.party.position,
       startTile: zone.startTile,
       endTile: zone.endTile,
+      // Type de la tuile d'arrivée : "door" (porte de sortie) ou "stairs"
+      // (escalier vers l'étage suivant). Le front affiche 🚪 ou 🪜.
+      exitType: isLastFloor ? "door" : "stairs",
       campfires: zone.checkpoints.map((c) => ({
         row: c.position?.row,
         col: c.position?.col,

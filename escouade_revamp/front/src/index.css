@@ -435,14 +435,29 @@ button:disabled {
 
 /* ── Authentification ─────────────────────────────────────────────────── */
 .auth-wrap {
+  position: relative;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
   background: radial-gradient(circle at 50% 30%, #1a1530, var(--bg));
 }
+/* Fond d'écran (image) : couvre tout, flouté + sombré pour la lisibilité. */
+.auth-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: blur(3px) brightness(0.45);
+  transform: scale(1.05); /* évite les bords transparents du flou */
+  z-index: 0;
+}
 .auth-card {
-  background: var(--bg-panel);
+  position: relative;
+  z-index: 1;
+  background: rgba(23, 19, 31, 0.92);
+  backdrop-filter: blur(4px);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 28px 32px;
@@ -540,11 +555,22 @@ button:disabled {
 .party-list li.dead { opacity: 0.5; }
 .party-head {
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
   font-size: 13px;
   margin-bottom: 6px;
 }
-.party-job { color: var(--text-dim); font-size: 11px; }
+/* Token de classe (image) à gauche du nom du membre. */
+.party-token {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--bg);
+}
+.party-job { color: var(--text-dim); font-size: 11px; margin-left: auto; }
 .party-gold { font-size: 12px; margin-top: 4px; color: var(--accent); }
 .bar { height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; margin: 3px 0; }
 .bar-hp { height: 100%; background: var(--hp, #e0524d); }
@@ -736,11 +762,23 @@ button:disabled {
   gap: 6px;
 }
 .monster-list .monster {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 12px;
   background: var(--bg-panel-2);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 3px 8px;
+}
+/* Token du monstre (image) à gauche du nom. */
+.monster-token {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  background: var(--bg);
 }
 .monster-list .monster.unknown {
   color: var(--text-dim);
@@ -858,46 +896,10 @@ button:disabled {
   color: var(--text-dim);
   font-size: 13px;
 }
-.dungeon-party {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.dungeon-member {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  width: 90px;
-  padding: 6px 8px;
-  background: var(--bg-panel);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-}
-.dungeon-member.dead {
-  opacity: 0.5;
-}
-.dm-name {
-  font-size: 11px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.dm-bar {
-  height: 6px;
-  background: #0a0810;
-  border-radius: 3px;
-  overflow: hidden;
-}
-.dm-hp {
-  height: 100%;
-  background: var(--hp);
-  transition: width 0.2s;
-}
-
 .dungeon-body {
   display: flex;
   gap: 20px;
-  align-items: flex-start;
+  align-items: stretch;
   flex-wrap: wrap;
 }
 .dungeon-grid-wrap {
@@ -955,12 +957,15 @@ button:disabled {
   flex-direction: column;
   gap: 14px;
   align-items: center;
+  justify-content: flex-end; /* dpad décalé en bas de la colonne */
+  min-height: 100%;
 }
 .dungeon-dpad {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
+  margin-top: auto; /* pousse le dpad tout en bas */
 }
 .dpad-mid {
   display: flex;
@@ -980,19 +985,15 @@ button:disabled {
 .dungeon-rest-btn {
   width: 200px;
 }
-.dungeon-exit-btn {
-  width: 200px;
-  border-color: var(--exit);
-  color: var(--exit);
-}
+/* Journal : sous la légende, dans la colonne de la grille. */
 .dungeon-log {
-  margin-top: 8px;
   max-width: 460px;
   display: flex;
   flex-direction: column;
   gap: 2px;
   font-size: 12px;
   color: var(--text-dim);
+  min-height: 20px;
 }
 .dungeon-log-line {
   border-left: 2px solid var(--border);

@@ -136,6 +136,8 @@ export type ExplorationState = {
   position: { row: number; col: number };
   startTile: { row: number; col: number };
   endTile: { row: number; col: number };
+  /** Type de la tuile d'arrivée : "door" (porte de sortie) ou "stairs" (escalier). */
+  exitType: 'door' | 'stairs';
   campfires: DungeonCampfire[];
   visited: { row: number; col: number }[];
   activeCampfire: {

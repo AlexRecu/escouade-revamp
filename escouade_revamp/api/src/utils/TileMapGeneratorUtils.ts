@@ -20,7 +20,16 @@ export type DungeonFloor = {
     deadEnds: Position[];
 };
 
-export function generateTileMapWithFeatures(seed: number = Date.now()): DungeonFloor {
+export function generateTileMapWithFeatures(
+    seed: number = Date.now(),
+    options: { wideCorridors?: boolean; maxTiles?: number } = {}
+): DungeonFloor {
+    // `wideCorridors` : autorise les blocs 2×2 (couloirs de largeur 2) au lieu
+    // de corridors de largeur 1 (règle wouldCreate2x2). Utilisé pour les biomes
+    // "ouverts" (Vallée des cendres, Terres Gelées).
+    // `maxTiles` : nombre de tuiles praticables (plus il est haut, plus la map
+    // est grande et plus le départ/arrivée sont éloignés).
+    const { wideCorridors = false, maxTiles = 16 } = options;
     const rand = seededRandom(seed);
     const map: TileMap = Array.from({ length: MAP_SIZE }, () => Array(MAP_SIZE).fill(false));
 
@@ -34,13 +43,9 @@ export function generateTileMapWithFeatures(seed: number = Date.now()): DungeonF
     const activeTiles: Position[] = [start];
 
     let tilesCreated = 1;
-    const maxTiles = 8;
-    // Garde-fou anti boucle infinie : la condition `areNeighborsEmpty` (4
-    // directions vides) est très restrictive ; avec certains seeds, aucune case
-    // ne peut plus s'ajouter et `tilesCreated` ne progresse plus. On borne le
-    // nombre de tentatives pour ne jamais bloquer (la map reste valide, juste
-    // plus petite).
-    const maxIterations = 500;
+    // Garde-fou anti boucle infinie : on borne le nombre de tentatives pour ne
+    // jamais bloquer (la map reste valide, juste plus petite).
+    const maxIterations = 1000;
     let iterations = 0;
 
     while (tilesCreated < maxTiles && iterations < maxIterations) {
@@ -54,10 +59,13 @@ export function generateTileMapWithFeatures(seed: number = Date.now()): DungeonF
 
             const newPos: Position = { row: base.row + dir.row, col: base.col + dir.col };
 
+            // En mode couloirs larges, on autorise les blocs 2×2 (pas de
+            // wouldCreate2x2) → passages plus ouverts.
+            const blockedBy2x2 = !wideCorridors && wouldCreate2x2(newPos, map);
             if (
                 isInBounds(newPos) &&
                 !map[newPos.row][newPos.col] &&
-                !wouldCreate2x2(newPos, map)
+                !blockedBy2x2
             ) {
                 map[newPos.row][newPos.col] = true;
                 activeTiles.push(newPos);

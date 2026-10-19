@@ -89,22 +89,42 @@ export const initializeSocket = (io: Server) => {
         const result = await action();
         if (result && result.state) socket.emit('exploration:state', { state: result.state });
         if (result && result.logs) socket.emit('exploration:log', { logs: result.logs });
+        // Sortie de donjon (fin atteinte) → le front revient à la mappemonde.
+        if (result && result.exited) socket.emit('exploration:exited', {});
       } catch (err: any) {
         socket.emit('error', { message: err?.message ?? 'Erreur inconnue' });
       }
+    };
+
+    /**
+     * Après une sortie de donjon (volontaire ou auto), resynchronise la session
+     * de ville et émet `hub:state` → le front met à jour `completedZones` /
+     * `worldLevel` (brouillard de guerre + boutique).
+     */
+    const refreshHub = async () => {
+      const state = await HubSessionService.refresh(playerId);
+      if (state) socket.emit('hub:state', { state });
     };
 
     socket.on('exploration:enter', (data: { dungeonId: string }) =>
       replyExploration(async () => ({ state: await ExplorationSessionService.enterDungeon(playerId, data.dungeonId) }))
     );
     socket.on('exploration:move', (data: { direction: Direction }) =>
-      replyExploration(() => ExplorationSessionService.move(playerId, data.direction))
+      replyExploration(async () => {
+        const result = await ExplorationSessionService.move(playerId, data.direction);
+        if (result.exited) await refreshHub();
+        return result;
+      })
     );
     socket.on('exploration:rest', () =>
       replyExploration(() => ExplorationSessionService.restAtCampfire(playerId))
     );
     socket.on('exploration:exit', () =>
-      replyExploration(async () => ({ logs: (await ExplorationSessionService.exitDungeon(playerId)).logs }))
+      replyExploration(async () => {
+        const result = await ExplorationSessionService.exitDungeon(playerId);
+        await refreshHub();
+        return result;
+      })
     );
 
     socket.on('disconnect', () => {

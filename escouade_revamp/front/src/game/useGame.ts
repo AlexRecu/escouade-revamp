@@ -26,6 +26,7 @@ import {
   onError,
   onExplorationState,
   onExplorationLog,
+  onExplorationExited,
 } from '../api/socket';
 
 export type GameActions = {
@@ -54,6 +55,11 @@ export type UseGame = {
   actions: GameActions;
   /** État d'exploration courant (null si l'équipe n'est pas dans un donjon). */
   exploration: ExplorationState | null;
+  /**
+   * Enregistre un callback appelé quand le donjon est terminé (porte de
+   * sortie atteinte) → le front peut revenir à la mappemonde (auto-sortie).
+   */
+  setExplorationExitedHandler: (cb: (() => void) | null) => void;
 };
 
 /**
@@ -67,9 +73,16 @@ export function useGame(): UseGame {
   const [connected, setConnected] = useState(false);
   const [exploration, setExploration] = useState<ExplorationState | null>(null);
   const joinedRef = useRef(false);
+  // Callback d'auto-sortie (donjon terminé) — stocké en ref pour ne pas
+  // resouscrire l'abonnement à chaque render.
+  const exitedHandlerRef = useRef<(() => void) | null>(null);
 
   const pushLogs = useCallback((newLogs: string[]) => {
     setLogs((prev) => [...prev, ...newLogs].slice(-60));
+  }, []);
+
+  const setExplorationExitedHandler = useCallback((cb: (() => void) | null) => {
+    exitedHandlerRef.current = cb;
   }, []);
 
   useEffect(() => {
@@ -82,6 +95,10 @@ export function useGame(): UseGame {
     onError((msg) => pushLogs([`⚠️ ${msg}`]));
     onExplorationState((s) => setExploration(s));
     onExplorationLog(pushLogs);
+    onExplorationExited(() => {
+      setExploration(null);
+      exitedHandlerRef.current?.();
+    });
 
     // Rejoint la ville courante une fois connecté.
     const onConnect = () => {
@@ -117,5 +134,5 @@ export function useGame(): UseGame {
     explorationExit,
   };
 
-  return { state, logs, connected, actions, exploration };
+  return { state, logs, connected, actions, exploration, setExplorationExitedHandler };
 }

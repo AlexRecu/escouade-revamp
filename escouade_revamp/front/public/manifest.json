@@ -1,0 +1,25 @@
+{
+  "name": "Escouade",
+  "short_name": "Escouade",
+  "description": "Escouade — RPG de donjons en temps réel (mode ville + exploration).",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0d0b14",
+  "theme_color": "#0d0b14",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "/pwa/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pwa/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

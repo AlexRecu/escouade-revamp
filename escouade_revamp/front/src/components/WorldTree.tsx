@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { WorldSummary, Hub, Dungeon } from '../types/world';
 import { computeLayout, type TreeNode } from '../game/forceLayout';
+import { monsterTokenUrl } from '../utils/tokens';
 
 type Props = {
   world: WorldSummary;
@@ -249,7 +250,22 @@ function DungeonPanel({
         )}
         {dungeon.monsters.map((m) => (
           <li key={m} className={seenMonsters.has(m) ? 'monster' : 'monster unknown'}>
-            {seenMonsters.has(m) ? m : '?'}
+            {seenMonsters.has(m) ? (
+              <>
+                <img
+                  className="monster-token"
+                  src={monsterTokenUrl(m)}
+                  alt={m}
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src =
+                      '/assets/tokens/default.png';
+                  }}
+                />
+                <span>{m}</span>
+              </>
+            ) : (
+              '?'
+            )}
           </li>
         ))}
       </ul>

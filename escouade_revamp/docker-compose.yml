@@ -62,6 +62,9 @@ services:
       - ./front/src:/app/src
       - ./front/index.html:/app/index.html
       - ./front/vite.config.ts:/app/vite.config.ts
+      # Assets statiques (tokens, login, pwa) — montés pour être servis sans
+      # rebuild de l'image à chaque ajout de fichier.
+      - ./front/public:/app/public
     command: npm run dev -- --host
     depends_on:
       - backend

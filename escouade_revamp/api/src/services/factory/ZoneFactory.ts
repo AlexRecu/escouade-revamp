@@ -51,7 +51,9 @@ export class ZoneFactory {
             );
         }
 
-        const { tileMap, startTile, endTile, campfires: campfireTiles, deadEnds } = generateTileMapWithFeatures(seed ?? params.zoneLevel);
+        // Biomes "ouverts" : couloirs plus larges (blocs 2×2 autorisés).
+        const wideCorridors = type === "Canyon" || type === "FrozenLand";
+        const { tileMap, startTile, endTile, campfires: campfireTiles, deadEnds } = generateTileMapWithFeatures(seed ?? params.zoneLevel, { wideCorridors });
 
         const spawnRates: MonsterSpawnRate[] = getSpawnRatesForZoneType(type);
         const encounterRate = calculateEncounterRate(spawnRates);

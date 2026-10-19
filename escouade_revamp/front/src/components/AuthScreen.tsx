@@ -39,6 +39,14 @@ export default function AuthScreen({ onAuthed }: Props) {
 
   return (
     <div className="auth-wrap">
+      {/* Fond d'écran (image de la précédente version du projet). */}
+      <div
+        className="auth-bg"
+        style={{
+          backgroundImage: `url('/assets/login/friends.png')`,
+        }}
+        aria-hidden
+      />
       <form className="auth-card" onSubmit={submit}>
         <h2>ESCOUADE</h2>
         <p className="auth-sub">Mode ville — point-and-clic</p>

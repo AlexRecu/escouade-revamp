@@ -25,7 +25,13 @@ function App() {
 
   // Partie temps réel (socket) : levée ici pour que l'équipe soit visible
   // sur la mappemonde ET en ville (colonne latérale permanente).
-  const { state, logs: gameLogs, connected, actions, exploration } = useGame();
+  const { state, logs: gameLogs, connected, actions, exploration, setExplorationExitedHandler } = useGame();
+
+  // Auto-sortie : quand le donjon est terminé (porte de sortie atteinte), le
+  // serveur émet `exploration:exited` → on revient à la mappemonde.
+  useEffect(() => {
+    setExplorationExitedHandler(() => setView({ name: 'world' }));
+  }, [setExplorationExitedHandler]);
 
   // **Source de vérité** : le niveau du monde, les zones terminées et le
   // bestiaire viennent de l'état serveur (state.party), pas d'un état local.
@@ -134,10 +140,6 @@ function App() {
                 logs={gameLogs}
                 onMove={(dir) => actions.explorationMove(dir)}
                 onRest={() => actions.explorationRest()}
-                onExit={() => {
-                  actions.explorationExit();
-                  setView({ name: 'world' });
-                }}
               />
             ) : (
               <div className="worldmap">Entrée dans le donjon…</div>

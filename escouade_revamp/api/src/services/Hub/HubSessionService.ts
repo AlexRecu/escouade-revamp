@@ -284,6 +284,29 @@ export class HubSessionService {
     return this.serialize(session);
   }
 
+  /**
+   * Resynchronise la session de ville avec la partie persistée.
+   *
+   * Utilisé après une exploration de donjon : l'équipe a été mutée et
+   * persistée par `ExplorationSessionService` (zones complétées, worldLevel,
+   * or, PV…). Cette méthode recharge la party depuis la base dans la session
+   * en mémoire, pour que le front (qui dérive `completedZones`/`worldLevel`
+   * de `state.party`) voie les changements → le brouillard de guerre se
+   * dissipe et la boutique se met à jour.
+   *
+   * @returns l'état sérialisé (ou null si aucune session active).
+   */
+  static async refresh(playerId: string): Promise<any> {
+    const session = this.sessions.get(playerId);
+    if (!session) return null;
+    const game = await PartyService.loadGame(playerId);
+    if (game) {
+      session.party = game.party;
+      session.questSystem = game.questSystem;
+    }
+    return this.serialize(session);
+  }
+
   // ── Helpers ──────────────────────────────────────────────────────────────
 
   private static require(playerId: string): HubState {
