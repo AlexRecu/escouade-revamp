@@ -148,6 +148,9 @@ export class HubSerializer {
           gold: m.gold,
           level: m.characterLevel,
           isDead: m.isDead(),
+          // Joueur qui contrôle ce perso + avatar (multi-joueurs).
+          ownerId: m.ownerId ?? null,
+          avatar: m.avatar ?? null,
           // Types d'armes que ce personnage peut équiper (selon sa classe).
           equippableWeapons: m.job.weapons,
           // Peut-il tenir une arme en main gauche (passif Double Armement) ?

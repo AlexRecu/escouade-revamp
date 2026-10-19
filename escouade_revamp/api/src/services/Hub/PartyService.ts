@@ -51,6 +51,37 @@ export class PartyService {
   }
 
   /**
+   * Crée l'état de départ d'une partie **avec une équipe vide** (sans le
+   * persister) : les quêtes du livret + la ville de départ, mais **aucun
+   * personnage**. Chaque joueur crée son propre personnage (voir
+   * `PartyRoomService.createCharacter`).
+   *
+   * Utilisé par `PartyRoomService.create` (multi-joueurs) : l'équipe se
+   * constitue au fil des créations de personnages.
+   *
+   * @returns la partie de départ (party vide + questSystem + currentHubId).
+   */
+  static async createEmptyGame(): Promise<{
+    party: Party;
+    questSystem: QuestSystem;
+    currentHubId: string;
+  }> {
+    const party = new Party(IdGenerator.generate("Party"), [], { row: 7, col: 7 });
+    party.gold = 0;
+
+    const questSystem = new QuestSystem();
+    for (const q of createDefaultQuests("fr")) questSystem.addQuest(q);
+
+    const world = await WorldService.getWorld();
+    const root = world.nodes.find(
+      (n) => n instanceof Hub && n.name === "Auberge du matin"
+    );
+    const currentHubId = root?.id ?? "Hub_Auberge du matin";
+
+    return { party, questSystem, currentHubId };
+  }
+
+  /**
    * Crée l'état de départ d'une partie **sans le persister** : une équipe de
    * départ (3 héros) + les quêtes du livret + la ville de départ.
    *

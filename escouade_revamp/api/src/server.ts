@@ -12,6 +12,7 @@ import dotenv from 'dotenv';
 import { Server } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import { initializeSocket } from './socket';
+import { PartyRoomService } from './services/Hub/PartyRoomService';
  
 dotenv.config({
   path:
@@ -72,6 +73,19 @@ const startServer = async () => {
     });
  
     initializeSocket(io);
+
+    // Nettoyage périodique des parties **vides** trop anciennes (abandonnées).
+    // Une room vide est conservée pour que le joueur puisse reprendre sa
+    // partie ; au-delà d'une heure d'inactivité, elle est supprimée.
+    const cleanupEmptyRooms = () => {
+      PartyRoomService.cleanupEmptyRooms()
+        .then((n) => {
+          if (n > 0) console.log(`🧹 ${n} partie(s) vide(s) supprimée(s).`);
+        })
+        .catch((err) => console.error('Erreur nettoyage rooms vides :', err));
+    };
+    cleanupEmptyRooms();
+    setInterval(cleanupEmptyRooms, 15 * 60 * 1000); // toutes les 15 min
   } catch (error) {
     console.error('\x1b[31m❌ Failed to start server:\x1b[0m', error);
     process.exit(1);

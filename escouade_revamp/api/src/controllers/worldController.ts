@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { WorldService } from '../services/World/WorldService';
+import { JobFactory } from '../services/factory/JobFactory';
 import statusesData from '../config/statuses_data.json';
 
 /**
@@ -43,4 +44,15 @@ export const getHub = async (req: Request, res: Response): Promise<void> => {
  */
 export const getStatuses = (_req: Request, res: Response): void => {
   res.status(200).json(statusesData);
+};
+
+/**
+ * GET /world/jobs — liste des jobs disponibles pour la création de
+ * personnage (nom, description, stats de base, or de classe).
+ *
+ * Route **publique** (pas d'auth) : le front l'appelle à l'ouverture de
+ * l'écran de création de personnage, avant même d'avoir rejoint une partie.
+ */
+export const getJobs = (_req: Request, res: Response): void => {
+  res.status(200).json(JobFactory.listJobs());
 };

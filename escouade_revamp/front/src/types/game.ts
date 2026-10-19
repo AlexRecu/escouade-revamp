@@ -47,6 +47,29 @@ export type PartyMember = {
   rightHand: EquippedWeapon | null;
   leftHand: EquippedWeapon | null;
   bag: BagItem[];
+  /** Id du joueur qui contrôle ce personnage (multi-joueurs). `null` = perso IA. */
+  ownerId: string | null;
+  /** Avatar personnalisé : nom du fichier de token choisi (ex. "Guerrier.png"). */
+  avatar: string | null;
+};
+
+/** Statistiques d'un personnage (7 stats). */
+export type Statistics = {
+  strength: number;
+  dexterity: number;
+  endurance: number;
+  mana: number;
+  intelligence: number;
+  perception: number;
+  charisma: number;
+};
+
+/** Job disponible pour la création de personnage (GET /api/world/jobs). */
+export type JobInfo = {
+  name: string;
+  description: string;
+  defaultStats: Statistics;
+  gold: number;
 };
 
 export type QuestStep = {

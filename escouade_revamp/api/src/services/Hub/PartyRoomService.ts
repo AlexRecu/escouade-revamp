@@ -11,6 +11,7 @@ import { HubService } from "./HubService";
 import { PartyService } from "./PartyService";
 import { HubSerializer } from "./HubSerializer";
 import { WorldService } from "../World/WorldService";
+import { JobFactory } from "../factory/JobFactory";
 import { IdGenerator } from "../../utils/IdGeneratorUtils";
 import { getSpawnRatesForZoneType } from "../../utils/RandomUtils";
 
@@ -63,7 +64,9 @@ export class PartyRoomService {
     isPublic = true,
     maxPlayers = 4
   ): Promise<PartyRoomDocument> {
-    const game = await PartyService.createStarterGame();
+    // Équipe **vide** : chaque joueur crée son propre personnage (voir
+    // `createCharacter`). L'équipe se constitue au fil des créations.
+    const game = await PartyService.createEmptyGame();
     const roomId = IdGenerator.generate("Room");
     const members: RoomMember[] = [
       { playerId: hostId as any, username: hostName, isSpectator: false },
@@ -83,6 +86,98 @@ export class PartyRoomService {
     });
     await this.setPlayerRoom(hostId, roomId);
     return doc;
+  }
+
+  /**
+   * Crée le **personnage** d'un joueur dans une partie.
+   *
+   * Règles (confirmées) : le joueur choisit son **job**, répartit **20 points**
+   * de stats (chaque stat entre 0 et 12, **en plus** des stats de base du job)
+   * et choisit un **avatar** (token) parmi ceux de sa classe. Le personnage est
+   * ajouté à l'équipe partagée de la room, avec `ownerId` = le joueur (pour que
+   * le front identifie « son » perso) et `avatar` = le token choisi.
+   *
+   * Un joueur ne peut avoir **qu'un seul** personnage par room (sinon erreur).
+   *
+   * @returns l'état sérialisé de la room (diffusé à tous par le socket).
+   */
+  static async createCharacter(
+    roomId: string,
+    playerId: string,
+    data: { name: string; job: string; stats: Record<string, number>; avatar?: string | null }
+  ): Promise<{ logs: string[]; state: any }> {
+    const room = await this.model.findOne({ roomId });
+    if (!room) throw new Error("Partie introuvable.");
+
+    // Le joueur doit être membre de la room (et non spectateur).
+    const member = room.members.find((m) => m.playerId.toString() === playerId);
+    if (!member) throw new Error("Vous n'êtes pas dans cette partie.");
+    if (member.isSpectator) throw new Error("Un spectateur ne peut pas créer de personnage.");
+
+    const { party, questSystem } = PartyService.deserialize(room.party, room.questSystem, room.currentHubId);
+
+    // Un seul personnage par joueur.
+    if (party.members.some((m) => m.ownerId === playerId)) {
+      throw new Error("Vous avez déjà un personnage dans cette partie.");
+    }
+
+    // Fabrique le job + applique les stats de base + les points du joueur.
+    // Règle du livret : **1 point à répartir par niveau**. Au niveau 1, le
+    // joueur dispose donc de 1 point à placer dans la stat de son choix.
+    const job = JobFactory.fromSerialized({ name: data.job });
+    const budget = job.jobLevel; // 1 au niveau 1
+    const stats = { ...job.defaultStats };
+    let allocated = 0;
+    for (const key of Object.keys(stats) as (keyof typeof stats)[]) {
+      const bonus = Math.max(0, Math.floor(Number(data.stats?.[key]) || 0));
+      stats[key] = Math.max(0, Math.min(12, stats[key] + bonus));
+      allocated += bonus;
+    }
+    if (allocated !== budget) {
+      throw new Error(`Vous devez répartir exactement ${budget} point (actuellement ${allocated}).`);
+    }
+
+    // Crée le perso avec le job (armes de départ + bouclier Guerrier gérés par
+    // le constructeur), puis applique les **stats custom** (base + bonus) et
+    // recalcule HP/MP — même approche que `CharacterFactory.fromSerialized`.
+    const char = new Character(
+      IdGenerator.generate("Char"),
+      data.name || member.username,
+      "Hero",
+      { row: 7, col: 7 },
+      job,
+      null,
+      null
+    );
+    char.stats = stats;
+    char.maxHp = stats.endurance + 10;
+    char.currentHp = char.maxHp;
+    char.maxMp = stats.mana + 10;
+    char.currentMp = char.maxMp;
+    char.ownerId = playerId;
+    char.avatar = data.avatar || null;
+    char.gold = job.gold; // or de classe
+
+    party.members.push(char);
+    // Bonus de départ : 100 or par personnage (cohérent avec le mode solo,
+    // où `party.gold = 100 × nb de membres`). S'ajoute à l'or de classe.
+    party.gold += 100;
+    party.consolidateGold(); // migre l'or de classe dans le pot commun
+
+    room.party = party.toSerialized();
+    room.questSystem = questSystem.toSerialized();
+    room.savedAt = new Date();
+    await room.save();
+
+    const session = new HubState(
+      (await WorldService.getHubById(room.currentHubId))!,
+      party,
+      questSystem
+    );
+    return {
+      logs: [`${char.name} (${job.name}) rejoint la partie.`],
+      state: this.serializeRoom(room, session),
+    };
   }
 
   /**
@@ -120,6 +215,12 @@ export class PartyRoomService {
         throw new Error("Cette partie est pleine.");
       }
       room.members.push({ playerId: playerId as any, username, isSpectator });
+      // Room vide (reprise d'une partie abandonnée) : le premier à rejoindre
+      // (hors spectateur) redevient l'hôte.
+      if (room.members.length === 1 && !isSpectator) {
+        room.hostId = playerId as any;
+        room.hostName = username;
+      }
     }
     room.savedAt = new Date();
     await room.save();
@@ -137,17 +238,34 @@ export class PartyRoomService {
 
     room.members = room.members.filter((m) => m.playerId.toString() !== playerId);
 
-    if (room.members.length === 0) {
-      await this.model.deleteOne({ roomId });
-    } else if (room.hostId.toString() === playerId) {
+    if (room.members.length > 0 && room.hostId.toString() === playerId) {
       // Transfert d'hôtiat au premier membre restant.
       const newHost = room.members[0];
       room.hostId = newHost.playerId;
       room.hostName = newHost.username;
     }
+    // La room est **conservée** même quand elle devient vide : l'état de jeu
+    // (personnages, or, progression) est ainsi préservé et le joueur peut
+    // reprendre sa partie depuis le lobby. Les rooms vides trop anciennes sont
+    // nettoyées périodiquement (voir `cleanupEmptyRooms`).
     room.savedAt = new Date();
-    if (room.members.length > 0) await room.save();
+    await room.save();
     await this.setPlayerRoom(playerId, null);
+  }
+
+  /**
+   * Nettoie les rooms **vides** trop anciennes (supprime les parties
+   * abandonnées). Appelé périodiquement au démarrage du serveur.
+   *
+   * @param maxAgeMs âge maximal (ms) d'une room vide avant suppression.
+   */
+  static async cleanupEmptyRooms(maxAgeMs = 60 * 60 * 1000): Promise<number> {
+    const cutoff = new Date(Date.now() - maxAgeMs);
+    const res = await this.model.deleteMany({
+      "members.0": { $exists: false },
+      savedAt: { $lt: cutoff },
+    });
+    return res.deletedCount;
   }
 
   /**

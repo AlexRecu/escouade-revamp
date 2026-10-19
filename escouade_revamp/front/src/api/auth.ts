@@ -37,6 +37,21 @@ export const getToken = (): string | null => localStorage.getItem(TOKEN_KEY);
 /** Récupère le pseudo stocké (ou null). */
 export const getUsername = (): string | null => localStorage.getItem(USER_KEY);
 
+/**
+ * Récupère l'id du joueur connecté en décodant le payload du JWT
+ * (le backend signe `{ playerId }`). `null` si pas de token ou payload illisible.
+ */
+export const getPlayerId = (): string | null => {
+  const token = getToken();
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.playerId ?? null;
+  } catch {
+    return null;
+  }
+};
+
 /** Détruit la session locale. */
 export const clearSession = (): void => {
   localStorage.removeItem(TOKEN_KEY);

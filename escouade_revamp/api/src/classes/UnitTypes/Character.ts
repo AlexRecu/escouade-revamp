@@ -22,6 +22,17 @@ export class Character extends Unit {
     maxAp: number;
     job: Job;
     stats: Statistics;
+    /**
+     * Id du joueur qui **contrôle** ce personnage (mode multi-joueurs).
+     * `null`/`undefined` pour un PNJ ou un personnage solo (non lié à un
+     * joueur). Utilisé par le front pour identifier « mon » personnage.
+     */
+    ownerId: string | null = null;
+    /**
+     * Avatar personnalisé : nom du fichier de token choisi par le joueur
+     * (ex. "Guerrier.png"). `null` = token de classe par défaut.
+     */
+    avatar: string | null = null;
     protected rightHand: Weapon | null;
     protected leftHand: Weapon | null;
     private spellsMap: Map<string, Spell> = new Map();

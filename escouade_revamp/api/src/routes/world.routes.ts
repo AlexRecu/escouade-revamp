@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getWorld, getHub, getStatuses } from '../controllers/worldController';
+import { getWorld, getHub, getStatuses, getJobs } from '../controllers/worldController';
 
 const router = Router();
 
@@ -128,5 +128,41 @@ router.get('/hub/:hubId', getHub);
  *                     items: { type: string }
  */
 router.get('/statuses', getStatuses);
+
+/**
+ * @swagger
+ * /api/world/jobs:
+ *   get:
+ *     tags: [World]
+ *     summary: Liste des jobs disponibles (création de personnage)
+ *     description: >
+ *       Renvoie les jobs jouables avec leur description, leurs stats de base
+ *       et leur or de classe. Route publique (pas d'auth) : le front l'appelle
+ *       à l'ouverture de l'écran de création de personnage.
+ *     responses:
+ *       200:
+ *         description: Liste des jobs
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   name: { type: string }
+ *                   description: { type: string }
+ *                   defaultStats:
+ *                     type: object
+ *                     properties:
+ *                       strength: { type: integer }
+ *                       dexterity: { type: integer }
+ *                       endurance: { type: integer }
+ *                       mana: { type: integer }
+ *                       intelligence: { type: integer }
+ *                       perception: { type: integer }
+ *                       charisma: { type: integer }
+ *                   gold: { type: integer }
+ */
+router.get('/jobs', getJobs);
 
 export default router;

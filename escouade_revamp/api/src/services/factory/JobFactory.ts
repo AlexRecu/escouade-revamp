@@ -35,6 +35,46 @@ export class JobFactory {
     }
 
     /**
+     * Liste les jobs disponibles pour la **création de personnage** : nom,
+     * description, stats de base et or de classe. Le front l'utilise pour
+     * afficher le choix du job + les stats de départ (le joueur répartit ses
+     * points **en plus** de ces stats de base).
+     */
+    static listJobs(): {
+        name: string;
+        description: string;
+        defaultStats: {
+            strength: number;
+            dexterity: number;
+            endurance: number;
+            mana: number;
+            intelligence: number;
+            perception: number;
+            charisma: number;
+        };
+        gold: number;
+    }[] {
+        const names = [
+            "Guerrier",
+            "Mage blanc",
+            "Mage noir",
+            "Mage rouge",
+            "Mage bleu",
+            "Voleur",
+            "Moine",
+        ];
+        return names.map((name) => {
+            const job = this.createJob(name);
+            return {
+                name: job.name,
+                description: job.description,
+                defaultStats: job.defaultStats,
+                gold: job.gold,
+            };
+        });
+    }
+
+    /**
      * Fabrique un job neuf (niveau 1, non évolué) à partir de son nom de base.
      *
      * Le matching est **insensible à la casse** : les noms réels des jobs

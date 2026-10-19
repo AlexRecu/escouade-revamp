@@ -24,6 +24,7 @@ import {
   partyCreate,
   partyJoin,
   partyLeave,
+  partyCreateCharacter,
   type ExplorationDirection,
   onState,
   onLog,
@@ -58,6 +59,13 @@ export type GameActions = {
   partyCreate: (opts: { name?: string; isPublic?: boolean; maxPlayers?: number }) => void;
   partyJoin: (roomId: string, isSpectator?: boolean) => void;
   partyLeave: () => void;
+  /** Crée le personnage du joueur (job + stats réparties + avatar). */
+  partyCreateCharacter: (data: {
+    name: string;
+    job: string;
+    stats: Record<string, number>;
+    avatar?: string | null;
+  }) => void;
 };
 
 export type UseGame = {
@@ -67,6 +75,8 @@ export type UseGame = {
   actions: GameActions;
   /** Liste des parties publiques (pour le lobby). */
   rooms: RoomSummary[];
+  /** Dernière erreur serveur (ex. création de personnage refusée). */
+  error: string | null;
   /** true si le joueur est dans une partie (room) — sinon il est au lobby. */
   inRoom: boolean;
   /** État d'exploration courant (null si l'équipe n'est pas dans un donjon). */
@@ -99,6 +109,9 @@ export function useGame(token: string | null): UseGame {
   const [connected, setConnected] = useState(false);
   const [exploration, setExploration] = useState<ExplorationState | null>(null);
   const [rooms, setRooms] = useState<RoomSummary[]>([]);
+  // Dernière erreur serveur (ex. création de personnage refusée) — affichée
+  // dans l'écran courant puis effacée au prochain état valide.
+  const [error, setError] = useState<string | null>(null);
   const joinedRef = useRef(false);
   // Callback d'auto-sortie (donjon terminé) — stocké en ref pour ne pas
   // resouscrire l'abonnement à chaque render.
@@ -140,9 +153,15 @@ export function useGame(token: string | null): UseGame {
       }
     });
 
-    onState((s) => setState(s));
+    onState((s) => {
+      setState(s);
+      setError(null); // un état valide efface la dernière erreur
+    });
     onLog(pushLogs);
-    onError((msg) => pushLogs([`⚠️ ${msg}`]));
+    onError((msg) => {
+      setError(msg);
+      pushLogs([`⚠️ ${msg}`]);
+    });
     onExplorationState((s) => setExploration(s));
     onExplorationLog(pushLogs);
     onExplorationExited(() => {
@@ -202,7 +221,8 @@ export function useGame(token: string | null): UseGame {
     partyCreate,
     partyJoin,
     partyLeave,
+    partyCreateCharacter,
   };
 
-  return { state, logs, connected, actions, rooms, inRoom, exploration, setExplorationExitedHandler, setAuthErrorHandler };
+  return { state, logs, connected, actions, rooms, error, inRoom, exploration, setExplorationExitedHandler, setAuthErrorHandler };
 }

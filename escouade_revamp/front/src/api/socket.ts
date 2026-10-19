@@ -109,6 +109,14 @@ export const partyJoin = (roomId: string, isSpectator = false): void => {
 /** Quitte la partie courante (retour au lobby). */
 export const partyLeave = (): void => { socket?.emit('party:leave', {}); };
 
+/** Crée le personnage du joueur (job + stats réparties + avatar). */
+export const partyCreateCharacter = (data: {
+  name: string;
+  job: string;
+  stats: Record<string, number>;
+  avatar?: string | null;
+}): void => { socket?.emit('party:createCharacter', data); };
+
 /** Liste des parties (réponse à `party:list`). */
 export function onPartyList(cb: (rooms: RoomSummary[]) => void): void {
   socket?.on('party:list', ({ rooms }: { rooms: RoomSummary[] }) => cb(rooms));

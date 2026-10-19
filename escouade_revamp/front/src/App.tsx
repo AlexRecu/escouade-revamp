@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { fetchWorld } from './api/client';
-import { getToken, getUsername, clearSession } from './api/auth';
+import { getToken, getUsername, clearSession, getPlayerId } from './api/auth';
 import type { WorldSummary, Hub } from './types/world';
 import WorldTree from './components/WorldTree';
 import City from './components/City';
@@ -8,6 +8,7 @@ import DungeonView from './components/DungeonView';
 import AuthScreen from './components/AuthScreen';
 import PartySidebar from './components/PartySidebar';
 import LobbyScreen from './components/LobbyScreen';
+import CharacterCreationScreen from './components/CharacterCreationScreen';
 import { useGame } from './game/useGame';
 
 type View =
@@ -28,7 +29,21 @@ function App() {
   // sur la mappemonde ET en ville (colonne latérale permanente). Le token est
   // passé en paramètre : quand il devient disponible (premier login), le
   // socket est re-connecté avec le JWT (sinon il serait refusé par le back).
-  const { state, logs: gameLogs, connected, actions, rooms, inRoom, exploration, setExplorationExitedHandler, setAuthErrorHandler } = useGame(getToken());
+  const { state, logs: gameLogs, connected, actions, rooms, error: gameError, inRoom, exploration, setExplorationExitedHandler, setAuthErrorHandler } = useGame(getToken());
+
+  // Identité du joueur connecté (pour savoir s'il a déjà un personnage dans
+  // la partie, et s'il est spectateur).
+  const myPlayerId = useMemo(() => getPlayerId(), []);
+  const hasCharacter = useMemo(
+    () => (state?.party.members ?? []).some((m) => m.ownerId === myPlayerId),
+    [state, myPlayerId]
+  );
+  const isSpectator = useMemo(
+    () => state?.room?.members.find((m) => m.playerId === myPlayerId)?.isSpectator ?? false,
+    [state, myPlayerId]
+  );
+  // Dans une partie, sans personnage, et non spectateur → écran de création.
+  const needsCharacter = inRoom && !hasCharacter && !isSpectator;
 
   // Auto-sortie : quand le donjon est terminé (porte de sortie atteinte), le
   // serveur émet `exploration:exited` → on revient à la mappemonde.
@@ -146,7 +161,14 @@ function App() {
           )}
           {inRoom && error && <div className="worldmap">Erreur : {error}</div>}
           {inRoom && !world && !error && <div className="worldmap">Chargement du monde…</div>}
-          {inRoom && world && view.name === 'world' && (
+          {inRoom && needsCharacter && (
+            <CharacterCreationScreen
+              defaultName={user ?? ''}
+              error={gameError}
+              onCreate={(data) => actions.partyCreateCharacter(data)}
+            />
+          )}
+          {inRoom && !needsCharacter && world && view.name === 'world' && (
             <WorldTree
               world={world}
               completedZones={completedZones}
@@ -167,7 +189,7 @@ function App() {
               }}
             />
           )}
-          {inRoom && world && view.name === 'city' && (
+          {inRoom && !needsCharacter && world && view.name === 'city' && (
             <City
               hub={view.hub}
               onBack={() => setView({ name: 'world' })}
@@ -176,7 +198,7 @@ function App() {
               actions={actions}
             />
           )}
-          {inRoom && view.name === 'dungeon' && (
+          {inRoom && !needsCharacter && view.name === 'dungeon' && (
             exploration ? (
               <DungeonView
                 exploration={exploration}

@@ -55,6 +55,9 @@ export class CharacterFactory {
     // Le constructeur écrase `job.jobLevel` à 1 (arg12 non fourni) : on le
     // restaure ici depuis les données sérialisées.
     char.job.jobLevel = data.classe?.jobLevel ?? 1;
+    // Joueur qui contrôle le perso + avatar personnalisé (multi-joueurs).
+    char.ownerId = data.ownerId ?? null;
+    char.avatar = data.avatar ?? null;
 
     return char;
   }
@@ -78,6 +81,9 @@ export class CharacterFactory {
       gold: char.gold,
       characterLevel: char.characterLevel,
       stats: char.stats,
+      // Joueur qui contrôle le perso + avatar personnalisé (multi-joueurs).
+      ownerId: char.ownerId ?? null,
+      avatar: char.avatar ?? null,
       status: char.status.map((s) => this.serializeStatus(s)),
       classe: {
         name: char.job.baseName,

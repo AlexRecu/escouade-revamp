@@ -7,25 +7,42 @@
  * token, on retombe sur `default.png`.
  */
 
-const TOKEN_BASE = '/assets/tokens';
+export const TOKEN_BASE = '/assets/tokens';
 
-/** Mapping nom de classe (job) → fichier de token. */
-const CLASS_TOKENS: Record<string, string> = {
-  'Guerrier': 'Guerrier.png',
-  'Mage blanc': 'Mage blanc.png',
-  'Mage bleu': 'Mage Bleu.png',
-  'Mage noir': 'Mage noir.png',
-  'Mage rouge': 'Mage Rouge.png',
-  'Voleur': 'voleur.png',
-  'Moine': 'Moine.png',
-};
+/**
+ * Liste des avatars de classe : nom du job (tel que renvoyé par le backend,
+ * ex. "Mage Blanc") + fichier de token correspondant. Le lookup est **insensible
+ * à la casse** (les noms réels des jobs ont des majuscules, les fichiers aussi).
+ */
+export const CLASS_AVATARS: { job: string; file: string }[] = [
+  { job: 'Guerrier', file: 'Guerrier.png' },
+  { job: 'Mage blanc', file: 'Mage blanc.png' },
+  { job: 'Mage bleu', file: 'Mage Bleu.png' },
+  { job: 'Mage noir', file: 'Mage noir.png' },
+  { job: 'Mage rouge', file: 'Mage Rouge.png' },
+  { job: 'Voleur', file: 'voleur.png' },
+  { job: 'Moine', file: 'Moine.png' },
+];
+
+/** Mapping normalisé (minuscules) nom de classe → fichier de token. */
+const CLASS_TOKENS: Record<string, string> = Object.fromEntries(
+  CLASS_AVATARS.map((a) => [a.job.toLowerCase(), a.file])
+);
+
+/**
+ * Fichier de token d'une **classe** (par le nom du job, insensible à la casse).
+ * `null` si la classe n'a pas de token dédié.
+ */
+export function classTokenFile(jobName: string): string | null {
+  return CLASS_TOKENS[jobName.toLowerCase()] ?? null;
+}
 
 /**
  * Chemin du token d'une **classe** (par le nom du job). Fallback `default.png`.
  * Le nom de fichier est encodé (certains contiennent des espaces).
  */
 export function classTokenUrl(jobName: string): string {
-  const file = CLASS_TOKENS[jobName] ?? 'default.png';
+  const file = classTokenFile(jobName) ?? 'default.png';
   return `${TOKEN_BASE}/${encodeURIComponent(file)}`;
 }
 
@@ -42,3 +59,11 @@ export function monsterTokenUrl(monsterName: string): string {
 
 /** Chemin du token par défaut (fallback). */
 export const DEFAULT_TOKEN_URL = `${TOKEN_BASE}/default.png`;
+
+/**
+ * Chemin d'un token à partir du **nom de fichier** (ex. "Guerrier.png").
+ * Utilisé pour l'avatar personnalisé choisi à la création de personnage.
+ */
+export function tokenUrl(file: string): string {
+  return `${TOKEN_BASE}/${encodeURIComponent(file)}`;
+}

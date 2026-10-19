@@ -1,5 +1,5 @@
 import type { GameState } from '../types/game';
-import { classTokenUrl } from '../utils/tokens';
+import { classTokenUrl, tokenUrl } from '../utils/tokens';
 
 type Props = {
   state: GameState | null;
@@ -36,7 +36,7 @@ export default function PartySidebar({ state, connected }: Props) {
                 <div className="party-head">
                   <img
                     className="party-token"
-                    src={classTokenUrl(m.job)}
+                    src={m.avatar ? tokenUrl(m.avatar) : classTokenUrl(m.job)}
                     alt={m.job}
                     onError={(e) => {
                       (e.currentTarget as HTMLImageElement).src =

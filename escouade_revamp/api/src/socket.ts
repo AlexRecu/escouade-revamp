@@ -201,6 +201,24 @@ export const initializeSocket = (io: Server) => {
         .catch((err) => socket.emit('error', { message: err?.message ?? 'Erreur' }));
     });
 
+    // `party:createCharacter` — un joueur crée SON personnage (job + stats
+    // réparties + avatar). Le perso est ajouté à l'équipe partagée et l'état
+    // est diffusé à toute la partie (chaque joueur voit l'équipe se compléter
+    // en temps réel).
+    socket.on('party:createCharacter', (data: { name: string; job: string; stats: Record<string, number>; avatar?: string }) => {
+      const roomId = currentRoomId();
+      if (!roomId) {
+        socket.emit('error', { message: "Vous n'êtes dans aucune partie." });
+        return;
+      }
+      PartyRoomService.createCharacter(roomId, playerId, data)
+        .then(({ logs, state }) => {
+          io.to(roomId).emit('hub:log', { logs });
+          io.to(roomId).emit('hub:state', { state });
+        })
+        .catch((err) => socket.emit('error', { message: err?.message ?? 'Erreur' }));
+    });
+
     // ── Exploration des donjons (mode déplacement) ──────────────────────────
     // Exécute une action d'exploration et renvoie l'état de la grille au
     // client via `exploration:state` (+ logs via `exploration:log`). En mode
