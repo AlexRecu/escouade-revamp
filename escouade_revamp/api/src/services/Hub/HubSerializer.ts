@@ -124,6 +124,10 @@ export class HubSerializer {
     const available = session.questSystem.availableQuests(session.party.members, recruited);
     const accepted = session.questSystem.allQuests().filter((q) => q.accepted && !q.completed);
     return {
+      // Nœud de position de l'équipe (id d'un hub OU d'un donjon) — c'est ce
+      // que suit le cercle blanc de la mappemonde. Quand l'équipe est en ville,
+      // c'est l'id du hub ; dans une zone d'exploration, l'id du donjon.
+      currentNodeId: session.currentNodeId,
       hub: {
         id: session.hub.id,
         name: session.hub.name,

@@ -22,8 +22,14 @@ export interface PlayerGameDocument extends Document {
   party: any;
   /** État du système de quêtes (sortie de `QuestSystem.toSerialized()`). */
   questSystem: any;
-  /** Ville courante (id du hub). */
+  /** Ville courante (id du hub) — le hub de base de l'équipe. */
   currentHubId: string;
+  /**
+   * Nœud de **position** de l'équipe (id d'un hub OU d'un donjon). C'est ce
+   * que suit le cercle blanc de la mappemonde. Quand l'équipe est en ville,
+   * `currentNodeId === currentHubId` ; dans une zone, c'est l'id du donjon.
+   */
+  currentNodeId: string;
   /** Date de sauvegarde. */
   savedAt: Date;
 }
@@ -34,6 +40,7 @@ const PlayerGameSchema = new Schema<PlayerGameDocument>(
     party: { type: Schema.Types.Mixed, required: true },
     questSystem: { type: Schema.Types.Mixed, required: true },
     currentHubId: { type: String, default: '' },
+    currentNodeId: { type: String, default: '' },
     savedAt: { type: Date, default: Date.now },
   },
   { timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' } }

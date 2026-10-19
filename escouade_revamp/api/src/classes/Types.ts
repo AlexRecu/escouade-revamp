@@ -142,4 +142,6 @@ export type HubLayout = {
     startTile: Position;
     buildings: HubBuilding[];
     exit: { row: number; col: number; label: string };
+    /** Case de la caravane (en diagonale de la sortie) — ouvre le panneau de voyage. */
+    caravan?: { row: number; col: number };
 };

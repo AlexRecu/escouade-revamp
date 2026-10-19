@@ -11,8 +11,10 @@ type Props = {
   worldLevel: number;
   /** Monstres déjà rencontrés (bestiaire) — les autres s'affichent « ? ». */
   seenMonsters: Set<string>;
-  /** Hub courant (position de l'équipe) — le cercle blanc suit cette position. */
+  /** Hub de base (services de ville). */
   currentHubId: string | null;
+  /** Nœud de position (hub OU donjon) — le cercle blanc suit cette position. */
+  currentNodeId: string | null;
   onEnterHub: (hub: Hub) => void;
   /** Entre dans un donjon (exploration) → régénère la map + mode déplacement. */
   onEnterDungeon: (dungeonId: string) => void;
@@ -32,12 +34,37 @@ export default function WorldTree({
   worldLevel,
   seenMonsters,
   currentHubId,
+  currentNodeId,
   onEnterHub,
   onEnterDungeon,
 }: Props) {
   const [debugMode, setDebugMode] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const rootId = world.hubs.find((h) => h.name === 'Auberge du matin')?.id ?? world.hubs[0]?.id;
+
+  // L'équipe est-elle en ville (position = hub de base) ?
+  const inCity = currentNodeId !== null && currentNodeId === currentHubId;
+  // Zones accessibles depuis le hub de base (arêtes orientées du monde).
+  const adjacentZoneIds = useMemo(() => {
+    const set = new Set<string>();
+    for (const to of world.edges?.[currentHubId ?? ''] ?? []) set.add(to);
+    return set;
+  }, [world, currentHubId]);
+
+  /**
+   * Un nœud est « verrouillé » si on ne peut pas s'y rendre depuis la position
+   * actuelle : les autres villes ne sont pas accessibles (pas de téléportation),
+   * et seules les zones adjacentes au hub de base sont entrables. En pleine
+   * exploration, tout le reste est verrouillé.
+   */
+  const isLocked = (node: TreeNode): boolean => {
+    if (node.id === currentNodeId) return false; // on est déjà ici
+    if (inCity) {
+      if (node.kind === 'hub') return true; // autres villes
+      return !adjacentZoneIds.has(node.id); // zones non adjacentes
+    }
+    return true; // en exploration : tout le reste est verrouillé
+  };
 
   const layout = useMemo(() => computeLayout(world, rootId!), [world, rootId]);
   const hubById = useMemo(() => new Map(world.hubs.map((h) => [h.id, h])), [world]);
@@ -158,7 +185,8 @@ export default function WorldTree({
               <Node
                 key={n.id}
                 node={n}
-                isCurrent={n.id === currentHubId}
+                isCurrent={n.id === currentNodeId}
+                isLocked={isLocked(n)}
                 isSelected={n.id === selectedId}
                 showLevel={n.kind === 'dungeon'}
                 effectiveLevel={n.kind === 'dungeon' ? effectiveLevel(n.id) : undefined}
@@ -173,6 +201,7 @@ export default function WorldTree({
             selectedNode.kind === 'hub' ? (
               <HubPanel
                 hub={hubById.get(selectedNode.id)!}
+                locked={isLocked(selectedNode)}
                 onEnter={() => {
                   const hub = hubById.get(selectedNode.id);
                   if (hub) onEnterHub(hub);
@@ -184,6 +213,7 @@ export default function WorldTree({
                 level={effectiveLevel(selectedNode.id)}
                 completed={completedZones.has(selectedNode.id)}
                 seenMonsters={seenMonsters}
+                locked={isLocked(selectedNode)}
                 onEnter={() => onEnterDungeon(selectedNode.id)}
               />
             )
@@ -201,7 +231,15 @@ export default function WorldTree({
 
 // ── Panneau ville ──────────────────────────────────────────────────────────
 
-function HubPanel({ hub, onEnter }: { hub: Hub; onEnter: () => void }) {
+function HubPanel({
+  hub,
+  locked,
+  onEnter,
+}: {
+  hub: Hub;
+  locked: boolean;
+  onEnter: () => void;
+}) {
   return (
     <div className="node-panel">
       <h3 className="node-panel-title">🏰 {hub.name}</h3>
@@ -212,7 +250,12 @@ function HubPanel({ hub, onEnter }: { hub: Hub; onEnter: () => void }) {
         {hub.services.church && <span className="svc">⛪ Sanctuaire</span>}
         {hub.services.questBoard && <span className="svc">📜 Quêtes</span>}
       </div>
-      <button className="node-panel-btn" onClick={onEnter}>
+      {locked && (
+        <p className="node-panel-locked">
+          🔒 Ville inaccessible : traversez une zone ou voyagez en caravane.
+        </p>
+      )}
+      <button className="node-panel-btn" onClick={onEnter} disabled={locked}>
         Entrer en ville
       </button>
     </div>
@@ -226,12 +269,14 @@ function DungeonPanel({
   level,
   completed,
   seenMonsters,
+  locked,
   onEnter,
 }: {
   dungeon: Dungeon;
   level: number;
   completed: boolean;
   seenMonsters: Set<string>;
+  locked: boolean;
   onEnter: () => void;
 }) {
   // Le nombre d'étages augmente avec la difficulté : 2 + niveau.
@@ -273,7 +318,12 @@ function DungeonPanel({
         La map est régénérée à chaque entrée. Déplacez-vous aux flèches (ou
         ZQSD) pour atteindre la sortie.
       </p>
-      <button className="node-panel-btn" onClick={onEnter}>
+      {locked && (
+        <p className="node-panel-locked">
+          🔒 Zone non accessible depuis votre position actuelle.
+        </p>
+      )}
+      <button className="node-panel-btn" onClick={onEnter} disabled={locked}>
         {completed ? 'Re-entrer dans le donjon' : 'Entrer dans le donjon'}
       </button>
     </div>
@@ -283,14 +333,17 @@ function DungeonPanel({
 function Node({
   node,
   isCurrent,
+  isLocked,
   isSelected,
   showLevel,
   effectiveLevel,
   onClick,
 }: {
   node: TreeNode;
-  /** Hub courant (position de l'équipe) → cercle blanc plein. */
+  /** Nœud de position de l'équipe → cercle blanc plein. */
   isCurrent: boolean;
+  /** Nœud inaccessible depuis la position actuelle → cadenas + opacité. */
+  isLocked: boolean;
   isSelected: boolean;
   showLevel: boolean;
   effectiveLevel?: number;
@@ -308,10 +361,10 @@ function Node({
 
   return (
     <g
-      className="worldtree-node"
+      className={`worldtree-node${isLocked ? ' locked' : ''}`}
       transform={`translate(${node.x}, ${node.y})`}
       onClick={onClick}
-      style={{ cursor: 'pointer' }}
+      style={{ cursor: 'pointer', opacity: isLocked ? 0.45 : 1 }}
     >
       {isSelected && (
         <circle r={r + 5} fill="none" stroke="#fff" strokeWidth={2} strokeDasharray="4 3" />
@@ -324,6 +377,9 @@ function Node({
       />
       {isHub && <text className="node-icon" y={5} textAnchor="middle">🏰</text>}
       {!isHub && <text className="node-icon" y={5} textAnchor="middle">⚔️</text>}
+      {isLocked && !isCurrent && (
+        <text className="node-lock" x={r - 4} y={-r + 4} textAnchor="middle">🔒</text>
+      )}
       <text className="node-label" y={r + 14} textAnchor="middle">
         {label}
       </text>

@@ -22,11 +22,19 @@ export class HubState {
     waiting: boolean = false;
     /** Nombre de nuits passées à l'auberge (pour le coût). */
     nightsStayed: number = 0;
+    /**
+     * Nœud de **position** de l'équipe (id d'un hub OU d'un donjon). C'est ce
+     * que suit le cercle blanc de la mappemonde. Quand l'équipe est en ville,
+     * `currentNodeId === hub.id` ; quand elle est dans une zone d'exploration,
+     * c'est l'id du donjon. (Défaut : le hub courant.)
+     */
+    currentNodeId: string;
 
-    constructor(hub: Hub, party: Party, questSystem?: QuestSystem) {
+    constructor(hub: Hub, party: Party, questSystem?: QuestSystem, currentNodeId?: string) {
         this.hub = hub;
         this.party = party;
         this.questSystem = questSystem ?? new QuestSystem();
+        this.currentNodeId = currentNodeId ?? hub.id;
     }
 
     /** La ville propose-t-elle ce service ? */

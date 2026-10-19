@@ -8,6 +8,8 @@ type Props = {
   activeBuilding: string | null;
   state: GameState | null;
   actions: GameActions;
+  /** Destinations de caravane (villes révélées au-delà d'une zone adjacente). */
+  caravanDestinations: { id: string; name: string }[];
   onClose: () => void;
 };
 
@@ -18,7 +20,7 @@ type Props = {
  * (nuit), sanctuaire (ranimer) ou tableau des quêtes (accepter). Chaque
  * action passe par le socket (voir `useGame`).
  */
-export default function CityPanels({ activeBuilding, state, actions, onClose }: Props) {
+export default function CityPanels({ activeBuilding, state, actions, caravanDestinations, onClose }: Props) {
   if (!activeBuilding) {
     return (
       <p style={{ fontSize: 13, color: 'var(--text-dim)' }}>
@@ -39,6 +41,8 @@ export default function CityPanels({ activeBuilding, state, actions, onClose }: 
       return <SanctuaryPanel state={state} actions={actions} onClose={onClose} />;
     case 'questBoard':
       return <QuestPanel state={state} actions={actions} onClose={onClose} />;
+    case 'caravan':
+      return <CaravanPanel state={state} actions={actions} destinations={caravanDestinations} />;
     default:
       return (
         <div>
@@ -47,6 +51,53 @@ export default function CityPanels({ activeBuilding, state, actions, onClose }: 
         </div>
       );
   }
+}
+
+// ── Caravane ───────────────────────────────────────────────────────────────
+
+/**
+ * Panneau caravane : voyage vers une ville au-delà d'une zone de transition.
+ * Les destinations sont filtrées par le brouillard de guerre (villes révélées)
+ * — tant qu'aucune zone n'est explorée, il n'y a pas de destination.
+ */
+function CaravanPanel({
+  state,
+  actions,
+  destinations,
+}: {
+  state: GameState;
+  actions: GameActions;
+  destinations: { id: string; name: string }[];
+}) {
+  return (
+    <div>
+      <p className="hint">
+        Voyagez vers une ville au-delà d'une zone de transition. Coût : 20 or —
+        risque de gobelins ou de brigands en route.
+      </p>
+      {destinations.length === 0 ? (
+        <p style={{ fontSize: 13, color: 'var(--text-dim)' }}>
+          Aucune destination connue pour l'instant. Explorez une zone pour
+          révéler les villes au-delà.
+        </p>
+      ) : (
+        destinations.map((dest) => {
+          const canAfford = state.party.gold >= 20;
+          return (
+            <button
+              key={dest.id}
+              className="caravan-btn"
+              disabled={!canAfford}
+              onClick={() => actions.caravan(dest.id)}
+            >
+              🏰 {dest.name}
+              <span className="caravan-cost">20 or</span>
+            </button>
+          );
+        })
+      )}
+    </div>
+  );
 }
 
 // ── Boutique ───────────────────────────────────────────────────────────────

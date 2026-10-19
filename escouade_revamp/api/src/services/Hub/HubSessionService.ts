@@ -114,7 +114,14 @@ export class HubSessionService {
     const hub = await WorldService.getHubById(game.currentHubId);
     if (!hub) throw new Error(`Hub introuvable : ${game.currentHubId}`);
 
-    const session = new HubState(hub, game.party, game.questSystem);
+    // Nœud de position : si c'était une zone (exploration abandonnée, ex.
+    // redémarrage), on ramène l'équipe au hub courant.
+    let currentNodeId = game.currentNodeId;
+    if (!(await WorldService.getHubById(currentNodeId))) {
+      currentNodeId = game.currentHubId;
+    }
+
+    const session = new HubState(hub, game.party, game.questSystem, currentNodeId);
     this.sessions.set(playerId, session);
     return this.serialize(session);
   }
@@ -255,9 +262,37 @@ export class HubSessionService {
     if (!session) throw new Error("Aucune session active.");
     const hub = await WorldService.getHubById(hubId);
     if (!hub) throw new Error(`Hub introuvable : ${hubId}`);
+    // **Blocage des déplacements** : on ne peut « entrer » que dans la ville où
+    // l'équipe se trouve (pas de téléportation).
+    if (hub.id !== session.hub.id) {
+      throw new Error("Vous ne pouvez pas vous téléporter : traversez une zone ou voyagez en caravane.");
+    }
     session.hub = hub;
+    session.currentNodeId = hub.id;
     await this.persist(playerId, session);
     return this.serialize(session);
+  }
+
+  /**
+   * **Caravane** (solo) : voyage vers une ville au-delà d'une zone de
+   * transition (sans l'explorer). Coût 20 or + risque.
+   */
+  static async takeCaravan(playerId: string, destHubId: string): Promise<{ logs: string[]; state: any }> {
+    const session = this.require(playerId);
+    const dests = await WorldService.getCaravanDestinations(session.hub.id);
+    const dest = dests.find((h) => h.id === destHubId);
+    if (!dest) throw new Error("Cette ville n'est pas accessible en caravane depuis ici.");
+    const payer = session.party.members[0];
+    if (!payer) throw new Error("Aucun personnage pour payer la caravane.");
+    const roll = Math.floor(Math.random() * 6) + 1;
+    const result = HubService.takeCaravan(session, payer, destHubId, roll);
+    if (!result.success) {
+      return { logs: result.logs, state: this.serialize(session) };
+    }
+    session.hub = dest;
+    session.currentNodeId = dest.id;
+    await this.persist(playerId, session);
+    return { logs: result.logs, state: this.serialize(session) };
   }
 
   /**
@@ -303,6 +338,11 @@ export class HubSessionService {
     if (game) {
       session.party = game.party;
       session.questSystem = game.questSystem;
+      // Après une exploration, le hub courant a pu changer (transition) → on
+      // recharge le hub + le nœud de position depuis la base.
+      const hub = await WorldService.getHubById(game.currentHubId);
+      if (hub) session.hub = hub;
+      session.currentNodeId = game.currentNodeId;
     }
     return this.serialize(session);
   }
@@ -316,7 +356,7 @@ export class HubSessionService {
   }
 
   private static async persist(playerId: string, session: HubState): Promise<void> {
-    await PartyService.saveGame(playerId, session.party, session.questSystem, session.hub.id);
+    await PartyService.saveGame(playerId, session.party, session.questSystem, session.hub.id, session.currentNodeId);
   }
 
   /** Noms des démons déjà recrutés (pactes du Démoniste). */

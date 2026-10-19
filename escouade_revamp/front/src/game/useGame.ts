@@ -15,6 +15,7 @@ import {
   hubAcceptQuest,
   hubCompleteZone,
   hubChangeHub,
+  hubCaravan,
   hubLeave,
   explorationEnter,
   explorationMove,
@@ -48,6 +49,7 @@ export type GameActions = {
   acceptQuest: (questId: string) => void;
   completeZone: (zoneId: string) => void;
   changeHub: (hubId: string) => void;
+  caravan: (destHubId: string) => void;
   leave: () => void;
   // Exploration des donjons.
   explorationEnter: (dungeonId: string) => void;
@@ -212,6 +214,7 @@ export function useGame(token: string | null): UseGame {
     acceptQuest: hubAcceptQuest,
     completeZone: hubCompleteZone,
     changeHub: hubChangeHub,
+    caravan: hubCaravan,
     leave: hubLeave,
     explorationEnter,
     explorationMove,

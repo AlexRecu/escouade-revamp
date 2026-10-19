@@ -16,6 +16,8 @@
   --building-inn: #d67f3f;
   --building-church: #7c5cff;
   --building-quest: #45c98a;
+  --building-caravan: #b08968;
+  --fence: #4a3b2a;
   --exit: #45c9c9;
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   color-scheme: dark;
@@ -333,6 +335,13 @@ button:disabled {
 .tile.building.inn { background: var(--building-inn); }
 .tile.building.church { background: var(--building-church); }
 .tile.building.questBoard { background: var(--building-quest); }
+.tile.building.caravan { background: var(--building-caravan); }
+/* Clôture : barrière autour du périmètre de la ville. */
+.tile.fence {
+  background: var(--fence);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.4);
+}
+/* Sortie : portail marqué (halo + liseré) pour bien la repérer. */
 .tile.exit {
   background: var(--exit);
   display: flex;
@@ -340,6 +349,12 @@ button:disabled {
   justify-content: center;
   font-size: 18px;
   cursor: pointer;
+  box-shadow: 0 0 10px rgba(69, 201, 201, 0.8), inset 0 0 0 2px rgba(255, 255, 255, 0.5);
+  animation: exit-pulse 1.8s ease-in-out infinite;
+}
+@keyframes exit-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(69, 201, 201, 0.6), inset 0 0 0 2px rgba(255, 255, 255, 0.4); }
+  50% { box-shadow: 0 0 16px rgba(69, 201, 201, 1), inset 0 0 0 2px rgba(255, 255, 255, 0.7); }
 }
 .tile.path {
   box-shadow: inset 0 0 0 2px var(--accent-2);
@@ -753,6 +768,49 @@ button:disabled {
   cursor: pointer;
 }
 .node-panel-btn:disabled { opacity: 0.5; cursor: default; }
+/* Message « verrouillé » dans les panneaux ville / zone. */
+.node-panel-locked {
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  font-size: 12px;
+  color: #e0a94a;
+  background: rgba(224, 169, 74, 0.1);
+  border: 1px solid rgba(224, 169, 74, 0.3);
+  border-radius: 6px;
+}
+/* Nœud verrouillé de la mappemonde (cadenas + opacité gérés en inline). */
+.node-lock {
+  font-size: 12px;
+  user-select: none;
+}
+/* Panneau caravane (case dédiée dans la ville). */
+.caravan-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 6px;
+  padding: 9px 12px;
+  background: rgba(176, 137, 104, 0.15);
+  color: var(--text);
+  border: 1px solid rgba(176, 137, 104, 0.5);
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.caravan-btn:hover:not(:disabled) {
+  background: rgba(176, 137, 104, 0.3);
+}
+.caravan-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.caravan-cost {
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 700;
+}
 .monster-list {
   list-style: none;
   margin: 0 0 10px;

@@ -46,8 +46,15 @@ export interface PartyRoomDocument extends Document {
   party: any;
   /** État du système de quêtes (sortie de `QuestSystem.toSerialized()`). */
   questSystem: any;
-  /** Ville courante (id du hub). */
+  /** Ville courante (id du hub) — le hub de base de l'équipe. */
   currentHubId: string;
+  /**
+   * Nœud de **position** de l'équipe (id d'un hub OU d'un donjon). C'est ce
+   * que suit le cercle blanc de la mappemonde. Quand l'équipe est en ville,
+   * `currentNodeId === currentHubId` ; quand elle est dans une zone
+   * d'exploration, `currentNodeId` est l'id du donjon.
+   */
+  currentNodeId: string;
   /** Visible dans le lobby (rejoignable). */
   isPublic: boolean;
   /** Nombre max de joueurs (hors spectateurs). */
@@ -75,6 +82,7 @@ const PartyRoomSchema = new Schema<PartyRoomDocument>(
     party: { type: Schema.Types.Mixed, required: true },
     questSystem: { type: Schema.Types.Mixed, required: true },
     currentHubId: { type: String, default: '' },
+    currentNodeId: { type: String, default: '' },
     isPublic: { type: Boolean, default: true },
     maxPlayers: { type: Number, default: 4 },
     savedAt: { type: Date, default: Date.now },

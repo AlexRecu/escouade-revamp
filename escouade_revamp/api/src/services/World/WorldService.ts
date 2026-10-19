@@ -97,4 +97,65 @@ export class WorldService {
         const node = world.nodes.find((n) => n.id === hubId);
         return node instanceof Hub ? node : null;
     }
+
+    /** Récupère un donjon par son id (ou null). */
+    static async getDungeonById(dungeonId: string): Promise<Dungeon | null> {
+        const world = await WorldService.getWorld();
+        const node = world.nodes.find((n) => n.id === dungeonId);
+        return node instanceof Dungeon ? node : null;
+    }
+
+    /**
+     * Nœuds **adjacents** à un nœud du monde (hubs + donjons connectés par une
+     * arête). Utilisé pour bloquer les déplacements : on ne peut entrer que
+     * dans les nœuds adjacents à la position courante.
+     */
+    static async getAdjacentNodeIds(nodeId: string): Promise<string[]> {
+        const world = await WorldService.getWorld();
+        return world.edges.get(nodeId) ?? [];
+    }
+
+    /**
+     * Le nœud `targetId` est-il **adjacent** au nœud `fromId` ? (test de
+     * connectivité pour autoriser un déplacement).
+     */
+    static async isAdjacent(fromId: string, targetId: string): Promise<boolean> {
+        const world = await WorldService.getWorld();
+        return (world.edges.get(fromId) ?? []).includes(targetId);
+    }
+
+    /**
+     * Destinations de **caravane** depuis un hub : les villes au-delà des zones
+     * de transition adjacentes. Un hub est relié à d'autres villes via des zones
+     * (`hub → zone → hub`) ; la caravane permet de traverser ces zones sans les
+     * explorer (coût + risque). Renvoie les hubs atteignables.
+     */
+    static async getCaravanDestinations(hubId: string): Promise<Hub[]> {
+        const world = await WorldService.getWorld();
+        const zones = world.edges.get(hubId) ?? [];
+        const dests: Hub[] = [];
+        for (const zoneId of zones) {
+            const zone = world.nodes.find((n) => n.id === zoneId);
+            if (!(zone instanceof Dungeon)) continue;
+            const beyond = await WorldService.getHubBeyondDungeon(zoneId, hubId);
+            if (beyond) dests.push(beyond);
+        }
+        return dests;
+    }
+
+    /**
+     * Le hub **au-delà** d'un donjon (pour une zone de transition). Un donjon
+     * de transition relie 2 hubs : celui d'où l'on vient (`fromHubId`) et celui
+     * au-delà. Renvoie le hub au-delà (ou null si impasse / pas de 2e hub).
+     */
+    static async getHubBeyondDungeon(dungeonId: string, fromHubId: string): Promise<Hub | null> {
+        const world = await WorldService.getWorld();
+        const targets = world.edges.get(dungeonId) ?? [];
+        for (const t of targets) {
+            if (t === fromHubId) continue; // on ignore le hub d'où l'on vient
+            const node = world.nodes.find((n) => n.id === t);
+            if (node instanceof Hub) return node;
+        }
+        return null;
+    }
 }

@@ -4,7 +4,7 @@
       "name": "Auberge du matin",
       "size": { "rows": 14, "cols": 14 },
       "tileMap": [
-        [false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+        [false, false, false, false, false, false, false, true, false, false, false, false, false, false],
         [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
         [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
         [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
@@ -21,12 +21,13 @@
       ],
       "startTile": { "row": 7, "col": 7 },
       "buildings": [
-        { "service": "shop", "row": 3, "col": 3 },
-        { "service": "inn", "row": 3, "col": 10 },
+        { "service": "shop", "row": 3, "col": 5 },
+        { "service": "inn", "row": 5, "col": 10 },
         { "service": "church", "row": 10, "col": 3 },
-        { "service": "questBoard", "row": 10, "col": 10 }
+        { "service": "questBoard", "row": 11, "col": 9 }
       ],
-      "exit": { "row": 7, "col": 12, "label": "Sortie vers les donjons" }
+      "exit": { "row": 0, "col": 7, "label": "Sortie vers les donjons" },
+      "caravan": { "row": 1, "col": 8 }
     },
     {
       "name": "Qual-Mastrech",
@@ -39,7 +40,7 @@
         [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
         [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
         [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
-        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [true, true, true, true, true, true, true, true, true, true, true, true, true, false],
         [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
         [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
         [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
@@ -49,12 +50,13 @@
       ],
       "startTile": { "row": 7, "col": 7 },
       "buildings": [
-        { "service": "shop", "row": 3, "col": 10 },
-        { "service": "inn", "row": 3, "col": 3 },
+        { "service": "shop", "row": 4, "col": 9 },
+        { "service": "inn", "row": 3, "col": 4 },
         { "service": "church", "row": 10, "col": 10 },
-        { "service": "questBoard", "row": 10, "col": 3 }
+        { "service": "questBoard", "row": 11, "col": 5 }
       ],
-      "exit": { "row": 7, "col": 1, "label": "Sortie vers les donjons" }
+      "exit": { "row": 7, "col": 0, "label": "Sortie vers les donjons" },
+      "caravan": { "row": 8, "col": 1 }
     },
     {
       "name": "Qual-Chen",
@@ -73,16 +75,17 @@
         [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
         [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
         [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
-        [false, false, false, false, false, false, false, false, false, false, false, false, false, false]
+        [false, false, false, false, false, false, false, true, false, false, false, false, false, false]
       ],
       "startTile": { "row": 7, "col": 7 },
       "buildings": [
-        { "service": "shop", "row": 3, "col": 3 },
-        { "service": "inn", "row": 10, "col": 3 },
-        { "service": "church", "row": 3, "col": 10 },
-        { "service": "questBoard", "row": 10, "col": 10 }
+        { "service": "shop", "row": 4, "col": 4 },
+        { "service": "inn", "row": 10, "col": 10 },
+        { "service": "church", "row": 3, "col": 9 },
+        { "service": "questBoard", "row": 11, "col": 4 }
       ],
-      "exit": { "row": 1, "col": 7, "label": "Sortie vers les donjons" }
+      "exit": { "row": 13, "col": 7, "label": "Sortie vers les donjons" },
+      "caravan": { "row": 12, "col": 6 }
     },
     {
       "name": "Qual-Far",
@@ -95,7 +98,7 @@
         [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
         [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
         [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
-        [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
+        [false, true, true, true, true, true, true, true, true, true, true, true, true, true],
         [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
         [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
         [false, true, true, true, true, true, true, true, true, true, true, true, true, false],
@@ -105,12 +108,13 @@
       ],
       "startTile": { "row": 7, "col": 7 },
       "buildings": [
-        { "service": "shop", "row": 10, "col": 3 },
-        { "service": "inn", "row": 10, "col": 10 },
-        { "service": "church", "row": 3, "col": 3 },
-        { "service": "questBoard", "row": 3, "col": 10 }
+        { "service": "shop", "row": 10, "col": 4 },
+        { "service": "inn", "row": 4, "col": 10 },
+        { "service": "church", "row": 11, "col": 9 },
+        { "service": "questBoard", "row": 3, "col": 5 }
       ],
-      "exit": { "row": 12, "col": 7, "label": "Sortie vers les donjons" }
+      "exit": { "row": 7, "col": 13, "label": "Sortie vers les donjons" },
+      "caravan": { "row": 6, "col": 12 }
     }
   ]
 }

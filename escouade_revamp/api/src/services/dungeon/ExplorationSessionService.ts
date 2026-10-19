@@ -60,9 +60,18 @@ export class ExplorationSessionService {
   static async enterDungeon(playerId: string, dungeonId: string): Promise<any> {
     const game = await PartyService.loadGame(playerId);
     if (!game) throw new Error("Aucune partie trouvée. Rejoignez d'abord une ville.");
+    // **Blocage des déplacements** : la zone doit être adjacente au hub courant
+    // (pas de téléportation d'un bout à l'autre de la carte).
+    if (!(await WorldService.isAdjacent(game.currentHubId, dungeonId))) {
+      throw new Error("Cette zone n'est pas accessible depuis votre position actuelle.");
+    }
     const session = await this.buildSession(game.party, game.questSystem, dungeonId);
     session.storage = { kind: "player", playerId };
+    session.hubId = game.currentHubId;
+    session.currentNodeId = dungeonId; // la position de l'équipe devient la zone
     this.sessions.set(playerId, session);
+    // Persiste la position (nœud = la zone) pour que le cercle blanc la suive.
+    await PartyService.saveGame(playerId, game.party, game.questSystem, game.currentHubId, dungeonId);
     return this.serialize(session);
   }
 
@@ -75,10 +84,18 @@ export class ExplorationSessionService {
    */
   static async enterDungeonRoom(roomId: string, dungeonId: string): Promise<any> {
     const game = await PartyRoomService.loadParty(roomId);
+    // **Blocage des déplacements** : la zone doit être adjacente au hub courant
+    // (pas de téléportation d'un bout à l'autre de la carte).
+    if (!(await WorldService.isAdjacent(game.currentHubId, dungeonId))) {
+      throw new Error("Cette zone n'est pas accessible depuis votre position actuelle.");
+    }
     const session = await this.buildSession(game.party, game.questSystem, dungeonId);
     session.storage = { kind: "room", roomId };
     session.hubId = game.currentHubId;
+    session.currentNodeId = dungeonId; // la position de l'équipe devient la zone
     this.sessions.set(roomId, session);
+    // Persiste la position (nœud = la zone) pour que le cercle blanc la suive.
+    await PartyRoomService.setCurrentNodeId(roomId, dungeonId);
     return this.serialize(session);
   }
 
@@ -184,16 +201,43 @@ export class ExplorationSessionService {
       // Porte de sortie (dernier étage) → donjon terminé + **auto-sortie**.
       session.completed = true;
       session.party.completeZone(session.dungeon.id);
-      await this.persist(session);
+      // **Position** : une zone de transition mène au hub au-delà ; une impasse
+      // ramène l'équipe au hub de départ.
+      const exit = await this.resolveExitPosition(session);
+      await this.persist(session, exit.nodeId);
       this.sessions.delete(sessionKey);
-      return {
-        logs: ["Vous avez atteint la sortie du donjon ! Zone terminée."],
-        state: this.serialize(session),
-        exited: true,
-      };
+      const logs = ["Vous avez atteint la sortie du donjon ! Zone terminée."];
+      if (exit.log) logs.push(exit.log);
+      return { logs, state: this.serialize(session), exited: true };
     }
 
     return { state: this.serialize(session) };
+  }
+
+  /**
+   * Détermine le **nœud de position** après la sortie d'une zone :
+   *  - **transition** (le donjon relie 2 hubs) → le hub au-delà (l'équipe
+   *    avance sur la carte).
+   *  - **impasse** (le donjon n'a qu'un seul hub) → le hub de départ (l'équipe
+   *    revient d'où elle est partie).
+   *
+   * Met à jour `session.hubId` (le hub de base) et `session.currentNodeId`
+   * (le nœud de position) en conséquence.
+   */
+  private static async resolveExitPosition(
+    session: DungeonSession
+  ): Promise<{ nodeId: string; log: string | null }> {
+    const fromHubId = session.hubId ?? "";
+    const beyond = await WorldService.getHubBeyondDungeon(session.dungeon.id, fromHubId);
+    if (beyond) {
+      // Transition : l'équipe arrive dans la ville au-delà.
+      session.hubId = beyond.id;
+      session.currentNodeId = beyond.id;
+      return { nodeId: beyond.id, log: `Vous arrivez à ${beyond.name}.` };
+    }
+    // Impasse : retour au hub de départ.
+    session.currentNodeId = fromHubId;
+    return { nodeId: fromHubId, log: "Vous revenez au point de départ." };
   }
 
   /**
@@ -217,9 +261,10 @@ export class ExplorationSessionService {
     const session = this.sessions.get(sessionKey);
     if (!session) return { logs: ["Vous n'êtes pas dans un donjon."] };
 
-    // Persiste l'équipe (la position dans la zone n'a pas d'intérêt : chaque
-    // entrée régénère le donjon).
-    await this.persist(session);
+    // Sortie volontaire : l'équipe revient au hub de départ (la position dans
+    // la zone n'a pas d'intérêt : chaque entrée régénère le donjon).
+    session.currentNodeId = session.hubId ?? "";
+    await this.persist(session, session.currentNodeId);
     this.sessions.delete(sessionKey);
     return { logs: ["Vous quittez le donjon."] };
   }
@@ -238,14 +283,19 @@ export class ExplorationSessionService {
     return session;
   }
 
-  /** Persiste l'équipe selon le backend (solo → PartyService, room → PartyRoomService). */
-  private static async persist(session: DungeonSession): Promise<void> {
+  /**
+   * Persiste l'équipe selon le backend (solo → PartyService, room →
+   * PartyRoomService). `currentNodeId` = le nœud de position (défaut : le hub
+   * de la session).
+   */
+  private static async persist(session: DungeonSession, currentNodeId?: string): Promise<void> {
+    const nodeId = currentNodeId ?? session.currentNodeId ?? session.hubId ?? "";
     if (session.storage.kind === "room") {
-      await PartyRoomService.saveParty(session.storage.roomId, session.party, session.questSystem, session.hubId ?? "");
+      await PartyRoomService.saveParty(session.storage.roomId, session.party, session.questSystem, session.hubId ?? "", nodeId);
     } else {
       const game = await PartyService.loadGame(session.storage.playerId);
       if (game) {
-        await PartyService.saveGame(session.storage.playerId, session.party, session.questSystem, game.currentHubId);
+        await PartyService.saveGame(session.storage.playerId, session.party, session.questSystem, session.hubId ?? game.currentHubId, nodeId);
       }
     }
   }
@@ -324,6 +374,8 @@ interface DungeonSession {
   completed: boolean;
   /** Backend de persistance (solo ou room). */
   storage: DungeonStorage;
-  /** Hub courant (pour la persistance en mode room). */
+  /** Hub d'origine (celui d'où l'on est entré dans la zone). */
   hubId?: string;
+  /** Nœud de position courant (l'id de la zone explorée). */
+  currentNodeId?: string;
 }

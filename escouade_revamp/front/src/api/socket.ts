@@ -40,6 +40,7 @@ export const hubSanctuary = (targetId: string): void => { socket?.emit('hub:sanc
 export const hubQuestBoard = (): void => { socket?.emit('hub:questBoard', {}); };
 export const hubAcceptQuest = (questId: string): void => { socket?.emit('hub:acceptQuest', { questId }); };
 export const hubChangeHub = (hubId: string): void => { socket?.emit('hub:changeHub', { hubId }); };
+export const hubCaravan = (destHubId: string): void => { socket?.emit('hub:caravan', { destHubId }); };
 export const hubCompleteZone = (zoneId: string): void => { socket?.emit('hub:completeZone', { zoneId }); };
 export const hubLeave = (): void => { socket?.emit('hub:leave', {}); };
 

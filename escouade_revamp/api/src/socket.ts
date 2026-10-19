@@ -126,6 +126,13 @@ export const initializeSocket = (io: Server) => {
         return { state: await HubSessionService.changeHub(playerId, data.hubId) };
       }, currentRoomId() !== null)
     );
+    // `hub:caravan` — voyage vers une ville au-delà d'une zone de transition
+    // (coût 20 or + risque gobelins/brûleur). Diffusé à toute la room.
+    socket.on('hub:caravan', (data: { destHubId: string }) => {
+      const roomId = currentRoomId();
+      if (roomId) return reply(() => PartyRoomService.takeCaravan(roomId, data.destHubId), true);
+      return reply(() => HubSessionService.takeCaravan(playerId, data.destHubId));
+    });
     socket.on('hub:completeZone', (data: { zoneId: string }) =>
       reply(async () => {
         const roomId = currentRoomId();

@@ -33,6 +33,7 @@ export class PartyService {
     party: Party;
     questSystem: QuestSystem;
     currentHubId: string;
+    currentNodeId: string;
   }> {
     const game = await this.createStarterGame();
     await this.model.findOneAndUpdate(
@@ -42,6 +43,7 @@ export class PartyService {
           party: game.party.toSerialized(),
           questSystem: game.questSystem.toSerialized(),
           currentHubId: game.currentHubId,
+          currentNodeId: game.currentNodeId,
           savedAt: new Date(),
         },
       },
@@ -65,6 +67,7 @@ export class PartyService {
     party: Party;
     questSystem: QuestSystem;
     currentHubId: string;
+    currentNodeId: string;
   }> {
     const party = new Party(IdGenerator.generate("Party"), [], { row: 7, col: 7 });
     party.gold = 0;
@@ -78,7 +81,8 @@ export class PartyService {
     );
     const currentHubId = root?.id ?? "Hub_Auberge du matin";
 
-    return { party, questSystem, currentHubId };
+    // On démarre en ville : le nœud de position = le hub de départ.
+    return { party, questSystem, currentHubId, currentNodeId: currentHubId };
   }
 
   /**
@@ -94,6 +98,7 @@ export class PartyService {
     party: Party;
     questSystem: QuestSystem;
     currentHubId: string;
+    currentNodeId: string;
   }> {
     // Équipe de départ : un Guerrier, un Mage Blanc, un Voleur.
     const members: Character[] = [
@@ -119,7 +124,8 @@ export class PartyService {
     );
     const currentHubId = root?.id ?? "Hub_Auberge du matin";
 
-    return { party, questSystem, currentHubId };
+    // On démarre en ville : le nœud de position = le hub de départ.
+    return { party, questSystem, currentHubId, currentNodeId: currentHubId };
   }
 
   /**
@@ -130,10 +136,14 @@ export class PartyService {
     party: Party;
     questSystem: QuestSystem;
     currentHubId: string;
+    currentNodeId: string;
   } | null> {
     const doc = await this.model.findOne({ player: playerId });
     if (!doc) return null;
-    return this.deserialize(doc.party, doc.questSystem, doc.currentHubId);
+    // Fallback : les sauvegardes antérieures n'ont pas `currentNodeId` → on
+    // retombe sur le hub courant (position en ville).
+    const currentNodeId = doc.currentNodeId || doc.currentHubId;
+    return this.deserialize(doc.party, doc.questSystem, doc.currentHubId, currentNodeId);
   }
 
   /**
@@ -143,7 +153,8 @@ export class PartyService {
     playerId: string,
     party: Party,
     questSystem: QuestSystem,
-    currentHubId: string
+    currentHubId: string,
+    currentNodeId?: string
   ): Promise<void> {
     await this.model.findOneAndUpdate(
       { player: playerId },
@@ -152,6 +163,8 @@ export class PartyService {
           party: party.toSerialized(),
           questSystem: questSystem.toSerialized(),
           currentHubId,
+          // Nœud de position (défaut : le hub courant si non précisé).
+          currentNodeId: currentNodeId ?? currentHubId,
           savedAt: new Date(),
         },
       },
@@ -185,7 +198,7 @@ export class PartyService {
    * Public : réutilisé par `PartyRoomService` (multi-joueurs) pour reconstruire
    * l'équipe + les quêtes d'une partie partagée depuis son état persisté.
    */
-  static deserialize(partyData: any, questData: any, currentHubId: string) {
+  static deserialize(partyData: any, questData: any, currentHubId: string, currentNodeId?: string) {
     const members: Character[] = (partyData.members ?? []).map((m: any) =>
       CharacterFactory.fromSerialized(m)
     );
@@ -202,6 +215,7 @@ export class PartyService {
     party.consolidateGold();
 
     const questSystem = QuestSystem.fromSerialized(questData, "fr");
-    return { party, questSystem, currentHubId };
+    // Nœud de position (fallback : le hub courant si non précisé).
+    return { party, questSystem, currentHubId, currentNodeId: currentNodeId ?? currentHubId };
   }
 }

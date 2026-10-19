@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { Hub, Position } from '../types/world';
+import type { Hub, Position, WorldSummary } from '../types/world';
 import type { GameState } from '../types/game';
 import type { GameActions } from '../game/useGame';
 import {
@@ -19,6 +19,7 @@ const BUILDING_ICON: Record<string, string> = {
   inn: '🛏️',
   church: '⛪',
   questBoard: '📜',
+  caravan: '🐫',
 };
 
 const BUILDING_LABEL: Record<string, string> = {
@@ -26,11 +27,16 @@ const BUILDING_LABEL: Record<string, string> = {
   inn: 'Auberge',
   church: 'Sanctuaire',
   questBoard: 'Tableau des quêtes',
+  caravan: 'Caravane',
 };
 
 type Props = {
   hub: Hub;
   onBack: () => void;
+  /** Monde (hubs, zones, arêtes) — pour calculer les destinations de caravane. */
+  world: WorldSummary | null;
+  /** Zones terminées — pour le brouillard de guerre (villes révélées). */
+  completedZones: Set<string>;
   /** État de session (socket) — fourni par App (useGame levé au niveau App). */
   state: GameState | null;
   /** Logs du jeu (socket) — fusionnés dans le journal local. */
@@ -49,7 +55,7 @@ type Props = {
  * NB : l'état de partie (socket) est fourni par App (useGame levé au niveau
  * App pour que l'équipe soit visible sur la mappemonde ET en ville).
  */
-export default function City({ hub, onBack, state, gameLogs, actions }: Props) {
+export default function City({ hub, onBack, world, completedZones, state, gameLogs, actions }: Props) {
   const layout = hub.layout;
   const [pos, setPos] = useState<Position>(layout?.startTile ?? { row: 0, col: 0 });
   const [path, setPath] = useState<Position[]>([]);
@@ -59,7 +65,52 @@ export default function City({ hub, onBack, state, gameLogs, actions }: Props) {
   const [sideCollapsed, setSideCollapsed] = useState(false);
   const timerRef = useRef<number | null>(null);
 
-  const buildings = useMemo(() => (layout ? buildingSet(layout) : new Set<string>()), [layout]);
+  // Obstacles pour le pathfinding : les bâtiments + la case caravane (on marche
+  // jusqu'à côté, pas dessus).
+  const buildings = useMemo(() => {
+    const s = layout ? buildingSet(layout) : new Set<string>();
+    if (layout?.caravan) s.add(`${layout.caravan.row},${layout.caravan.col}`);
+    return s;
+  }, [layout]);
+
+  // **Brouillard de guerre** (même logique que la mappemonde) : les villes
+  // révélées = la racine (Auberge du matin) + les villes connectées à une zone
+  // terminée. Tant qu'aucune zone n'est explorée, seule l'auberge est connue.
+  const revealedHubs = useMemo(() => {
+    if (!world) return new Set<string>();
+    const s = new Set<string>();
+    const rootId = world.hubs.find((h) => h.name === 'Auberge du matin')?.id ?? world.hubs[0]?.id;
+    if (rootId) s.add(rootId);
+    const hubIds = new Set(world.hubs.map((h) => h.id));
+    for (const [from, targets] of Object.entries(world.edges)) {
+      if (completedZones.has(from)) {
+        for (const to of targets) if (hubIds.has(to)) s.add(to);
+      }
+      if (hubIds.has(from)) {
+        for (const to of targets) if (completedZones.has(to)) s.add(from);
+      }
+    }
+    return s;
+  }, [world, completedZones]);
+
+  // Destinations de caravane : les villes situées au-delà d'une zone de
+  // transition adjacente au hub actuel, **et déjà révélées** (brouillard de
+  // guerre). Pas de téléportation directe ville→ville, et pas de voyage vers
+  // une ville inconnue.
+  const caravanDestinations = useMemo(() => {
+    if (!world) return [];
+    const hubIds = new Set(world.hubs.map((h) => h.id));
+    const destIds = new Set<string>();
+    // Zones adjacentes au hub actuel.
+    for (const zoneId of world.edges[hub.id] ?? []) {
+      if (hubIds.has(zoneId)) continue; // on ne traverse que des zones
+      // Hubs au-delà de cette zone.
+      for (const beyond of world.edges[zoneId] ?? []) {
+        if (hubIds.has(beyond) && beyond !== hub.id) destIds.add(beyond);
+      }
+    }
+    return world.hubs.filter((h) => destIds.has(h.id) && revealedHubs.has(h.id));
+  }, [world, hub.id, revealedHubs]);
 
   const pushLog = useCallback((msg: string) => {
     setLog((l) => [...l.slice(-40), msg]);
@@ -111,10 +162,13 @@ export default function City({ hub, onBack, state, gameLogs, actions }: Props) {
 
   const onTileClick = (row: number, col: number) => {
     const target = { row, col };
-    // Bâtiment ? On marche jusqu'à la case marchable la plus proche.
+    // Bâtiment ou caravane ? On marche jusqu'à la case marchable la plus proche.
     const building = layout.buildings.find((b) => b.row === row && b.col === col);
-    if (building) {
-      const stop = nearestWalkableToBuilding(layout, building, buildings);
+    const isCaravan = !!layout.caravan && layout.caravan.row === row && layout.caravan.col === col;
+    if (building || isCaravan) {
+      const service = building ? building.service : 'caravan';
+      const anchor = building ?? layout.caravan!;
+      const stop = nearestWalkableToBuilding(layout, anchor, buildings);
       if (!stop) return;
       const alreadyThere = pos.row === stop.row && pos.col === stop.col;
       const p = findPath(layout, pos, stop, buildings);
@@ -122,12 +176,12 @@ export default function City({ hub, onBack, state, gameLogs, actions }: Props) {
         pushLog('Inaccessible.');
         return;
       }
-      setActiveBuilding(building.service);
+      setActiveBuilding(service);
       if (p.length > 0) {
         setPath(p);
       } else {
         // Déjà devant le bâtiment : on ouvre le panneau directement.
-        pushLog(`Vous êtes devant le ${BUILDING_LABEL[building.service] ?? building.service}.`);
+        pushLog(`Vous êtes devant le ${BUILDING_LABEL[service] ?? service}.`);
       }
       return;
     }
@@ -155,6 +209,24 @@ export default function City({ hub, onBack, state, gameLogs, actions }: Props) {
 
   const pathSet = new Set(path.map((p) => `${p.row},${p.col}`));
 
+  // **Clôture** : les tuiles bloquées qui bordent le périmètre marchable
+  // (adjacentes à au moins une tuile praticable) → barrière autour de la ville.
+  const fenceSet = useMemo(() => {
+    const s = new Set<string>();
+    if (!layout) return s;
+    const { rows, cols } = layout.size;
+    const walk = (r: number, c: number) => !!layout.tileMap[r]?.[c];
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        if (walk(r, c)) continue; // on ne clôture que les cases bloquées
+        const nearWalk =
+          walk(r - 1, c) || walk(r + 1, c) || walk(r, c - 1) || walk(r, c + 1);
+        if (nearWalk) s.add(`${r},${c}`);
+      }
+    }
+    return s;
+  }, [layout]);
+
   return (
     <div className="city">
       <div className="city-main">
@@ -168,25 +240,30 @@ export default function City({ hub, onBack, state, gameLogs, actions }: Props) {
               const walkable = layout.tileMap[row]?.[col];
               const building = layout.buildings.find((b) => b.row === row && b.col === col);
               const isExit = layout.exit.row === row && layout.exit.col === col;
+              const isCaravan = !!layout.caravan && layout.caravan.row === row && layout.caravan.col === col;
               const onPath = pathSet.has(`${row},${col}`);
               let cls = 'tile ' + (walkable ? 'walk' : 'block');
+              if (!walkable && fenceSet.has(`${row},${col}`)) cls += ' fence';
               if (building) cls = `tile building ${building.service}`;
+              if (isCaravan) cls = 'tile building caravan';
               if (isExit) cls = 'tile exit';
               if (onPath) cls += ' path';
               return (
                 <div
                   key={`${row}-${col}`}
                   className={cls}
-                  onClick={() => walkable && onTileClick(row, col)}
+                  onClick={() => (walkable || building || isCaravan) && onTileClick(row, col)}
                   title={
                     building
                       ? BUILDING_LABEL[building.service]
-                      : isExit
-                        ? layout.exit.label
-                        : undefined
+                      : isCaravan
+                        ? BUILDING_LABEL.caravan
+                        : isExit
+                          ? layout.exit.label
+                          : undefined
                   }
                 >
-                  {building ? BUILDING_ICON[building.service] : isExit ? '🚪' : ''}
+                  {building ? BUILDING_ICON[building.service] : isCaravan ? BUILDING_ICON.caravan : isExit ? '🚪' : ''}
                 </div>
               );
             }),
@@ -230,6 +307,7 @@ export default function City({ hub, onBack, state, gameLogs, actions }: Props) {
                 activeBuilding={activeBuilding}
                 state={state}
                 actions={actions}
+                caravanDestinations={caravanDestinations}
                 onClose={() => setActiveBuilding(null)}
               />
             </div>

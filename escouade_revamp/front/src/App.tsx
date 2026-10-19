@@ -51,6 +51,14 @@ function App() {
     setExplorationExitedHandler(() => setView({ name: 'world' }));
   }, [setExplorationExitedHandler]);
 
+  // Synchronisation ville : quand le hub de base change (caravane), la vue
+  // ville suit le nouveau hub (sinon on resterait affiché sur l'ancienne ville).
+  useEffect(() => {
+    if (view.name === 'city' && state?.hub && state.hub.id !== view.hub.id) {
+      setView({ name: 'city', hub: state.hub });
+    }
+  }, [state?.hub, view]);
+
   // Token expiré / invalide : le socket est refusé → on renvoie vers l'écran
   // de connexion (re-login) au lieu de rester bloqué sur « Connexion… ».
   useEffect(() => {
@@ -82,9 +90,11 @@ function App() {
     () => new Set(state?.party.seenMonsters ?? []),
     [state]
   );
-  // Hub courant (position de l'équipe) : le cercle blanc de la mappemonde
-  // suit cette position, pas la racine.
+  // Hub de base (services de ville).
   const currentHubId = state?.hub.id ?? null;
+  // Nœud de position (hub OU donjon) : le cercle blanc de la mappemonde suit
+  // cette position. En ville c'est le hub ; dans une zone, l'id du donjon.
+  const currentNodeId = state?.currentNodeId ?? state?.hub.id ?? null;
 
   useEffect(() => {
     if (!user) return;
@@ -175,6 +185,7 @@ function App() {
               worldLevel={worldLevel}
               seenMonsters={seenMonsters}
               currentHubId={currentHubId}
+              currentNodeId={currentNodeId}
               onEnterHub={(hub) => {
                 // Le serveur persiste le hub courant (position de l'équipe) —
                 // c'est ce que le cercle blanc de la mappemonde suit.
@@ -193,6 +204,8 @@ function App() {
             <City
               hub={view.hub}
               onBack={() => setView({ name: 'world' })}
+              world={world}
+              completedZones={completedZones}
               state={state}
               gameLogs={gameLogs}
               actions={actions}
