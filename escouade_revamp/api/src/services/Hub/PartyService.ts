@@ -34,6 +34,36 @@ export class PartyService {
     questSystem: QuestSystem;
     currentHubId: string;
   }> {
+    const game = await this.createStarterGame();
+    await this.model.findOneAndUpdate(
+      { player: playerId },
+      {
+        $set: {
+          party: game.party.toSerialized(),
+          questSystem: game.questSystem.toSerialized(),
+          currentHubId: game.currentHubId,
+          savedAt: new Date(),
+        },
+      },
+      { upsert: true, new: true }
+    );
+    return game;
+  }
+
+  /**
+   * Crée l'état de départ d'une partie **sans le persister** : une équipe de
+   * départ (3 héros) + les quêtes du livret + la ville de départ.
+   *
+   * Réutilisé par `createGame` (solo) et par `PartyRoomService` (multi-joueurs)
+   * pour initialiser une partie partagée.
+   *
+   * @returns la partie de départ (party + questSystem + currentHubId).
+   */
+  static async createStarterGame(): Promise<{
+    party: Party;
+    questSystem: QuestSystem;
+    currentHubId: string;
+  }> {
     // Équipe de départ : un Guerrier, un Mage Blanc, un Voleur.
     const members: Character[] = [
       this.makeHero("Guerrier"),
@@ -57,19 +87,6 @@ export class PartyService {
       (n) => n instanceof Hub && n.name === "Auberge du matin"
     );
     const currentHubId = root?.id ?? "Hub_Auberge du matin";
-
-    await this.model.findOneAndUpdate(
-      { player: playerId },
-      {
-        $set: {
-          party: party.toSerialized(),
-          questSystem: questSystem.toSerialized(),
-          currentHubId,
-          savedAt: new Date(),
-        },
-      },
-      { upsert: true, new: true }
-    );
 
     return { party, questSystem, currentHubId };
   }
@@ -133,8 +150,11 @@ export class PartyService {
 
   /**
    * (Dé)sérialise une partie depuis les données stockées.
+   *
+   * Public : réutilisé par `PartyRoomService` (multi-joueurs) pour reconstruire
+   * l'équipe + les quêtes d'une partie partagée depuis son état persisté.
    */
-  private static deserialize(partyData: any, questData: any, currentHubId: string) {
+  static deserialize(partyData: any, questData: any, currentHubId: string) {
     const members: Character[] = (partyData.members ?? []).map((m: any) =>
       CharacterFactory.fromSerialized(m)
     );

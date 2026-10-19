@@ -1,7 +1,7 @@
 // Hook de partie : gère la connexion Socket.IO et l'état de session (temps réel).
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { GameState, ExplorationState } from '../types/game';
+import type { GameState, ExplorationState, RoomSummary } from '../types/game';
 import {
   connectSocket,
   disconnectSocket,
@@ -20,6 +20,10 @@ import {
   explorationMove,
   explorationRest,
   explorationExit,
+  partyList,
+  partyCreate,
+  partyJoin,
+  partyLeave,
   type ExplorationDirection,
   onState,
   onLog,
@@ -27,6 +31,9 @@ import {
   onExplorationState,
   onExplorationLog,
   onExplorationExited,
+  onPartyList,
+  onPartyUpdated,
+  onPartyLeft,
 } from '../api/socket';
 
 export type GameActions = {
@@ -46,6 +53,11 @@ export type GameActions = {
   explorationMove: (direction: ExplorationDirection) => void;
   explorationRest: () => void;
   explorationExit: () => void;
+  // Lobby de parties (multi-joueurs).
+  partyList: () => void;
+  partyCreate: (opts: { name?: string; isPublic?: boolean; maxPlayers?: number }) => void;
+  partyJoin: (roomId: string, isSpectator?: boolean) => void;
+  partyLeave: () => void;
 };
 
 export type UseGame = {
@@ -53,6 +65,10 @@ export type UseGame = {
   logs: string[];
   connected: boolean;
   actions: GameActions;
+  /** Liste des parties publiques (pour le lobby). */
+  rooms: RoomSummary[];
+  /** true si le joueur est dans une partie (room) — sinon il est au lobby. */
+  inRoom: boolean;
   /** État d'exploration courant (null si l'équipe n'est pas dans un donjon). */
   exploration: ExplorationState | null;
   /**
@@ -60,22 +76,35 @@ export type UseGame = {
    * sortie atteinte) → le front peut revenir à la mappemonde (auto-sortie).
    */
   setExplorationExitedHandler: (cb: (() => void) | null) => void;
+  /**
+   * Enregistre un callback appelé quand la connexion socket est **refusée**
+   * (token invalide ou expiré) → le front peut renvoyer vers l'écran de
+   * connexion (re-login).
+   */
+  setAuthErrorHandler: (cb: (() => void) | null) => void;
 };
 
 /**
  * Hook qui connecte le socket (avec le token JWT), rejoint la ville courante
  * et expose l'état de session + les actions. L'état est mis à jour en temps
  * réel à chaque action (le serveur renvoie l'état sérialisé).
+ *
+ * @param token le token JWT courant (null si pas connecté). Quand il passe de
+ *   null à une valeur (premier login), le socket est **re-connecté** avec le
+ *   token — sinon il serait connecté sans token et refusé par le middleware.
  */
-export function useGame(): UseGame {
+export function useGame(token: string | null): UseGame {
   const [state, setState] = useState<GameState | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
   const [connected, setConnected] = useState(false);
   const [exploration, setExploration] = useState<ExplorationState | null>(null);
+  const [rooms, setRooms] = useState<RoomSummary[]>([]);
   const joinedRef = useRef(false);
   // Callback d'auto-sortie (donjon terminé) — stocké en ref pour ne pas
   // resouscrire l'abonnement à chaque render.
   const exitedHandlerRef = useRef<(() => void) | null>(null);
+  // Callback d'erreur d'auth (token invalide/expiré) — renvoie vers le login.
+  const authErrorHandlerRef = useRef<(() => void) | null>(null);
 
   const pushLogs = useCallback((newLogs: string[]) => {
     setLogs((prev) => [...prev, ...newLogs].slice(-60));
@@ -85,10 +114,31 @@ export function useGame(): UseGame {
     exitedHandlerRef.current = cb;
   }, []);
 
+  const setAuthErrorHandler = useCallback((cb: (() => void) | null) => {
+    authErrorHandlerRef.current = cb;
+  }, []);
+
   useEffect(() => {
+    // Pas de token (pas connecté) → pas de socket. On attend le login.
+    if (!token) {
+      setConnected(false);
+      return;
+    }
+
+    // Nouveau token = nouveau joueur → on doit re-rejoindre la ville.
+    joinedRef.current = false;
+
     const socket = connectSocket();
     socket.on('connect', () => setConnected(true));
     socket.on('disconnect', () => setConnected(false));
+    // Connexion refusée par le serveur (token invalide/expiré) → on renvoie
+    // vers l'écran de connexion pour que le joueur se reconnecte.
+    socket.on('connect_error', (err: Error) => {
+      if (err?.message?.includes('Authentication error')) {
+        setConnected(false);
+        authErrorHandlerRef.current?.();
+      }
+    });
 
     onState((s) => setState(s));
     onLog(pushLogs);
@@ -100,11 +150,24 @@ export function useGame(): UseGame {
       exitedHandlerRef.current?.();
     });
 
-    // Rejoint la ville courante une fois connecté.
+    // Lobby de parties : liste des parties publiques + rafraîchissement à
+    // chaque création/rejoindre/quitte. Quand le joueur quitte sa partie,
+    // on retourne au lobby (state nulle → inRoom false).
+    onPartyList((rs) => setRooms(rs));
+    onPartyUpdated(() => partyList());
+    onPartyLeft(() => {
+      setState(null);
+      setExploration(null);
+      partyList();
+    });
+
+    // Une fois connecté : demande l'état de la room courante (si le joueur en
+    // est dans une) + la liste des parties pour le lobby.
     const onConnect = () => {
       if (!joinedRef.current) {
         joinedRef.current = true;
         hubJoin();
+        partyList();
       }
     };
     socket.on('connect', onConnect);
@@ -114,7 +177,10 @@ export function useGame(): UseGame {
       socket.off('connect', onConnect);
       disconnectSocket();
     };
-  }, [pushLogs]);
+  }, [pushLogs, token]);
+
+  // Le joueur est dans une partie si l'état reçu porte un bloc `room`.
+  const inRoom = !!state?.room;
 
   const actions: GameActions = {
     join: hubJoin,
@@ -132,7 +198,11 @@ export function useGame(): UseGame {
     explorationMove,
     explorationRest,
     explorationExit,
+    partyList,
+    partyCreate,
+    partyJoin,
+    partyLeave,
   };
 
-  return { state, logs, connected, actions, exploration, setExplorationExitedHandler };
+  return { state, logs, connected, actions, rooms, inRoom, exploration, setExplorationExitedHandler, setAuthErrorHandler };
 }

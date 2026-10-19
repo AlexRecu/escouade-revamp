@@ -88,3 +88,38 @@ export function onExplorationLog(cb: (logs: string[]) => void): void {
 export function onExplorationExited(cb: () => void): void {
   socket?.on('exploration:exited', () => cb());
 }
+
+// ── Lobby de parties (multi-joueurs) ───────────────────────────────────────
+
+import type { RoomSummary } from '../types/game';
+
+/** Liste les parties publiques (pour le lobby). */
+export const partyList = (): void => { socket?.emit('party:list', {}); };
+
+/** Crée une nouvelle partie (l'appelant en devient l'hôte). */
+export const partyCreate = (opts: { name?: string; isPublic?: boolean; maxPlayers?: number }): void => {
+  socket?.emit('party:create', opts);
+};
+
+/** Rejoint une partie existante (en tant que joueur ou spectateur). */
+export const partyJoin = (roomId: string, isSpectator = false): void => {
+  socket?.emit('party:join', { roomId, isSpectator });
+};
+
+/** Quitte la partie courante (retour au lobby). */
+export const partyLeave = (): void => { socket?.emit('party:leave', {}); };
+
+/** Liste des parties (réponse à `party:list`). */
+export function onPartyList(cb: (rooms: RoomSummary[]) => void): void {
+  socket?.on('party:list', ({ rooms }: { rooms: RoomSummary[] }) => cb(rooms));
+}
+
+/** Émis quand une partie est créée/rejointe/quitte → rafraîchir le lobby. */
+export function onPartyUpdated(cb: () => void): void {
+  socket?.on('party:updated', () => cb());
+}
+
+/** Émis quand le joueur quitte sa partie → retour au lobby. */
+export function onPartyLeft(cb: () => void): void {
+  socket?.on('party:left', () => cb());
+}

@@ -11,21 +11,22 @@ const TOKEN_BASE = '/assets/tokens';
 
 /** Mapping nom de classe (job) → fichier de token. */
 const CLASS_TOKENS: Record<string, string> = {
-  'Guerrier': 'default.png', // pas de token dédié → default
-  'Mage blanc': 'mageBlanc.png',
-  'Mage bleu': 'mageBleu.png',
-  'Mage noir': 'mageNoir.png',
-  'Mage rouge': 'mageRouge.png',
+  'Guerrier': 'Guerrier.png',
+  'Mage blanc': 'Mage blanc.png',
+  'Mage bleu': 'Mage Bleu.png',
+  'Mage noir': 'Mage noir.png',
+  'Mage rouge': 'Mage Rouge.png',
   'Voleur': 'voleur.png',
-  'Moine': 'default.png',
+  'Moine': 'Moine.png',
 };
 
 /**
  * Chemin du token d'une **classe** (par le nom du job). Fallback `default.png`.
+ * Le nom de fichier est encodé (certains contiennent des espaces).
  */
 export function classTokenUrl(jobName: string): string {
   const file = CLASS_TOKENS[jobName] ?? 'default.png';
-  return `${TOKEN_BASE}/${file}`;
+  return `${TOKEN_BASE}/${encodeURIComponent(file)}`;
 }
 
 /**

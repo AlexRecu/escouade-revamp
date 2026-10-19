@@ -1022,3 +1022,136 @@ button:disabled {
   color: var(--accent);
   white-space: nowrap;
 }
+
+/* ── Lobby de parties (multi-joueurs) ───────────────────────────────────── */
+.lobby {
+  max-width: 720px;
+  margin: 24px auto;
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.lobby-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.lobby-head h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.lobby-status {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.lobby-create {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+}
+.lobby-input {
+  flex: 1 1 220px;
+  min-width: 180px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-2, #1a1622);
+  color: var(--text);
+  font-size: 13px;
+}
+.lobby-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.lobby-select {
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-2, #1a1622);
+  color: var(--text);
+  font-size: 12px;
+}
+.lobby-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-2, #1a1622);
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+.lobby-btn:hover:not(:disabled) {
+  filter: brightness(1.2);
+}
+.lobby-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.lobby-btn.primary {
+  background: var(--accent, #7c5cff);
+  border-color: transparent;
+  color: #fff;
+  font-weight: 600;
+}
+.lobby-btn.ghost {
+  background: transparent;
+}
+.lobby-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.lobby-empty {
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 13px;
+  padding: 24px 0;
+}
+.lobby-room {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+}
+.lobby-room-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.lobby-room-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+.lobby-room-meta {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.lobby-room-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+/* Badge de partie courante dans le header. */
+.room-badge {
+  color: var(--accent, #7c5cff);
+  font-weight: 600;
+}
+.room-switch {
+  margin-left: 8px;
+}

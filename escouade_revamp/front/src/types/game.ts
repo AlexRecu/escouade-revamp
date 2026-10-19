@@ -82,6 +82,35 @@ export type ShopItem = {
 };
 
 /** État de session complet renvoyé par le serveur après chaque action. */
+/** Membre d'une partie (room) multi-joueurs. */
+export type RoomMember = {
+  playerId: string;
+  username: string;
+  isSpectator: boolean;
+};
+
+/** Bloc `room` présent dans l'état quand le joueur est dans une partie. */
+export type RoomInfo = {
+  roomId: string;
+  name: string;
+  hostName: string;
+  isPublic: boolean;
+  maxPlayers: number;
+  members: RoomMember[];
+};
+
+/** Résumé d'une partie pour le lobby (liste des parties en cours). */
+export type RoomSummary = {
+  roomId: string;
+  name: string;
+  hostName: string;
+  isPublic: boolean;
+  maxPlayers: number;
+  playerCount: number;
+  memberCount: number;
+  members: { username: string; isSpectator: boolean }[];
+};
+
 export type GameState = {
   hub: Hub;
   party: {
@@ -99,6 +128,8 @@ export type GameState = {
     accepted: Quest[];
   };
   shop: ShopItem[];
+  /** Partie courante (présent si le joueur est dans une room multi-joueurs). */
+  room?: RoomInfo;
 };
 
 // ── Exploration des donjons (mode déplacement) ─────────────────────────────

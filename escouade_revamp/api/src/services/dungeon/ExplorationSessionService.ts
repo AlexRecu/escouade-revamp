@@ -6,11 +6,24 @@ import { Campfire } from "../../classes/Progression/Campfire";
 import { Position } from "../../classes/Types";
 import { WorldService } from "../World/WorldService";
 import { PartyService } from "../Hub/PartyService";
+import { PartyRoomService } from "../Hub/PartyRoomService";
 import { ZoneFactory } from "../factory/ZoneFactory";
 import { CampfireService } from "./CampfireService";
 
 /** Direction de déplacement (4 directions, pas de diagonale). */
 export type Direction = "north" | "south" | "east" | "west";
+
+/**
+ * Backend de persistance d'une session de donjon.
+ *
+ *  - `player` : mode solo — l'équipe est celle du joueur (`PartyService`).
+ *  - `room`   : mode multi-joueurs — l'équipe est **partagée** par la partie
+ *    (`PartyRoomService`) ; la session est cléée par `roomId` et commune à
+ *    tous les membres de la room.
+ */
+type DungeonStorage =
+  | { kind: "player"; playerId: string }
+  | { kind: "room"; roomId: string };
 
 const DIRECTIONS: Record<Direction, { row: number; col: number }> = {
   north: { row: -1, col: 0 },
@@ -38,23 +51,53 @@ export class ExplorationSessionService {
   private static sessions: Map<string, DungeonSession> = new Map();
 
   /**
-   * Entre dans un donjon : charge l'équipe, **régénère** le donjon (nouveau
-   * seed, nb d'étages dynamique) et démarre à l'étage 1.
+   * Entre dans un donjon en **mode solo** : charge l'équipe du joueur,
+   * **régénère** le donjon (nouveau seed, nb d'étages dynamique) et démarre à
+   * l'étage 1.
    *
    * @returns l'état sérialisé pour le front.
    */
   static async enterDungeon(playerId: string, dungeonId: string): Promise<any> {
-    // Charge la partie persistée (équipe + quêtes + ville courante).
     const game = await PartyService.loadGame(playerId);
     if (!game) throw new Error("Aucune partie trouvée. Rejoignez d'abord une ville.");
+    const session = await this.buildSession(game.party, game.questSystem, dungeonId);
+    session.storage = { kind: "player", playerId };
+    this.sessions.set(playerId, session);
+    return this.serialize(session);
+  }
 
+  /**
+   * Entre dans un donjon en **mode multi-joueurs** : charge l'équipe **partagée**
+   * de la room, régénère le donjon et démarre à l'étage 1. La session est cléée
+   * par `roomId` (commune à tous les membres).
+   *
+   * @returns l'état sérialisé pour le front.
+   */
+  static async enterDungeonRoom(roomId: string, dungeonId: string): Promise<any> {
+    const game = await PartyRoomService.loadParty(roomId);
+    const session = await this.buildSession(game.party, game.questSystem, dungeonId);
+    session.storage = { kind: "room", roomId };
+    session.hubId = game.currentHubId;
+    this.sessions.set(roomId, session);
+    return this.serialize(session);
+  }
+
+  /**
+   * Construit la session de donjon (régénération de la grille) à partir d'une
+   * équipe. Commun au mode solo et au mode room.
+   */
+  private static async buildSession(
+    party: Party,
+    questSystem: QuestSystem,
+    dungeonId: string
+  ): Promise<DungeonSession> {
     const world = await WorldService.getWorld();
     const node = world.nodes.find((n) => n.id === dungeonId);
     if (!(node instanceof Dungeon)) throw new Error(`Donjon introuvable : ${dungeonId}`);
 
     // Niveau effectif (scaling dynamique) — clé = dungeon.id (cohérent avec
     // le front qui stocke/détecte les zones complétées par id).
-    const level = game.party.effectiveZoneLevel(dungeonId);
+    const level = party.effectiveZoneLevel(dungeonId);
     const floors = 2 + level;
 
     // Régénération : un nouveau seed à chaque entrée → nouvelle grille.
@@ -76,18 +119,17 @@ export class ExplorationSessionService {
 
     // Position de départ : la tuile de départ du 1er étage.
     const firstZone = levels[0];
-    game.party.moveTo({ ...firstZone.startTile });
+    party.moveTo({ ...firstZone.startTile });
 
-    const session: DungeonSession = {
-      party: game.party,
-      questSystem: game.questSystem,
+    return {
+      party,
+      questSystem,
       dungeon,
       currentFloor: 0,
       activeCampfire: undefined,
       completed: false,
+      storage: { kind: "player", playerId: "" }, // rempli par l'appelant
     };
-    this.sessions.set(playerId, session);
-    return this.serialize(session);
   }
 
   /**
@@ -96,10 +138,11 @@ export class ExplorationSessionService {
    * Valide que la case cible est adjacente et praticable. Gère la détection
    * de feu de camp et la progression d'étage (atteinte de la tuile de sortie).
    *
+   * @param sessionKey clé de la session (`playerId` en solo, `roomId` en room).
    * @returns l'état sérialisé (ou une erreur si le déplacement est invalide).
    */
-  static async move(playerId: string, direction: Direction): Promise<any> {
-    const session = this.require(playerId);
+  static async move(sessionKey: string, direction: Direction): Promise<any> {
+    const session = this.require(sessionKey);
     if (session.completed) {
       return { logs: ["Le donjon est terminé."], state: this.serialize(session), exited: true };
     }
@@ -141,8 +184,8 @@ export class ExplorationSessionService {
       // Porte de sortie (dernier étage) → donjon terminé + **auto-sortie**.
       session.completed = true;
       session.party.completeZone(session.dungeon.id);
-      await this.persist(playerId, session);
-      this.sessions.delete(playerId);
+      await this.persist(session);
+      this.sessions.delete(sessionKey);
       return {
         logs: ["Vous avez atteint la sortie du donjon ! Zone terminée."],
         state: this.serialize(session),
@@ -157,8 +200,8 @@ export class ExplorationSessionService {
    * Se repose au feu de camp courant (si l'équipe est dessus et qu'il est
    * encore utilisable).
    */
-  static async restAtCampfire(playerId: string): Promise<any> {
-    const session = this.require(playerId);
+  static async restAtCampfire(sessionKey: string): Promise<any> {
+    const session = this.require(sessionKey);
     if (!session.activeCampfire) {
       return { logs: ["Il n'y a pas de feu de camp ici."], state: this.serialize(session) };
     }
@@ -170,36 +213,40 @@ export class ExplorationSessionService {
    * Quitte le donjon : persiste l'équipe (or, HP, zones complétées) et libère
    * la session. Le front revient à la mappemonde et resynchronise la ville.
    */
-  static async exitDungeon(playerId: string): Promise<any> {
-    const session = this.sessions.get(playerId);
+  static async exitDungeon(sessionKey: string): Promise<any> {
+    const session = this.sessions.get(sessionKey);
     if (!session) return { logs: ["Vous n'êtes pas dans un donjon."] };
 
     // Persiste l'équipe (la position dans la zone n'a pas d'intérêt : chaque
     // entrée régénère le donjon).
-    await this.persist(playerId, session);
-    this.sessions.delete(playerId);
+    await this.persist(session);
+    this.sessions.delete(sessionKey);
     return { logs: ["Vous quittez le donjon."] };
   }
 
   /** Renvoie l'état courant (ou null si aucune session). */
-  static getState(playerId: string): any {
-    const session = this.sessions.get(playerId);
+  static getState(sessionKey: string): any {
+    const session = this.sessions.get(sessionKey);
     return session ? this.serialize(session) : null;
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
-  private static require(playerId: string): DungeonSession {
-    const session = this.sessions.get(playerId);
+  private static require(sessionKey: string): DungeonSession {
+    const session = this.sessions.get(sessionKey);
     if (!session) throw new Error("Vous n'êtes pas dans un donjon. Entrez-en d'abord un.");
     return session;
   }
 
-  /** Persiste l'équipe (or, PV, zones complétées) sans changer de ville. */
-  private static async persist(playerId: string, session: DungeonSession): Promise<void> {
-    const game = await PartyService.loadGame(playerId);
-    if (game) {
-      await PartyService.saveGame(playerId, session.party, session.questSystem, game.currentHubId);
+  /** Persiste l'équipe selon le backend (solo → PartyService, room → PartyRoomService). */
+  private static async persist(session: DungeonSession): Promise<void> {
+    if (session.storage.kind === "room") {
+      await PartyRoomService.saveParty(session.storage.roomId, session.party, session.questSystem, session.hubId ?? "");
+    } else {
+      const game = await PartyService.loadGame(session.storage.playerId);
+      if (game) {
+        await PartyService.saveGame(session.storage.playerId, session.party, session.questSystem, game.currentHubId);
+      }
     }
   }
 
@@ -275,4 +322,8 @@ interface DungeonSession {
   currentFloor: number;
   activeCampfire?: Campfire;
   completed: boolean;
+  /** Backend de persistance (solo ou room). */
+  storage: DungeonStorage;
+  /** Hub courant (pour la persistance en mode room). */
+  hubId?: string;
 }

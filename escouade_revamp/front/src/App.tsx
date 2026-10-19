@@ -7,6 +7,7 @@ import City from './components/City';
 import DungeonView from './components/DungeonView';
 import AuthScreen from './components/AuthScreen';
 import PartySidebar from './components/PartySidebar';
+import LobbyScreen from './components/LobbyScreen';
 import { useGame } from './game/useGame';
 
 type View =
@@ -24,14 +25,33 @@ function App() {
   const [view, setView] = useState<View>({ name: 'world' });
 
   // Partie temps réel (socket) : levée ici pour que l'équipe soit visible
-  // sur la mappemonde ET en ville (colonne latérale permanente).
-  const { state, logs: gameLogs, connected, actions, exploration, setExplorationExitedHandler } = useGame();
+  // sur la mappemonde ET en ville (colonne latérale permanente). Le token est
+  // passé en paramètre : quand il devient disponible (premier login), le
+  // socket est re-connecté avec le JWT (sinon il serait refusé par le back).
+  const { state, logs: gameLogs, connected, actions, rooms, inRoom, exploration, setExplorationExitedHandler, setAuthErrorHandler } = useGame(getToken());
 
   // Auto-sortie : quand le donjon est terminé (porte de sortie atteinte), le
   // serveur émet `exploration:exited` → on revient à la mappemonde.
   useEffect(() => {
     setExplorationExitedHandler(() => setView({ name: 'world' }));
   }, [setExplorationExitedHandler]);
+
+  // Token expiré / invalide : le socket est refusé → on renvoie vers l'écran
+  // de connexion (re-login) au lieu de rester bloqué sur « Connexion… ».
+  useEffect(() => {
+    setAuthErrorHandler(() => {
+      clearSession();
+      setUser(null);
+      setWorld(null);
+      setView({ name: 'world' });
+    });
+  }, [setAuthErrorHandler]);
+
+  // Quand le joueur entre dans une partie (création / rejoindre), on repart
+  // de la mappemonde. Quand il en sort (retour au lobby), idem.
+  useEffect(() => {
+    setView({ name: 'world' });
+  }, [inRoom]);
 
   // **Source de vérité** : le niveau du monde, les zones terminées et le
   // bestiaire viennent de l'état serveur (state.party), pas d'un état local.
@@ -95,15 +115,38 @@ function App() {
           </span>
         )}
         <span className="subtitle">👤 {user}</span>
+        {inRoom && state?.room && (
+          <>
+            <span className="subtitle room-badge" title="Partie en cours">
+              🎮 {state.room.name}
+            </span>
+            <button
+              className="logout room-switch"
+              onClick={() => actions.partyLeave()}
+              title="Quitter cette partie et revenir au lobby"
+            >
+              Changer de partie
+            </button>
+          </>
+        )}
         <button className="logout" onClick={logout}>Déconnexion</button>
       </header>
       <div className="app-body">
-        {/* Colonne latérale permanente : l'équipe (visible partout). */}
-        <PartySidebar state={state} connected={connected} />
+        {/* Colonne latérale permanente : l'équipe (visible dans une partie). */}
+        {inRoom && <PartySidebar state={state} connected={connected} />}
         <main className="app-main">
-          {error && <div className="worldmap">Erreur : {error}</div>}
-          {!world && !error && <div className="worldmap">Chargement du monde…</div>}
-          {world && view.name === 'world' && (
+          {/* Pas dans une partie → écran de lobby (créer / rejoindre / spectateur). */}
+          {!inRoom && (
+            <LobbyScreen
+              rooms={rooms}
+              connected={connected}
+              onCreate={(opts) => actions.partyCreate(opts)}
+              onJoin={(roomId, isSpectator) => actions.partyJoin(roomId, isSpectator)}
+            />
+          )}
+          {inRoom && error && <div className="worldmap">Erreur : {error}</div>}
+          {inRoom && !world && !error && <div className="worldmap">Chargement du monde…</div>}
+          {inRoom && world && view.name === 'world' && (
             <WorldTree
               world={world}
               completedZones={completedZones}
@@ -124,7 +167,7 @@ function App() {
               }}
             />
           )}
-          {world && view.name === 'city' && (
+          {inRoom && world && view.name === 'city' && (
             <City
               hub={view.hub}
               onBack={() => setView({ name: 'world' })}
@@ -133,7 +176,7 @@ function App() {
               actions={actions}
             />
           )}
-          {view.name === 'dungeon' && (
+          {inRoom && view.name === 'dungeon' && (
             exploration ? (
               <DungeonView
                 exploration={exploration}
