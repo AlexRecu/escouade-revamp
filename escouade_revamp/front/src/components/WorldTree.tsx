@@ -5,8 +5,10 @@ import { monsterTokenUrl } from '../utils/tokens';
 
 type Props = {
   world: WorldSummary;
-  /** Zones terminées (brouillard de guerre : révéler les villes au-delà). */
+  /** Zones terminées (niveau effectif des zones). */
   completedZones: Set<string>;
+  /** Villes visitées (brouillard de guerre des villes, source de vérité serveur). */
+  visitedHubs: Set<string>;
   /** Niveau de progression du monde (0 → 6). */
   worldLevel: number;
   /** Monstres déjà rencontrés (bestiaire) — les autres s'affichent « ? ». */
@@ -31,6 +33,7 @@ const EDGE_COLOR = '#3a3150';
 export default function WorldTree({
   world,
   completedZones,
+  visitedHubs,
   worldLevel,
   seenMonsters,
   currentHubId,
@@ -42,54 +45,51 @@ export default function WorldTree({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const rootId = world.hubs.find((h) => h.name === 'Auberge du matin')?.id ?? world.hubs[0]?.id;
 
-  // L'équipe est-elle en ville (position = hub de base) ?
+  // L'équipe est-elle en ville (position = hub de base) ? Sinon, sur la
+  // mappemonde, elle est à la sortie d'une zone (position = un donjon).
   const inCity = currentNodeId !== null && currentNodeId === currentHubId;
-  // Zones accessibles depuis le hub de base (arêtes orientées du monde).
-  const adjacentZoneIds = useMemo(() => {
+  // Nœuds accessibles depuis la **position actuelle** (hub OU donjon).
+  // Bidirectionnel : une arête `pos → X` OU `X → pos` suffit (les transitions
+  // sont orientées, ex. Qual-Far → Grotte → Qual-Chen : depuis Qual-Chen on
+  // peut ré-entrer dans la Grotte, et depuis la Grotte on peut aller aux 2 villes).
+  const adjacentIds = useMemo(() => {
     const set = new Set<string>();
-    for (const to of world.edges?.[currentHubId ?? ''] ?? []) set.add(to);
+    const posId = currentNodeId ?? '';
+    for (const to of world.edges?.[posId] ?? []) set.add(to);
+    for (const [from, targets] of Object.entries(world.edges ?? {})) {
+      if (targets.includes(posId)) set.add(from);
+    }
     return set;
-  }, [world, currentHubId]);
+  }, [world, currentNodeId]);
 
   /**
    * Un nœud est « verrouillé » si on ne peut pas s'y rendre depuis la position
-   * actuelle : les autres villes ne sont pas accessibles (pas de téléportation),
-   * et seules les zones adjacentes au hub de base sont entrables. En pleine
-   * exploration, tout le reste est verrouillé.
+   * actuelle :
+   *  - **en ville** : seules les zones adjacentes sont entrables (pas de
+   *    téléportation vers une autre ville).
+   *  - **à la sortie d'une zone** (position = donjon) : les villes adjacentes
+   *    sont accessibles (l'équipe choisit sa destination) ; les zones ne le
+   *    sont pas (il faut d'abord passer par une ville).
    */
   const isLocked = (node: TreeNode): boolean => {
     if (node.id === currentNodeId) return false; // on est déjà ici
     if (inCity) {
       if (node.kind === 'hub') return true; // autres villes
-      return !adjacentZoneIds.has(node.id); // zones non adjacentes
+      return !adjacentIds.has(node.id); // zones non adjacentes
     }
-    return true; // en exploration : tout le reste est verrouillé
+    // Position sur un donjon (sortie de zone) : villes adjacentes accessibles.
+    if (node.kind === 'hub') return !adjacentIds.has(node.id);
+    return true; // zones : il faut d'abord entrer dans une ville
   };
 
   const layout = useMemo(() => computeLayout(world, rootId!), [world, rootId]);
   const hubById = useMemo(() => new Map(world.hubs.map((h) => [h.id, h])), [world]);
   const dungeonById = useMemo(() => new Map(world.dungeons.map((d) => [d.id, d])), [world]);
 
-  // **Brouillard de guerre** : hubs révélés = racine + villes connectées
-  // à une zone terminée. (Terminer une zone révèle les villes au-delà.)
-  const revealedHubs = useMemo(() => {
-    const s = new Set<string>();
-    if (rootId) s.add(rootId);
-    const hubIds = new Set(world.hubs.map((h) => h.id));
-    for (const [from, targets] of Object.entries(world.edges)) {
-      // Si from est une zone terminée, révéler les hubs connectés.
-      if (completedZones.has(from)) {
-        for (const to of targets) if (hubIds.has(to)) s.add(to);
-      }
-      // Si un des cibles est une zone terminée, révéler le hub from.
-      if (hubIds.has(from)) {
-        for (const to of targets) {
-          if (completedZones.has(to)) s.add(from);
-        }
-      }
-    }
-    return s;
-  }, [world, completedZones, rootId]);
+  // **Brouillard de guerre des villes** : les villes révélées = celles que
+  // l'équipe a déjà visitées (source de vérité serveur : `visitedHubs`). C'est
+  // la même logique que la caravane (on ne voyage que vers des villes connues).
+  const revealedHubs = useMemo(() => visitedHubs, [visitedHubs]);
 
   // Zones révélées = connectées à au moins un hub révélé.
   const revealedZones = useMemo(() => {
@@ -190,6 +190,7 @@ export default function WorldTree({
                 isSelected={n.id === selectedId}
                 showLevel={n.kind === 'dungeon'}
                 effectiveLevel={n.kind === 'dungeon' ? effectiveLevel(n.id) : undefined}
+                isCompleted={n.kind === 'dungeon' ? completedZones.has(n.id) : false}
                 onClick={() => setSelectedId(n.id)}
               />
             ))}
@@ -279,8 +280,9 @@ function DungeonPanel({
   locked: boolean;
   onEnter: () => void;
 }) {
-  // Le nombre d'étages augmente avec la difficulté : 2 + niveau.
-  const floors = 2 + level;
+  // Le nombre d'étages augmente avec la difficulté : 2 + niveau. Le lac est
+  // une zone unique (1 étage, le port = entrée/sortie).
+  const floors = dungeon.biome === 'Lake' ? 1 : 2 + level;
   return (
     <div className="node-panel">
       <h3 className="node-panel-title">⚔️ {dungeon.name}</h3>
@@ -337,6 +339,7 @@ function Node({
   isSelected,
   showLevel,
   effectiveLevel,
+  isCompleted,
   onClick,
 }: {
   node: TreeNode;
@@ -347,6 +350,8 @@ function Node({
   isSelected: boolean;
   showLevel: boolean;
   effectiveLevel?: number;
+  /** Zone d'exploration déjà terminée → badge ✓. */
+  isCompleted: boolean;
   onClick: () => void;
 }) {
   const isHub = node.kind === 'hub';
@@ -379,6 +384,9 @@ function Node({
       {!isHub && <text className="node-icon" y={5} textAnchor="middle">⚔️</text>}
       {isLocked && !isCurrent && (
         <text className="node-lock" x={r - 4} y={-r + 4} textAnchor="middle">🔒</text>
+      )}
+      {isCompleted && (
+        <text className="node-done" x={r - 4} y={-r + 4} textAnchor="middle">✓</text>
       )}
       <text className="node-label" y={r + 14} textAnchor="middle">
         {label}

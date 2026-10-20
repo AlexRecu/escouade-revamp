@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { fetchWorld } from './api/client';
 import { getToken, getUsername, clearSession, getPlayerId } from './api/auth';
 import type { WorldSummary, Hub } from './types/world';
@@ -51,11 +51,31 @@ function App() {
     setExplorationExitedHandler(() => setView({ name: 'world' }));
   }, [setExplorationExitedHandler]);
 
-  // Synchronisation ville : quand le hub de base change (caravane), la vue
-  // ville suit le nouveau hub (sinon on resterait affiché sur l'ancienne ville).
+  // Ville dans laquelle on est en train d'entrer (id de hub). Sert à ne pas
+  // annuler l'entrée en ville pendant la fenêtre avant la réponse du serveur
+  // (voir l'effet de synchro ci-dessous).
+  const pendingCityRef = useRef<string | null>(null);
+
+  // Fin de voyage en caravane : quand le hub de base change alors qu'on est
+  // en ville, on revient sur la **mappemonde** (pas dans la ville). Le joueur
+  // choisit alors d'entrer en ville ou de repartir à l'aventure. (Le seul
+  // moyen de changer de hub en ville est la caravane — `changeHub` est bloqué
+  // pour les autres villes.) On ignore le cas où on vient de demander
+  // d'entrer dans la ville `view.hub` (sortie de zone) : le serveur n'a pas
+  // encore confirmé, `state.hub` est encore l'ancien hub.
   useEffect(() => {
-    if (view.name === 'city' && state?.hub && state.hub.id !== view.hub.id) {
-      setView({ name: 'city', hub: state.hub });
+    if (view.name !== 'city' || !state?.hub) return;
+    // Le serveur a confirmé l'entrée dans la ville `view.hub` → on peut
+    // effacer la ville cible en attente.
+    if (state.hub.id === view.hub.id) {
+      pendingCityRef.current = null;
+      return;
+    }
+    // Le hub de base a changé vers une autre ville (caravane) → mappemonde.
+    // On ignore le cas où on vient de demander d'entrer dans `view.hub`
+    // (sortie de zone) : le serveur n'a pas encore confirmé.
+    if (view.hub.id !== pendingCityRef.current) {
+      setView({ name: 'world' });
     }
   }, [state?.hub, view]);
 
@@ -88,6 +108,11 @@ function App() {
   );
   const seenMonsters = useMemo(
     () => new Set(state?.party.seenMonsters ?? []),
+    [state]
+  );
+  // Villes visitées (brouillard de guerre des villes, source de vérité serveur).
+  const visitedHubs = useMemo(
+    () => new Set(state?.party.visitedHubs ?? []),
     [state]
   );
   // Hub de base (services de ville).
@@ -182,13 +207,17 @@ function App() {
             <WorldTree
               world={world}
               completedZones={completedZones}
+              visitedHubs={visitedHubs}
               worldLevel={worldLevel}
               seenMonsters={seenMonsters}
               currentHubId={currentHubId}
               currentNodeId={currentNodeId}
               onEnterHub={(hub) => {
                 // Le serveur persiste le hub courant (position de l'équipe) —
-                // c'est ce que le cercle blanc de la mappemonde suit.
+                // c'est ce que le cercle blanc de la mappemonde suit. On note
+                // la ville cible pour que l'effet de synchro caravane ne
+                // l'annule pas avant la réponse du serveur.
+                pendingCityRef.current = hub.id;
                 actions.changeHub(hub.id);
                 setView({ name: 'city', hub });
               }}
@@ -205,7 +234,6 @@ function App() {
               hub={view.hub}
               onBack={() => setView({ name: 'world' })}
               world={world}
-              completedZones={completedZones}
               state={state}
               gameLogs={gameLogs}
               actions={actions}
@@ -218,6 +246,7 @@ function App() {
                 logs={gameLogs}
                 onMove={(dir) => actions.explorationMove(dir)}
                 onRest={() => actions.explorationRest()}
+                onOpenChest={() => actions.explorationChest()}
               />
             ) : (
               <div className="worldmap">Entrée dans le donjon…</div>

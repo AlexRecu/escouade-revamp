@@ -138,6 +138,7 @@ export class HubSerializer {
         id: session.party.id,
         worldLevel: session.party.worldLevel,
         completedZones: Array.from(session.party.completedZones),
+        visitedHubs: Array.from(session.party.visitedHubs),
         gold: session.party.gold,
         seenMonsters: Array.from(session.party.seenMonsters),
         members: session.party.members.map((m) => ({

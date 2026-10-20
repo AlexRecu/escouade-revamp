@@ -55,6 +55,7 @@ export const explorationMove = (direction: ExplorationDirection): void => {
   socket?.emit('exploration:move', { direction });
 };
 export const explorationRest = (): void => { socket?.emit('exploration:rest', {}); };
+export const explorationChest = (): void => { socket?.emit('exploration:chest', {}); };
 export const explorationExit = (): void => { socket?.emit('exploration:exit', {}); };
 
 // ── Abonnements (serveur → client) ─────────────────────────────────────────

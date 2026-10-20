@@ -280,6 +280,9 @@ export const initializeSocket = (io: Server) => {
     socket.on('exploration:rest', () =>
       replyExploration(() => ExplorationSessionService.restAtCampfire(explorationKey()), currentRoomId() !== null)
     );
+    socket.on('exploration:chest', () =>
+      replyExploration(() => ExplorationSessionService.openChest(explorationKey()), currentRoomId() !== null)
+    );
     socket.on('exploration:exit', () =>
       replyExploration(async () => {
         const result = await ExplorationSessionService.exitDungeon(explorationKey());

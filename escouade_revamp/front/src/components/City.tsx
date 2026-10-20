@@ -35,8 +35,6 @@ type Props = {
   onBack: () => void;
   /** Monde (hubs, zones, arêtes) — pour calculer les destinations de caravane. */
   world: WorldSummary | null;
-  /** Zones terminées — pour le brouillard de guerre (villes révélées). */
-  completedZones: Set<string>;
   /** État de session (socket) — fourni par App (useGame levé au niveau App). */
   state: GameState | null;
   /** Logs du jeu (socket) — fusionnés dans le journal local. */
@@ -55,7 +53,7 @@ type Props = {
  * NB : l'état de partie (socket) est fourni par App (useGame levé au niveau
  * App pour que l'équipe soit visible sur la mappemonde ET en ville).
  */
-export default function City({ hub, onBack, world, completedZones, state, gameLogs, actions }: Props) {
+export default function City({ hub, onBack, world, state, gameLogs, actions }: Props) {
   const layout = hub.layout;
   const [pos, setPos] = useState<Position>(layout?.startTile ?? { row: 0, col: 0 });
   const [path, setPath] = useState<Position[]>([]);
@@ -73,44 +71,20 @@ export default function City({ hub, onBack, world, completedZones, state, gameLo
     return s;
   }, [layout]);
 
-  // **Brouillard de guerre** (même logique que la mappemonde) : les villes
-  // révélées = la racine (Auberge du matin) + les villes connectées à une zone
-  // terminée. Tant qu'aucune zone n'est explorée, seule l'auberge est connue.
-  const revealedHubs = useMemo(() => {
-    if (!world) return new Set<string>();
-    const s = new Set<string>();
-    const rootId = world.hubs.find((h) => h.name === 'Auberge du matin')?.id ?? world.hubs[0]?.id;
-    if (rootId) s.add(rootId);
-    const hubIds = new Set(world.hubs.map((h) => h.id));
-    for (const [from, targets] of Object.entries(world.edges)) {
-      if (completedZones.has(from)) {
-        for (const to of targets) if (hubIds.has(to)) s.add(to);
-      }
-      if (hubIds.has(from)) {
-        for (const to of targets) if (completedZones.has(to)) s.add(from);
-      }
-    }
-    return s;
-  }, [world, completedZones]);
+  // **Brouillard de guerre des villes** : les villes connues = celles que
+  // l'équipe a déjà visitées (source de vérité côté serveur : `visitedHubs`).
+  // On y arrive par caravane ou en traversant une zone de transition.
+  const visitedHubs = useMemo(
+    () => new Set(state?.party.visitedHubs ?? []),
+    [state]
+  );
 
-  // Destinations de caravane : les villes situées au-delà d'une zone de
-  // transition adjacente au hub actuel, **et déjà révélées** (brouillard de
-  // guerre). Pas de téléportation directe ville→ville, et pas de voyage vers
-  // une ville inconnue.
+  // Destinations de caravane : **toutes les villes visitées** sauf le hub
+  // actuel. Tant qu'on n'a visité que l'auberge, il n'y a aucune destination.
   const caravanDestinations = useMemo(() => {
     if (!world) return [];
-    const hubIds = new Set(world.hubs.map((h) => h.id));
-    const destIds = new Set<string>();
-    // Zones adjacentes au hub actuel.
-    for (const zoneId of world.edges[hub.id] ?? []) {
-      if (hubIds.has(zoneId)) continue; // on ne traverse que des zones
-      // Hubs au-delà de cette zone.
-      for (const beyond of world.edges[zoneId] ?? []) {
-        if (hubIds.has(beyond) && beyond !== hub.id) destIds.add(beyond);
-      }
-    }
-    return world.hubs.filter((h) => destIds.has(h.id) && revealedHubs.has(h.id));
-  }, [world, hub.id, revealedHubs]);
+    return world.hubs.filter((h) => h.id !== hub.id && visitedHubs.has(h.id));
+  }, [world, hub.id, visitedHubs]);
 
   const pushLog = useCallback((msg: string) => {
     setLog((l) => [...l.slice(-40), msg]);

@@ -20,6 +20,7 @@ import {
   explorationEnter,
   explorationMove,
   explorationRest,
+  explorationChest,
   explorationExit,
   partyList,
   partyCreate,
@@ -55,6 +56,7 @@ export type GameActions = {
   explorationEnter: (dungeonId: string) => void;
   explorationMove: (direction: ExplorationDirection) => void;
   explorationRest: () => void;
+  explorationChest: () => void;
   explorationExit: () => void;
   // Lobby de parties (multi-joueurs).
   partyList: () => void;
@@ -219,6 +221,7 @@ export function useGame(token: string | null): UseGame {
     explorationEnter,
     explorationMove,
     explorationRest,
+    explorationChest,
     explorationExit,
     partyList,
     partyCreate,

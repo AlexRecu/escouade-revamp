@@ -3,7 +3,7 @@
 import { weightedRandomChoice } from "../../utils/RandomUtils";
 import { Encounter } from "../Exploration/Encounter";
 import { Campfire } from "../Progression/Campfire";
-import { MonsterSpawnRate, Position } from "../Types";
+import { MonsterSpawnRate, Position, Chest } from "../Types";
 
 export type ZoneType = "Forest" | "Cave" | "Tower" | "Castle" | "Canyon" | "FrozenLand" | "Lake";
 
@@ -51,6 +51,8 @@ export class Zone {
   specialEncounters: SpecialEncounter[];
   /** Tuiles de pêche (lac) — y pêcher peut faire apparaître un démon (Mateus). */
   fishingTiles: Position[];
+  /** Coffres de la zone (position + type commun/rare + état d'ouverture). */
+  chests: Chest[];
 
   constructor(
     id: string,
@@ -70,7 +72,8 @@ export class Zone {
     deadEnds: Position[] = [],
     blockedTiles: Position[] = [],
     specialEncounters: SpecialEncounter[] = [],
-    fishingTiles: Position[] = []
+    fishingTiles: Position[] = [],
+    chests: Chest[] = []
   ) {
     this.id = id;
     this.name = name;
@@ -90,6 +93,7 @@ export class Zone {
     this.blockedTiles = blockedTiles;
     this.specialEncounters = specialEncounters;
     this.fishingTiles = fishingTiles;
+    this.chests = chests;
   }
 
   /** true si la case est un spot de pêche (lac). */

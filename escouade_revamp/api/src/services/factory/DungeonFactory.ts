@@ -1,6 +1,5 @@
 import { Dungeon } from "../../classes/World/Dungeon";
 import { ZoneType, Zone } from "../../classes/World/Zone";
-import { IdGenerator } from "../../utils/IdGeneratorUtils";
 import { ZoneFactory } from "./ZoneFactory";
 
 export class DungeonFactory {
@@ -26,7 +25,10 @@ export class DungeonFactory {
       }
   
       return new Dungeon(
-        IdGenerator.generate("Dungeon"),
+        // Id déterministe (stable entre générations) : chaque biome n'apparaît
+        // qu'une fois dans le monde, donc `Dungeon_<biome>` est unique. C'est
+        // ce qui rend `completedZones` (qui stocke ces ids) stable dans le temps.
+        `Dungeon_${params.type}`,
         params.name,
         params.level,
         params.type,

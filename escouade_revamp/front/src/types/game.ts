@@ -146,6 +146,8 @@ export type GameState = {
     id: string;
     worldLevel: number;
     completedZones: string[];
+    /** Villes visitées (ids de hubs) — source de vérité du brouillard de guerre des villes. */
+    visitedHubs: string[];
     /** Pot commun d'or de l'équipe (source de vérité des transactions de ville). */
     gold: number;
     /** Monstres déjà vus (bestiaire, persisté côté serveur). */
@@ -182,6 +184,14 @@ export type DungeonCampfire = {
   used: boolean;
 };
 
+/** Coffre présent sur la grille (commun ou rare). */
+export type DungeonChest = {
+  row: number;
+  col: number;
+  type: 'common' | 'rare';
+  opened: boolean;
+};
+
 /** État d'exploration renvoyé par le serveur après chaque action de donjon. */
 export type ExplorationState = {
   dungeonId: string;
@@ -199,6 +209,15 @@ export type ExplorationState = {
   /** Type de la tuile d'arrivée : "door" (porte de sortie) ou "stairs" (escalier). */
   exitType: 'door' | 'stairs';
   campfires: DungeonCampfire[];
+  /** Coffres de l'étage (position + type commun/rare + état d'ouverture). */
+  chests: DungeonChest[];
+  /** Coffre sur la case courante (pour le bouton d'ouverture). */
+  activeChest: {
+    row: number;
+    col: number;
+    type: 'common' | 'rare';
+    opened: boolean;
+  } | null;
   visited: { row: number; col: number }[];
   activeCampfire: {
     location: string;

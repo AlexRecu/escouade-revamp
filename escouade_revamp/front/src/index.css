@@ -783,6 +783,13 @@ button:disabled {
   font-size: 12px;
   user-select: none;
 }
+/* Nœud de zone terminée de la mappemonde (badge ✓). */
+.node-done {
+  font-size: 13px;
+  font-weight: 700;
+  fill: #4ade80;
+  user-select: none;
+}
 /* Panneau caravane (case dédiée dans la ville). */
 .caravan-btn {
   display: flex;

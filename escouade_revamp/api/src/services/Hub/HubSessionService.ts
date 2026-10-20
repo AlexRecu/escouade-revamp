@@ -114,10 +114,13 @@ export class HubSessionService {
     const hub = await WorldService.getHubById(game.currentHubId);
     if (!hub) throw new Error(`Hub introuvable : ${game.currentHubId}`);
 
-    // Nœud de position : si c'était une zone (exploration abandonnée, ex.
-    // redémarrage), on ramène l'équipe au hub courant.
+    // Nœud de position : peut être un hub (en ville) OU un donjon (l'équipe
+    // est à la sortie d'une zone, sur la mappemonde). On ne le ramène au hub
+    // courant que si l'id est invalide (ex. id legacy, redémarrage).
     let currentNodeId = game.currentNodeId;
-    if (!(await WorldService.getHubById(currentNodeId))) {
+    const isHub = !!(await WorldService.getHubById(currentNodeId));
+    const isDungeon = !!(await WorldService.getDungeonById(currentNodeId));
+    if (!isHub && !isDungeon) {
       currentNodeId = game.currentHubId;
     }
 
@@ -262,13 +265,20 @@ export class HubSessionService {
     if (!session) throw new Error("Aucune session active.");
     const hub = await WorldService.getHubById(hubId);
     if (!hub) throw new Error(`Hub introuvable : ${hubId}`);
-    // **Blocage des déplacements** : on ne peut « entrer » que dans la ville où
-    // l'équipe se trouve (pas de téléportation).
-    if (hub.id !== session.hub.id) {
+    // **Blocage des déplacements** : on ne peut « entrer » que dans une ville
+    // où l'équipe peut légitimement se trouver : la ville où elle est déjà,
+    // OU une ville adjacente au donjon sur lequel elle se trouve (sortie d'une
+    // zone de transition : l'équipe choisit l'une des 2 villes).
+    const onDungeon = session.currentNodeId !== session.hub.id;
+    const adjacentToPosition = onDungeon
+      ? await WorldService.isAdjacent(session.currentNodeId, hub.id)
+      : false;
+    if (hub.id !== session.hub.id && !adjacentToPosition) {
       throw new Error("Vous ne pouvez pas vous téléporter : traversez une zone ou voyagez en caravane.");
     }
     session.hub = hub;
     session.currentNodeId = hub.id;
+    session.party.markHubVisited(hub.id);
     await this.persist(playerId, session);
     return this.serialize(session);
   }
@@ -279,9 +289,12 @@ export class HubSessionService {
    */
   static async takeCaravan(playerId: string, destHubId: string): Promise<{ logs: string[]; state: any }> {
     const session = this.require(playerId);
-    const dests = await WorldService.getCaravanDestinations(session.hub.id);
-    const dest = dests.find((h) => h.id === destHubId);
-    if (!dest) throw new Error("Cette ville n'est pas accessible en caravane depuis ici.");
+    // La destination doit être une ville existante, différente du hub courant.
+    // (Le brouillard de guerre est géré par le front.)
+    const dest = await WorldService.getHubById(destHubId);
+    if (!dest || dest.id === session.hub.id) {
+      throw new Error("Cette ville n'est pas accessible en caravane depuis ici.");
+    }
     const payer = session.party.members[0];
     if (!payer) throw new Error("Aucun personnage pour payer la caravane.");
     const roll = Math.floor(Math.random() * 6) + 1;
@@ -291,6 +304,7 @@ export class HubSessionService {
     }
     session.hub = dest;
     session.currentNodeId = dest.id;
+    session.party.markHubVisited(dest.id);
     await this.persist(playerId, session);
     return { logs: result.logs, state: this.serialize(session) };
   }
@@ -413,6 +427,7 @@ export class HubSessionService {
         id: session.party.id,
         worldLevel: session.party.worldLevel,
         completedZones: Array.from(session.party.completedZones),
+        visitedHubs: Array.from(session.party.visitedHubs),
         gold: session.party.gold,
         seenMonsters: Array.from(session.party.seenMonsters),
         members: session.party.members.map((m) => ({

@@ -7,6 +7,7 @@ import { Character } from "../../classes/UnitTypes/Character";
 import { Item } from "../../classes/Items/Item";
 import { Weapon } from "../../classes/Items/Weapon";
 import { Dungeon } from "../../classes/World/Dungeon";
+import { Hub } from "../../classes/World/Hub";
 import { HubService } from "./HubService";
 import { PartyService } from "./PartyService";
 import { HubSerializer } from "./HubSerializer";
@@ -282,17 +283,26 @@ export class PartyRoomService {
   static async getHubState(roomId: string): Promise<{ room: PartyRoomDocument; session: HubState }> {
     const room = await this.model.findOne({ roomId });
     if (!room) throw new Error("Partie introuvable.");
-    // Si la position est une **zone** (l'équipe était en exploration), on la
-    // ramène au hub courant : l'exploration a été abandonnée (ex. redémarrage
-    // du serveur, déconnexion). Le cercle blanc ne doit pointer que sur un
-    // nœud valide (un hub en mode ville).
+    // La position (`currentNodeId`) peut être un **hub** (en ville) OU un
+    // **donjon** (l'équipe est à la sortie d'une zone, sur la mappemonde). On
+    // ne la ramène au hub courant que si l'id est invalide (ex. id legacy
+    // d'un ancien monde, redémarrage).
     let currentNodeId = room.currentNodeId || room.currentHubId;
-    if (!(await WorldService.getHubById(currentNodeId))) {
+    const isHub = !!(await WorldService.getHubById(currentNodeId));
+    const isDungeon = !!(await WorldService.getDungeonById(currentNodeId));
+    if (!isHub && !isDungeon) {
       currentNodeId = room.currentHubId;
       room.currentNodeId = currentNodeId;
       await room.save();
     }
     const { party, questSystem } = PartyService.deserialize(room.party, room.questSystem, room.currentHubId, currentNodeId);
+    // Migration legacy : les sauvegardes antérieures au champ `visitedHubs`
+    // n'ont pas de liste de villes visitées. On considère que toutes les villes
+    // sont connues (la partie a été jouée sous l'ancien code).
+    if (room.party?.visitedHubs === undefined) {
+      const world = await WorldService.getWorld();
+      for (const n of world.nodes) if (n instanceof Hub) party.markHubVisited(n.id);
+    }
     const hub = await WorldService.getHubById(room.currentHubId);
     if (!hub) throw new Error(`Hub introuvable : ${room.currentHubId}`);
     return { room, session: new HubState(hub, party, questSystem, currentNodeId) };
@@ -328,7 +338,20 @@ export class PartyRoomService {
   }> {
     const room = await this.model.findOne({ roomId });
     if (!room) throw new Error("Partie introuvable.");
-    return PartyService.deserialize(room.party, room.questSystem, room.currentHubId, room.currentNodeId);
+    const { party, questSystem, currentHubId, currentNodeId } = PartyService.deserialize(
+      room.party,
+      room.questSystem,
+      room.currentHubId,
+      room.currentNodeId
+    );
+    // Migration legacy : les sauvegardes antérieures au champ `visitedHubs`
+    // n'ont pas de liste de villes visitées. On considère que toutes les villes
+    // sont connues (la partie a été jouée sous l'ancien code).
+    if (room.party?.visitedHubs === undefined) {
+      const world = await WorldService.getWorld();
+      for (const n of world.nodes) if (n instanceof Hub) party.markHubVisited(n.id);
+    }
+    return { party, questSystem, currentHubId, currentNodeId };
   }
 
   /**
@@ -451,14 +474,21 @@ export class PartyRoomService {
     const { room, session } = await this.getHubState(roomId);
     const hub = await WorldService.getHubById(hubId);
     if (!hub) throw new Error(`Hub introuvable : ${hubId}`);
-    // **Blocage des déplacements** : on ne peut « entrer » que dans la ville où
-    // l'équipe se trouve. Pour changer de ville, il faut traverser une zone de
-    // transition (exploration) ou voyager en caravane (voir `takeCaravan`).
-    if (hub.id !== session.hub.id) {
+    // **Blocage des déplacements** : on ne peut « entrer » que dans une ville
+    // où l'équipe peut légitimement se trouver :
+    //  - la ville où elle est déjà (hub de base), OU
+    //  - une ville **adjacente** au donjon sur lequel elle se trouve (sortie
+    //    d'une zone de transition : l'équipe choisit l'une des 2 villes).
+    const onDungeon = session.currentNodeId !== session.hub.id;
+    const adjacentToPosition = onDungeon
+      ? await WorldService.isAdjacent(session.currentNodeId, hub.id)
+      : false;
+    if (hub.id !== session.hub.id && !adjacentToPosition) {
       throw new Error("Vous ne pouvez pas vous téléporter : traversez une zone ou voyagez en caravane.");
     }
     session.hub = hub;
     session.currentNodeId = hub.id;
+    session.party.markHubVisited(hub.id);
     await this.persistRoom(roomId, session);
     return this.serializeRoom(room, session);
   }
@@ -473,11 +503,13 @@ export class PartyRoomService {
    */
   static async takeCaravan(roomId: string, destHubId: string): Promise<{ logs: string[]; state: any }> {
     const { room, session } = await this.getHubState(roomId);
-    // La destination doit être une ville au-delà d'une zone de transition
-    // adjacente au hub courant (pas de téléportation).
-    const dests = await WorldService.getCaravanDestinations(session.hub.id);
-    const dest = dests.find((h) => h.id === destHubId);
-    if (!dest) throw new Error("Cette ville n'est pas accessible en caravane depuis ici.");
+    // La destination doit être une ville existante, différente du hub courant.
+    // (Le brouillard de guerre — ne voyager que vers des villes révélées — est
+    // géré par le front, qui n'affiche que les destinations connues.)
+    const dest = await WorldService.getHubById(destHubId);
+    if (!dest || dest.id === session.hub.id) {
+      throw new Error("Cette ville n'est pas accessible en caravane depuis ici.");
+    }
     const payer = session.party.members[0];
     if (!payer) throw new Error("Aucun personnage pour payer la caravane.");
     // Roll du voyage (1-6) : 1 = brûleur, 2-3 = gobelins, 4-6 = tranquille.
@@ -489,6 +521,7 @@ export class PartyRoomService {
     // Voyage réussi : l'équipe arrive à destination.
     session.hub = dest;
     session.currentNodeId = dest.id;
+    session.party.markHubVisited(dest.id);
     await this.persistRoom(roomId, session);
     return { logs: result.logs, state: this.serializeRoom(room, session) };
   }

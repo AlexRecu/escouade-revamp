@@ -7,17 +7,19 @@ type Props = {
   logs: string[];
   onMove: (direction: ExplorationDirection) => void;
   onRest: () => void;
+  onOpenChest: () => void;
 };
 
 /**
  * Vue d'exploration d'un donjon (mode déplacement).
  *
  * Affiche la grille de l'étage courant (14×14), la position de l'équipe, les
- * feux de camp, la sortie, et les cases déjà visitées. Le déplacement se fait
- * aux flèches (clavier ou boutons). Le combat n'est pas encore branché.
+ * feux de camp, les coffres, la sortie, et les cases déjà visitées. Le
+ * déplacement se fait aux flèches (clavier ou boutons). Le combat n'est pas
+ * encore branché.
  */
-export default function DungeonView({ exploration, logs, onMove, onRest }: Props) {
-  const { tileMap, position, startTile, endTile, exitType, campfires, visited, activeCampfire, completed } = exploration;
+export default function DungeonView({ exploration, logs, onMove, onRest, onOpenChest }: Props) {
+  const { tileMap, position, startTile, endTile, exitType, campfires, chests, activeChest, visited, activeCampfire, completed } = exploration;
 
   // Index des cases visitées (row,col) pour un accès O(1).
   const visitedSet = useMemo(() => {
@@ -32,6 +34,13 @@ export default function DungeonView({ exploration, logs, onMove, onRest }: Props
     for (const c of campfires) if (c.row != null && c.col != null) m.set(`${c.row},${c.col}`, c.used);
     return m;
   }, [campfires]);
+
+  // Index des coffres (row,col) → { type, opened }.
+  const chestSet = useMemo(() => {
+    const m = new Map<string, { type: 'common' | 'rare'; opened: boolean }>();
+    for (const c of chests) if (c.row != null && c.col != null) m.set(`${c.row},${c.col}`, { type: c.type, opened: c.opened });
+    return m;
+  }, [chests]);
 
   // Déplacement au clavier (flèches + ZQSD/WASD).
   useEffect(() => {
@@ -81,6 +90,7 @@ export default function DungeonView({ exploration, logs, onMove, onRest }: Props
                 const isStart = startTile.row === r && startTile.col === c;
                 const isEnd = endTile.row === r && endTile.col === c;
                 const campUsed = campfireSet.get(`${r},${c}`);
+                const chest = chestSet.get(`${r},${c}`);
                 const isVisited = visitedSet.has(`${r},${c}`);
 
                 let cls = 'tile';
@@ -92,6 +102,7 @@ export default function DungeonView({ exploration, logs, onMove, onRest }: Props
                 let icon = '';
                 if (isPos) icon = '👥';
                 else if (campfireSet.has(`${r},${c}`)) icon = campUsed ? '🪵' : '🔥';
+                else if (chest) icon = chest.opened ? '📭' : chest.type === 'rare' ? '💎' : '📦';
                 else if (isEnd) icon = exitIcon;
                 else if (isStart) icon = '📍';
 
@@ -106,6 +117,8 @@ export default function DungeonView({ exploration, logs, onMove, onRest }: Props
           <div className="dungeon-legend">
             <span>👥 Équipe</span>
             <span>🔥 Feu de camp</span>
+            <span>📦 Coffre</span>
+            <span>💎 Coffre rare</span>
             <span>{exitIcon} {exitLabel}</span>
             <span>📍 Départ</span>
           </div>
@@ -129,6 +142,20 @@ export default function DungeonView({ exploration, logs, onMove, onRest }: Props
               {activeCampfire.used
                 ? 'Feu de camp éteint'
                 : `🔥 Se reposer (+${Math.round(activeCampfire.restoredHp * 100)}% PV/MP)`}
+            </button>
+          )}
+
+          {activeChest && (
+            <button
+              className="dungeon-rest-btn"
+              onClick={onOpenChest}
+              disabled={activeChest.opened}
+            >
+              {activeChest.opened
+                ? '📭 Coffre vide'
+                : activeChest.type === 'rare'
+                  ? '💎 Ouvrir le coffre rare'
+                  : '📦 Ouvrir le coffre'}
             </button>
           )}
 

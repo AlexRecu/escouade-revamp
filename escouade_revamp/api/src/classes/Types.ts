@@ -80,6 +80,17 @@ export type Position = {
     col: number
 };
 
+/** Type de coffre : commun (objets de zone ≤ niveau-1) ou rare (objets de zone = niveau). */
+export type ChestType = "common" | "rare";
+
+/** Coffre d'exploration : position sur la grille + type + état d'ouverture. */
+export type Chest = {
+    position: Position;
+    type: ChestType;
+    /** true si le coffre a déjà été ouvert (session courante). */
+    opened: boolean;
+};
+
 /** Mode de difficulté de la partie (easy = wipe à la ville, hard = game over). */
 export type Difficulty = "easy" | "hard";
 

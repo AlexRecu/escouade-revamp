@@ -51,15 +51,17 @@ export class ZoneFactory {
             );
         }
 
-        // Biomes "ouverts" : couloirs plus larges (blocs 2×2 autorisés).
-        const wideCorridors = type === "Canyon" || type === "FrozenLand";
-        const { tileMap, startTile, endTile, campfires: campfireTiles, deadEnds } = generateTileMapWithFeatures(seed ?? params.zoneLevel, { wideCorridors });
+        // Génération paramétrée par biome (spine + branches, variété à taille
+        // égale). Le biome détermine la sinuosité, les branches et la largeur.
+        const { tileMap, startTile, endTile, campfires: campfireTiles, deadEnds, chests: chestPlacements } = generateTileMapWithFeatures(seed ?? params.zoneLevel, { biome: type });
 
         const spawnRates: MonsterSpawnRate[] = getSpawnRatesForZoneType(type);
         const encounterRate = calculateEncounterRate(spawnRates);
         const checkpoints: Campfire[] = campfireTiles.map(
             (tile, index) => new Campfire(`Feu de camp #${index}`, 0.5, 0.5, tile)
         );
+        // Coffres de l'étage (fermés au départ).
+        const chests = chestPlacements.map((c) => ({ position: c.position, type: c.type, opened: false }));
 
         return new Zone(
             id,
@@ -76,7 +78,11 @@ export class ZoneFactory {
             endTile,
             campfireTiles,
             params.parentDungeonName,
-            deadEnds
+            deadEnds,
+            [],            // blockedTiles
+            [],            // specialEncounters
+            [],            // fishingTiles
+            chests
         );
     }
 

@@ -3,12 +3,12 @@ import { WorldMap } from "../../classes/World/WorldMap";
 import { Zone, ZoneType } from "../../classes/World/Zone";
 import { Hub } from "../../classes/World/Hub";
 import { ZoneFactory } from "./ZoneFactory";
-import { IdGenerator } from "../../utils/IdGeneratorUtils";
 import { DungeonFactory } from "./DungeonFactory";
 import { Dungeon } from "../../classes/World/Dungeon";
 import { STABLE_ZONE_NAMES, seededRandom, randomSeed } from "../../utils/RandomUtils";
 import { Position, HubLayout } from "../../classes/Types";
 import hubsData from "../../config/hubs_data.json";
+
 
 const ZONE_NAMES = [
     "Forêt", "Grotte", "Tour", "Château", "Canyon", "Terre Gelée"
@@ -180,7 +180,7 @@ export class WorldLoader {
             seed: seed,
         });
         const lakeDungeon = new Dungeon(
-            IdGenerator.generate("Dungeon"),
+            "Dungeon_Lake", // id déterministe (stable entre générations)
             STABLE_ZONE_NAMES.Lake,
             1,
             "Lake",

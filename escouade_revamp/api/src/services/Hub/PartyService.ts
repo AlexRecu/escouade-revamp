@@ -81,6 +81,9 @@ export class PartyService {
     );
     const currentHubId = root?.id ?? "Hub_Auberge du matin";
 
+    // Ville de départ visitée (brouillard de guerre des villes).
+    party.markHubVisited(currentHubId);
+
     // On démarre en ville : le nœud de position = le hub de départ.
     return { party, questSystem, currentHubId, currentNodeId: currentHubId };
   }
@@ -124,6 +127,9 @@ export class PartyService {
     );
     const currentHubId = root?.id ?? "Hub_Auberge du matin";
 
+    // Ville de départ visitée (brouillard de guerre des villes).
+    party.markHubVisited(currentHubId);
+
     // On démarre en ville : le nœud de position = le hub de départ.
     return { party, questSystem, currentHubId, currentNodeId: currentHubId };
   }
@@ -143,7 +149,20 @@ export class PartyService {
     // Fallback : les sauvegardes antérieures n'ont pas `currentNodeId` → on
     // retombe sur le hub courant (position en ville).
     const currentNodeId = doc.currentNodeId || doc.currentHubId;
-    return this.deserialize(doc.party, doc.questSystem, doc.currentHubId, currentNodeId);
+    const { party, questSystem, currentHubId } = this.deserialize(
+      doc.party,
+      doc.questSystem,
+      doc.currentHubId,
+      currentNodeId
+    );
+    // Migration legacy : les sauvegardes antérieures au champ `visitedHubs`
+    // n'ont pas de liste de villes visitées. On considère que toutes les villes
+    // sont connues (la partie a été jouée sous l'ancien code).
+    if (doc.party?.visitedHubs === undefined) {
+      const world = await WorldService.getWorld();
+      for (const n of world.nodes) if (n instanceof Hub) party.markHubVisited(n.id);
+    }
+    return { party, questSystem, currentHubId, currentNodeId };
   }
 
   /**
@@ -209,6 +228,10 @@ export class PartyService {
     for (const z of partyData.completedZones ?? []) party.completedZones.add(z);
     // Bestiaire : restaure les monstres déjà rencontrés (persisté).
     for (const m of partyData.seenMonsters ?? []) party.seenMonsters.add(m);
+    // Villes visitées : restaure celles déjà vues (persisté) + le hub courant
+    // (l'équipe y est donc elle est connue).
+    for (const h of partyData.visitedHubs ?? []) party.visitedHubs.add(h);
+    party.markHubVisited(currentHubId);
     // Pot commun d'or : restaure la valeur stockée, puis migre l'or par membre
     // (les parties antérieures stockaient l'or sur chaque `Character`).
     party.gold = partyData.gold ?? 0;

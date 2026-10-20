@@ -25,6 +25,13 @@ export class Party {
    * (et « ? » pour les inconnus) même après rechargement.
    */
   seenMonsters: Set<string> = new Set();
+  /**
+   * **Villes visitées** (ids de hubs). Source de vérité du brouillard de guerre
+   * des villes : on ne peut voyager en caravane que vers des villes qu'on a
+   * déjà vues. Une ville est marquée visitée quand on y arrive (caravane ou
+   * transition) ou quand la partie y démarre.
+   */
+  visitedHubs: Set<string> = new Set();
 
   constructor(id: string, members: Character[], startPosition: Position) {
     this.id = id ?? IdGenerator.generate("Party");
@@ -37,6 +44,11 @@ export class Party {
   /** Ajoute un monstre au bestiaire (idempotent). */
   markMonsterSeen(monsterName: string): void {
     this.seenMonsters.add(monsterName);
+  }
+
+  /** Marque une ville comme visitée (idempotent) — révèle la ville au brouillard. */
+  markHubVisited(hubId: string): void {
+    if (hubId) this.visitedHubs.add(hubId);
   }
 
   /**
@@ -107,6 +119,7 @@ export class Party {
       completedZones: Array.from(this.completedZones),
       gold: this.gold,
       seenMonsters: Array.from(this.seenMonsters),
+      visitedHubs: Array.from(this.visitedHubs),
       members: this.members.map((m) => CharacterFactory.toSerialized(m)),
     };
   }

@@ -28,13 +28,22 @@ const HUB_DESCRIPTIONS: Record<string, string> = {
 const HUB_DESCRIPTION_DEFAULT =
     "Une localité de passage, modeste mais accueillante, où l'escouade peut se reposer et s'équiper avant de repartir.";
 
+/** Seed fixe du monde : topologie stable et identique pour tous les joueurs. */
+const WORLD_SEED = 20261020;
+
 export class WorldService {
     private static world: WorldMap | null = null;
 
-    /** Génère (ou retourne) le monde. Un seul monde par processus. */
+    /**
+     * Génère (ou retourne) le monde. Un seul monde par processus, avec une
+     * **seed fixe** : la topologie est stable d'un redémarrage à l'autre (et
+     * identique pour tous les joueurs). C'est ce qui garantit que les ids de
+     * nœuds (hubs + donjons) — et donc `completedZones` / `visitedHubs` —
+     * restent valides dans le temps.
+     */
     static async getWorld(): Promise<WorldMap> {
         if (!WorldService.world) {
-            WorldService.world = await WorldLoader.generate();
+            WorldService.world = await WorldLoader.generate(WORLD_SEED);
         }
         return WorldService.world;
     }
@@ -112,35 +121,29 @@ export class WorldService {
      */
     static async getAdjacentNodeIds(nodeId: string): Promise<string[]> {
         const world = await WorldService.getWorld();
-        return world.edges.get(nodeId) ?? [];
+        const result = new Set<string>();
+        // Arêtes sortantes (nodeId → X).
+        for (const to of world.edges.get(nodeId) ?? []) result.add(to);
+        // Arêtes entrantes (X → nodeId) : les transitions sont orientées
+        // (hubA → zone → hubB), donc une zone qui mène VERS nodeId doit aussi
+        // être considérée comme adjacente (sinon on ne peut pas la rejouer
+        // depuis le hub d'arrivée).
+        world.edges.forEach((targets, from) => {
+            if (targets.includes(nodeId)) result.add(from);
+        });
+        return Array.from(result);
     }
 
     /**
      * Le nœud `targetId` est-il **adjacent** au nœud `fromId` ? (test de
-     * connectivité pour autoriser un déplacement).
+     * connectivité pour autoriser un déplacement). Bidirectionnel : une arête
+     * `fromId → targetId` OU `targetId → fromId` suffit (les transitions sont
+     * orientées, mais on peut entrer dans une zone depuis les deux côtés).
      */
     static async isAdjacent(fromId: string, targetId: string): Promise<boolean> {
         const world = await WorldService.getWorld();
-        return (world.edges.get(fromId) ?? []).includes(targetId);
-    }
-
-    /**
-     * Destinations de **caravane** depuis un hub : les villes au-delà des zones
-     * de transition adjacentes. Un hub est relié à d'autres villes via des zones
-     * (`hub → zone → hub`) ; la caravane permet de traverser ces zones sans les
-     * explorer (coût + risque). Renvoie les hubs atteignables.
-     */
-    static async getCaravanDestinations(hubId: string): Promise<Hub[]> {
-        const world = await WorldService.getWorld();
-        const zones = world.edges.get(hubId) ?? [];
-        const dests: Hub[] = [];
-        for (const zoneId of zones) {
-            const zone = world.nodes.find((n) => n.id === zoneId);
-            if (!(zone instanceof Dungeon)) continue;
-            const beyond = await WorldService.getHubBeyondDungeon(zoneId, hubId);
-            if (beyond) dests.push(beyond);
-        }
-        return dests;
+        return (world.edges.get(fromId) ?? []).includes(targetId)
+            || (world.edges.get(targetId) ?? []).includes(fromId);
     }
 
     /**

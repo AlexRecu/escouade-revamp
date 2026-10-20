@@ -9,6 +9,8 @@ import { PartyService } from "../Hub/PartyService";
 import { PartyRoomService } from "../Hub/PartyRoomService";
 import { ZoneFactory } from "../factory/ZoneFactory";
 import { CampfireService } from "./CampfireService";
+import { ChestService } from "./ChestService";
+import { Chest } from "../../classes/Types";
 
 /** Direction de déplacement (4 directions, pas de diagonale). */
 export type Direction = "north" | "south" | "east" | "west";
@@ -60,9 +62,10 @@ export class ExplorationSessionService {
   static async enterDungeon(playerId: string, dungeonId: string): Promise<any> {
     const game = await PartyService.loadGame(playerId);
     if (!game) throw new Error("Aucune partie trouvée. Rejoignez d'abord une ville.");
-    // **Blocage des déplacements** : la zone doit être adjacente au hub courant
-    // (pas de téléportation d'un bout à l'autre de la carte).
-    if (!(await WorldService.isAdjacent(game.currentHubId, dungeonId))) {
+    // **Blocage des déplacements** : la zone doit être adjacente à la position
+    // actuelle (hub en ville, ou donjon à la sortie d'une zone). Pas de
+    // téléportation d'un bout à l'autre de la carte.
+    if (!(await WorldService.isAdjacent(game.currentNodeId, dungeonId))) {
       throw new Error("Cette zone n'est pas accessible depuis votre position actuelle.");
     }
     const session = await this.buildSession(game.party, game.questSystem, dungeonId);
@@ -84,9 +87,10 @@ export class ExplorationSessionService {
    */
   static async enterDungeonRoom(roomId: string, dungeonId: string): Promise<any> {
     const game = await PartyRoomService.loadParty(roomId);
-    // **Blocage des déplacements** : la zone doit être adjacente au hub courant
-    // (pas de téléportation d'un bout à l'autre de la carte).
-    if (!(await WorldService.isAdjacent(game.currentHubId, dungeonId))) {
+    // **Blocage des déplacements** : la zone doit être adjacente à la position
+    // actuelle (hub en ville, ou donjon à la sortie d'une zone). Pas de
+    // téléportation d'un bout à l'autre de la carte.
+    if (!(await WorldService.isAdjacent(game.currentNodeId, dungeonId))) {
       throw new Error("Cette zone n'est pas accessible depuis votre position actuelle.");
     }
     const session = await this.buildSession(game.party, game.questSystem, dungeonId);
@@ -115,7 +119,9 @@ export class ExplorationSessionService {
     // Niveau effectif (scaling dynamique) — clé = dungeon.id (cohérent avec
     // le front qui stocke/détecte les zones complétées par id).
     const level = party.effectiveZoneLevel(dungeonId);
-    const floors = 2 + level;
+    // Le lac est une **zone unique** (pas d'étages) : on y entre, on explore,
+    // on en repart par le même port. Les autres donjons ont 2 + niveau étages.
+    const floors = node.biome === "Lake" ? 1 : 2 + level;
 
     // Régénération : un nouveau seed à chaque entrée → nouvelle grille.
     const seed = Math.floor(Math.random() * 1_000_000);
@@ -184,6 +190,12 @@ export class ExplorationSessionService {
     );
     session.activeCampfire = camp;
 
+    // Détection de coffre sur la case (bouton d'ouverture).
+    const chest = zone.chests.find(
+      (c) => c.position.row === to.row && c.position.col === to.col
+    );
+    session.activeChest = chest;
+
     // Atteinte de la tuile d'arrivée (escalier ou porte de sortie).
     if (to.row === zone.endTile.row && to.col === zone.endTile.col) {
       const isLastFloor = session.currentFloor === session.dungeon.levels.length - 1;
@@ -193,6 +205,7 @@ export class ExplorationSessionService {
         const nextZone = session.dungeon.levels[session.currentFloor];
         session.party.moveTo({ ...nextZone.startTile });
         session.activeCampfire = undefined;
+        session.activeChest = undefined;
         return {
           logs: [`Vous descendez à l'étage ${session.currentFloor + 1}.`],
           state: this.serialize(session),
@@ -215,29 +228,40 @@ export class ExplorationSessionService {
   }
 
   /**
-   * Détermine le **nœud de position** après la sortie d'une zone :
-   *  - **transition** (le donjon relie 2 hubs) → le hub au-delà (l'équipe
-   *    avance sur la carte).
-   *  - **impasse** (le donjon n'a qu'un seul hub) → le hub de départ (l'équipe
-   *    revient d'où elle est partie).
+   * Détermine le **nœud de position** après la sortie d'une zone.
    *
-   * Met à jour `session.hubId` (le hub de base) et `session.currentNodeId`
-   * (le nœud de position) en conséquence.
+   * L'équipe reste **sur le nœud du donjon** (pas téléportée dans une ville) :
+   * elle se retrouve sur la mappemonde, positionnée sur la zone qu'elle vient
+   * de terminer, et choisit alors sa destination parmi les villes adjacentes.
+   *  - **transition** (le donjon relie 2 hubs) → les 2 villes sont adjacentes ;
+   *    la ville au-delà est marquée comme découverte (brouillard de guerre).
+   *  - **impasse** (le donjon n'a qu'un seul hub) → seule la ville de départ
+   *    est adjacente.
+   *
+   * `session.hubId` (le hub de base, services de ville) reste le hub de
+   * départ : il ne sera mis à jour que quand l'équipe entrera réellement dans
+   * une ville (`changeHub`).
    */
   private static async resolveExitPosition(
     session: DungeonSession
   ): Promise<{ nodeId: string; log: string | null }> {
     const fromHubId = session.hubId ?? "";
     const beyond = await WorldService.getHubBeyondDungeon(session.dungeon.id, fromHubId);
+    // L'équipe reste sur le donjon (le cercle blanc de la mappemonde la suit).
+    session.currentNodeId = session.dungeon.id;
     if (beyond) {
-      // Transition : l'équipe arrive dans la ville au-delà.
-      session.hubId = beyond.id;
-      session.currentNodeId = beyond.id;
-      return { nodeId: beyond.id, log: `Vous arrivez à ${beyond.name}.` };
+      // Transition : la ville au-delà est découverte (visible sur la carte).
+      session.party.markHubVisited(beyond.id);
+      return {
+        nodeId: session.dungeon.id,
+        log: `Vous êtes à la sortie de la zone. Vous pouvez rejoindre ${beyond.name} ou revenir en arrière.`,
+      };
     }
-    // Impasse : retour au hub de départ.
-    session.currentNodeId = fromHubId;
-    return { nodeId: fromHubId, log: "Vous revenez au point de départ." };
+    // Impasse : seule la ville de départ est adjacente.
+    return {
+      nodeId: session.dungeon.id,
+      log: "Vous êtes à la sortie de la zone.",
+    };
   }
 
   /**
@@ -250,6 +274,45 @@ export class ExplorationSessionService {
       return { logs: ["Il n'y a pas de feu de camp ici."], state: this.serialize(session) };
     }
     const logs = CampfireService.restAtCampfire(session.party, session.activeCampfire);
+    return { logs, state: this.serialize(session) };
+  }
+
+  /**
+   * Ouvre le coffre sur la case courante (si l'équipe est dessus et qu'il est
+   * encore fermé). Le contenu (1 à 3 objets) est tiré selon le type de coffre
+   * et le niveau de la zone, puis ajouté au sac du premier membre (pot commun
+   * de l'équipe, comme les achats du marchand).
+   */
+  static async openChest(sessionKey: string): Promise<any> {
+    const session = this.require(sessionKey);
+    const chest = session.activeChest;
+    if (!chest) {
+      return { logs: ["Il n'y a pas de coffre ici."], state: this.serialize(session) };
+    }
+    if (chest.opened) {
+      return { logs: ["Ce coffre est déjà vide."], state: this.serialize(session) };
+    }
+
+    const zone = session.dungeon.levels[session.currentFloor];
+    const items = ChestService.rollChestContents(chest.type, zone.zoneLevel);
+
+    // Les objets rejoignent le sac du premier membre (pot commun de l'équipe).
+    const holder = session.party.members[0];
+    if (holder) {
+      for (const item of items) holder.bag.push(item);
+    }
+
+    // Marque le coffre comme ouvert (session courante).
+    chest.opened = true;
+    session.activeChest = chest;
+
+    const label = chest.type === "rare" ? "rare" : "commun";
+    const logs: string[] = [`Vous ouvrez un coffre ${label}.`];
+    if (items.length === 0) {
+      logs.push("Il est vide...");
+    } else {
+      logs.push(`L'équipe récupère : ${items.map((i) => i.name).join(", ")}.`);
+    }
     return { logs, state: this.serialize(session) };
   }
 
@@ -334,6 +397,22 @@ export class ExplorationSessionService {
         col: c.position?.col,
         used: c.isUsed,
       })),
+      // Coffres de l'étage (position + type + état d'ouverture).
+      chests: zone.chests.map((c) => ({
+        row: c.position.row,
+        col: c.position.col,
+        type: c.type,
+        opened: c.opened,
+      })),
+      // Coffre sur la case courante (pour le bouton d'ouverture).
+      activeChest: session.activeChest
+        ? {
+            row: session.activeChest.position.row,
+            col: session.activeChest.position.col,
+            type: session.activeChest.type,
+            opened: session.activeChest.opened,
+          }
+        : null,
       visited: Array.from(session.party.visitedTiles).map((key) => {
         const [row, col] = key.split(",").map(Number);
         return { row, col };
@@ -371,6 +450,8 @@ interface DungeonSession {
   dungeon: Dungeon;
   currentFloor: number;
   activeCampfire?: Campfire;
+  /** Coffre sur la case courante (pour le bouton d'ouverture). */
+  activeChest?: Chest;
   completed: boolean;
   /** Backend de persistance (solo ou room). */
   storage: DungeonStorage;
