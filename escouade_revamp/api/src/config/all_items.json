@@ -997,7 +997,7 @@
         "effect": "Ranime un allié avec la moitié de ses points de vie maximum.",
         "purchasePrice": 500,
         "resaleBase": 250,
-        "zoneThreshold": 0
+        "zoneThreshold": 5
     },
     {
         "name": "Antidote universel",
