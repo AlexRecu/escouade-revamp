@@ -8,6 +8,7 @@ import { Status } from "../../classes/Status";
 import { Position } from "../../classes/Types";
 import { Character } from "../../classes/UnitTypes/Character";
 import { JobFactory } from "./JobFactory";
+import { ItemFactory } from "./ItemFactory";
 
 /**
  * Fabrique / (dé)sérialise des `Character`.
@@ -143,8 +144,26 @@ export class CharacterFactory {
       data.weaponSubStat,
       data.range,
       data.element,
-      data.status ? this.deserializeStatus(data.status) : null
+      this.resolveWeaponStatus(data)
     );
+  }
+
+  /**
+   * Résout le statut d'une arme sérialisée.
+   *
+   * Les armes créées **avant** le fix de `ItemFactory` ont un `status`
+   * malformé en base (le nom du statut était une string sérialisée comme
+   * objet → `{ name: null, ... }`). On reconstruit alors le statut depuis le
+   * nom de l'arme (recherche dans `all_items.json`) pour que l'effet
+   * (Saignée, Poison, Crit+…) fonctionne à nouveau.
+   */
+  private static resolveWeaponStatus(data: any): Status | null {
+    const s = data.status;
+    // Statut bien formé (name défini) : on le réutilise tel quel.
+    if (s && typeof s === "object" && s.name) return this.deserializeStatus(s);
+    // Statut malformé ou absent : on se fie au nom de l'arme.
+    const def = ItemFactory.findData(data.name);
+    return ItemFactory.buildWeaponStatus(def?.status ?? null);
   }
 
   // ── Objets (sac) ───────────────────────────────────────────────────────

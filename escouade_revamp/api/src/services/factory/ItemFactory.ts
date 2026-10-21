@@ -5,6 +5,7 @@ import { Weapon } from "../../classes/Items/Weapon";
 import { Status } from "../../classes/Status";
 import { IdGenerator } from "../../utils/IdGeneratorUtils";
 import allItems from "../../config/all_items.json";
+import statusesData from "../../config/statuses_data.json";
 
 /**
  * Fabrique des objets à partir des données de `all_items.json`.
@@ -89,7 +90,7 @@ export class ItemFactory {
     }
 
     private static createWeapon(id: string, data: any, price: number, threshold: number): Weapon {
-        const status: Status | null = data.status ?? null;
+        const status = this.buildWeaponStatus(data.status);
         return new Weapon(
             id,
             data.name,
@@ -105,6 +106,29 @@ export class ItemFactory {
             data.element ?? "",
             status
         );
+    }
+
+    /**
+     * Construit un objet `Status` à partir du **nom** du statut d'arme.
+     *
+     * Le JSON `all_items.json` stocke `status` comme une simple string
+     * (ex. `"Saignée"`). Sans cette conversion, `weapon.status` restait une
+     * string et le test `weapon.status.chance` dans `handleWeaponAttack`
+     * était `undefined` → le statut d'arme n'était **jamais** appliqué
+     * (Saignée ne drainait pas, Poison n'empoisonnait pas, etc.).
+     *
+     * `chance` est fixé à 10 : le statut se déclenche à chaque attaque qui
+     * touche la cible.
+     */
+    static buildWeaponStatus(statusName: string | null | undefined): Status | null {
+        if (!statusName) return null;
+        const def = (statusesData as any[]).find((s) => s.name === statusName);
+        const status = new Status();
+        status.name = statusName;
+        status.statusType = def?.statusType ?? "curse";
+        status.nbTurnEffect = def?.nbTurnEffect ?? null;
+        status.chance = 10;
+        return status;
     }
 
     /**

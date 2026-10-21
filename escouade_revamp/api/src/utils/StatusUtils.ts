@@ -35,11 +35,11 @@ export function applyStatus(user: Unit, status: Status, target: Unit, roll: numb
                 resultArray.push(`${target.name} n'est plus affecté par aucun malus`);
                 break;
             } case 'Saignée': {
-                const drain = target.currentHp * 0.2;
-                target.currentHp -= drain;
+                const drain = Math.round(target.currentHp * 0.2);
+                target.currentHp = Math.max(0, target.currentHp - drain);
                 const healthRegened = Math.round(drain / 2);
-                user.currentHp = Math.max(user.currentHp + healthRegened, user.maxHp);
-                resultArray.push(`${target.name} est drainé de ${drain}PV`);
+                user.currentHp = Math.min(user.currentHp + healthRegened, user.maxHp);
+                resultArray.push(`${target.name} est drainé de ${drain}PV (${user.name} récupère ${healthRegened}PV)`);
                 break;
             } case 'Renvoi': {
                 //appliquer l'utilisation de la corde sortie
