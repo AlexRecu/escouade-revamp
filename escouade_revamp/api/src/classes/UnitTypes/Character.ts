@@ -52,8 +52,8 @@ export class Character extends Unit {
                 name,
                 type,
                 position,
-                stats.endurance + 10, // HP
-                stats.endurance + 10, // Max HP
+                stats.endurance * 2 + 10, // HP
+                stats.endurance * 2 + 10, // Max HP
                 [],
                 items
             );
@@ -74,7 +74,7 @@ export class Character extends Unit {
             const classe = arg8 as Job;
             const items = (arg11 as Item[]) ?? classe.startItems;
     
-            super(id, name, type, position, stats.endurance + 10, stats.endurance + 10, arg3 as Status[], items);
+            super(id, name, type, position, stats.endurance * 2 + 10, stats.endurance * 2 + 10, arg3 as Status[], items);
     
             this.currentMp = stats.mana + 10;
             this.maxMp = stats.mana + 10;
@@ -426,11 +426,13 @@ export class Character extends Unit {
         let resultArray: string[] = []
         if (item instanceof Consumable) {
             resultArray.push(`${this.name} utilise ${item.name} sur ${target.name}.`);
+            let consumed = false;
             if (item.revive && target.isDead()) {
                 // Ranime : à la moitié des PV max (ou montant fixe si défini).
                 target.currentHp = item.hpPercent
                     ? Math.floor(target.maxHp * item.hpPercent)
                     : (item.hp || 1);
+                consumed = true;
             } else if (!target.isDead()) {
                 if (item.fullHeal) {
                     target.currentHp = target.maxHp;
@@ -446,9 +448,13 @@ export class Character extends Unit {
                         target.currentMp = Math.min(target.currentMp + item.mp, target.maxMp);
                     }
                 }
+                consumed = true;
             } else {
                 resultArray.push(`${target.name} est KO et ne peut recevoir ces soins.`);
             }
+            // L'objet est consommé s'il a été effectivement utilisé (soin sur
+            // une cible vivante ou réanimation). Sinon il reste dans le sac.
+            if (consumed) this.consumeItem(item);
         } if (item instanceof Tools && this.job instanceof Thief && this.job.nbTools) {
             resultArray.push(`${this.name} utilise le parchemin ${item.name} sur ${target.name}.`);
             this.job.nbTools--;
@@ -465,6 +471,15 @@ export class Character extends Unit {
             }
         }
         return resultArray;
+    }
+
+    /**
+     * Retire un objet du sac (après usage). Ne fait rien si l'objet n'y est
+     * pas (déjà consommé, ou objet de classe non stocké).
+     */
+    private consumeItem(item: Item): void {
+        const idx = this.bag.findIndex((it) => it.id === item.id);
+        if (idx !== -1) this.bag.splice(idx, 1);
     }
 
     /**

@@ -113,7 +113,9 @@ export class Zone {
    */
   rollForEncounter(teamSize: number = 1, rand: () => number = Math.random): string[] {
     const min = 1;
-    const max = 6;
+    // Pour limiter la difficulté, le nombre d'ennemis est plafonné à
+    // (taille de l'équipe + 1) : on ne peut pas être submergé.
+    const max = teamSize + 1;
   
     // Génère un nombre de monstres suivant une Gaussienne autour de teamSize (avec sigma ≈ 1.2)
     const gaussianRandom = (): number => {

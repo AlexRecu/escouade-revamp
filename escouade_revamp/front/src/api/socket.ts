@@ -58,6 +58,40 @@ export const explorationRest = (): void => { socket?.emit('exploration:rest', {}
 export const explorationChest = (): void => { socket?.emit('exploration:chest', {}); };
 export const explorationExit = (): void => { socket?.emit('exploration:exit', {}); };
 
+// ── Combat interactif (client → serveur) ───────────────────────────────────
+
+/** Phase de placement : repositionne un héros sur les 2 lignes du bas. */
+export const combatPlace = (unitId: string, position: { row: number; col: number }): void => {
+  socket?.emit('combat:place', { unitId, position });
+};
+/** Valide le placement et démarre le combat. */
+export const combatConfirmPlacement = (): void => {
+  socket?.emit('combat:confirmPlacement', {});
+};
+export const combatMove = (unitId: string, position: { row: number; col: number }): void => {
+  socket?.emit('combat:move', { unitId, position });
+};
+export const combatAct = (
+  unitId: string,
+  action: 'attack' | 'spell' | 'skill' | 'item' | 'combo',
+  targetId: string | null,
+  extra?: { spell?: { name: string }; skill?: { name: string }; item?: any; combo?: string[] }
+): void => {
+  socket?.emit('combat:act', { unitId, action, targetId, extra });
+};
+export const combatEndTurn = (unitId: string): void => {
+  socket?.emit('combat:endTurn', { unitId });
+};
+/** Un tour IA à la fois (animation des ennemis un par un). */
+export const combatAiStep = (): void => { socket?.emit('combat:aiStep', {}); };
+export const combatFlee = (): void => { socket?.emit('combat:flee', {}); };
+/** Fin de combat : le serveur applique le butin / la défaite et renvoie l'état d'exploration. */
+export const combatEnd = (): void => { socket?.emit('combat:end', {}); };
+/** Soumet les stats choisies pour les montées de niveau reportées. */
+export const combatSubmitStats = (choices: { characterId: string; stat: string }[]): void => {
+  socket?.emit('combat:submitStats', { choices });
+};
+
 // ── Abonnements (serveur → client) ─────────────────────────────────────────
 
 export function onState(cb: (state: GameState) => void): void {
@@ -89,6 +123,17 @@ export function onExplorationLog(cb: (logs: string[]) => void): void {
 /** Émis quand le donjon est terminé (porte de sortie atteinte) → auto-sortie. */
 export function onExplorationExited(cb: () => void): void {
   socket?.on('exploration:exited', () => cb());
+}
+
+/** Émis après une victoire avec montée de niveau : les montées reportées
+ *  (stat à choisir par le joueur) pour l'écran de choix. */
+export function onExplorationLevelUps(cb: (levelUps: { characterId: string; name: string; level: number }[]) => void): void {
+  socket?.on('exploration:levelUps', ({ levelUps }: { levelUps: { characterId: string; name: string; level: number }[] }) => cb(levelUps));
+}
+
+/** Émis à chaque action de combat (état du plateau + actions disponibles). */
+export function onCombatState(cb: (state: import('../types/game').CombatState) => void): void {
+  socket?.on('combat:state', ({ state }: { state: import('../types/game').CombatState }) => cb(state));
 }
 
 // ── Lobby de parties (multi-joueurs) ───────────────────────────────────────

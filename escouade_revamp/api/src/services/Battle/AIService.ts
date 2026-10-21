@@ -49,10 +49,22 @@ export class AIService {
         // Se rapprocher de la cible (déplacement dépendant de la classe).
         monster.moveTowards(target.position, monster.getMovementRange(), this.state.units);
 
+        // Snapshot des PV/PM avant l'action : le diff donne les unités
+        // réellement affectées (les attaques de zone touchent plusieurs héros).
+        const before = new Map<string, number>();
+        for (const u of this.state.units) before.set(u.id, u.currentHp);
+
         // Utiliser une compétence de monstre si disponible, sinon attaque simple.
         if (monster.monsterSkills && monster.monsterSkills.length > 0 && Math.random() < 0.3) {
             const log = monster.useRandomAbility(this.state.units);
             this.state.pushLogMany(log);
+            const affected = this.state.units
+                .filter((u) => {
+                    const b = before.get(u.id);
+                    return b !== undefined && u.currentHp !== b;
+                })
+                .map((u) => u.id);
+            this.state.recordAction(monster.id, target.id, affected.length ? affected : [target.id], "skill");
         } else {
             // Un allié sous "Bouclier impénétrable" peut intercepter l'attaque.
             if (this.tryProtect(target)) {
@@ -60,6 +72,13 @@ export class AIService {
             }
             const log = monster.attack(target, this.roll(), this.rollCrit());
             this.state.pushLogMany(log);
+            const affected = this.state.units
+                .filter((u) => {
+                    const b = before.get(u.id);
+                    return b !== undefined && u.currentHp !== b;
+                })
+                .map((u) => u.id);
+            this.state.recordAction(monster.id, target.id, affected.length ? affected : [target.id], "attack");
         }
     }
 

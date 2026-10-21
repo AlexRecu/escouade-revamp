@@ -61,6 +61,9 @@ export class Party {
       this.gold += m.gold;
       m.gold = 0;
     }
+    // L'or est toujours un nombre entier : on arrondit le pot commun (corrige
+    // aussi les fractions résiduelles d'anciennes versions).
+    this.gold = Math.floor(this.gold);
   }
 
   moveTo(position: Position) {

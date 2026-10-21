@@ -1,16 +1,57 @@
-import type { GameState } from '../types/game';
+import { useMemo } from 'react';
+import type { GameState, ExplorationState } from '../types/game';
 import { classTokenUrl, tokenUrl } from '../utils/tokens';
 
 type Props = {
   state: GameState | null;
   connected: boolean;
+  /** État d'exploration courant (PV/MP/or à jour pendant le donjon). */
+  exploration: ExplorationState | null;
+  /** Id du joueur connecté (pour mettre son personnage en premier). */
+  myPlayerId: string | null;
+  /** Ouvre le panneau de détail d'un personnage (stats, compétences, sorts, équipement). */
+  onSelectMember?: (memberId: string) => void;
 };
 
 /**
- * Colonne latérale permanente de l'équipe (visible sur la mappemonde ET en
- * ville). Affiche les membres (PV/MP/or) + les armes équipées.
+ * Colonne latérale permanente de l'équipe (visible sur la mappemonde, en ville
+ * ET en donjon). Affiche les membres (PV/MP) + les armes équipées.
+ *
+ * Pendant l'exploration, les PV/MP/or proviennent de l'état d'exploration
+ * (`exploration.party`) — l'état de ville (`state.party`) n'est pas mis à jour
+ * pendant le donjon. Le personnage du joueur connecté est affiché en premier
+ * pour qu'il puisse suivre ses PV sans scroller (surtout en mobile).
  */
-export default function PartySidebar({ state, connected }: Props) {
+export default function PartySidebar({ state, connected, exploration, myPlayerId, onSelectMember }: Props) {
+  // Fusionne les PV/MP à jour (exploration) sur les membres de base (ville).
+  const members = useMemo(() => {
+    if (!state) return [];
+    const base = state.party.members;
+    const expMembers = exploration?.party.members ?? [];
+    const merged = base.map((m) => {
+      const exp = expMembers.find((e) => e.id === m.id);
+      return {
+        ...m,
+        hp: exp ? exp.hp : m.hp,
+        maxHp: exp ? exp.maxHp : m.maxHp,
+        mp: exp ? exp.mp : m.mp,
+        maxMp: exp ? exp.maxMp : m.maxMp,
+        isDead: exp ? exp.isDead : m.isDead,
+      };
+    });
+    // Le personnage du joueur connecté en premier.
+    merged.sort((a, b) => {
+      const aMine = a.ownerId === myPlayerId ? 0 : 1;
+      const bMine = b.ownerId === myPlayerId ? 0 : 1;
+      return aMine - bMine;
+    });
+    return merged;
+  }, [state, exploration, myPlayerId]);
+
+  // Or du groupe : on arrondit à 2 décimales pour éviter les artefacts de
+  // virgule flottante (ex. "125.46000000000001").
+  const gold = Math.round((exploration ? exploration.party.gold : state?.party.gold ?? 0) * 100) / 100;
+
   return (
     <aside className="party-sidebar">
       <div className="party-sidebar-head">
@@ -24,15 +65,23 @@ export default function PartySidebar({ state, connected }: Props) {
         <p className="hint">Chargement de l'équipe…</p>
       ) : (
         <>
-          <p className="party-level">
-            Niveau du monde : <b>{state.party.worldLevel}</b>
-          </p>
-          <div className="party-gold-pot" title="Pot commun d'or de l'équipe">
-            💰 <b>{state.party.gold}</b> or
+          {/* Niveau du monde + or du groupe sur une seule ligne (compact mobile). */}
+          <div className="party-level-row">
+            <span className="party-level">
+              Niveau du monde : <b>{state.party.worldLevel}</b>
+            </span>
+            <span className="party-gold-inline" title="Pot commun d'or de l'équipe">
+              💰 <b>{gold}</b>
+            </span>
           </div>
           <ul className="party-list">
-            {state.party.members.map((m) => (
-              <li key={m.id} className={m.isDead ? 'dead' : ''}>
+            {members.map((m) => (
+              <li
+                key={m.id}
+                className={`${m.isDead ? 'dead' : ''} ${m.ownerId === myPlayerId ? 'mine' : ''} ${onSelectMember ? 'clickable' : ''}`}
+                onClick={() => onSelectMember?.(m.id)}
+                title={onSelectMember ? 'Voir le détail du personnage' : undefined}
+              >
                 <div className="party-head">
                   <img
                     className="party-token"

@@ -3,7 +3,7 @@ import { QuestSystem } from "../../classes/Progression/QuestSystem";
 import { Dungeon } from "../../classes/World/Dungeon";
 import { Zone } from "../../classes/World/Zone";
 import { Campfire } from "../../classes/Progression/Campfire";
-import { Position } from "../../classes/Types";
+import { Position, Statistics } from "../../classes/Types";
 import { WorldService } from "../World/WorldService";
 import { PartyService } from "../Hub/PartyService";
 import { PartyRoomService } from "../Hub/PartyRoomService";
@@ -11,6 +11,10 @@ import { ZoneFactory } from "../factory/ZoneFactory";
 import { CampfireService } from "./CampfireService";
 import { ChestService } from "./ChestService";
 import { Chest } from "../../classes/Types";
+import { EncounterEngine } from "../../classes/Exploration/EncounterEngine";
+import { CombatService } from "../Battle/CombatService";
+import { CombatSessionService } from "../Battle/CombatSessionService";
+import { LootEngine } from "../../classes/Progression/LootEngine";
 
 /** Direction de déplacement (4 directions, pas de diagonale). */
 export type Direction = "north" | "south" | "east" | "west";
@@ -23,7 +27,7 @@ export type Direction = "north" | "south" | "east" | "west";
  *    (`PartyRoomService`) ; la session est cléée par `roomId` et commune à
  *    tous les membres de la room.
  */
-type DungeonStorage =
+export type DungeonStorage =
   | { kind: "player"; playerId: string }
   | { kind: "room"; roomId: string };
 
@@ -62,10 +66,11 @@ export class ExplorationSessionService {
   static async enterDungeon(playerId: string, dungeonId: string): Promise<any> {
     const game = await PartyService.loadGame(playerId);
     if (!game) throw new Error("Aucune partie trouvée. Rejoignez d'abord une ville.");
-    // **Blocage des déplacements** : la zone doit être adjacente à la position
-    // actuelle (hub en ville, ou donjon à la sortie d'une zone). Pas de
-    // téléportation d'un bout à l'autre de la carte.
-    if (!(await WorldService.isAdjacent(game.currentNodeId, dungeonId))) {
+    // **Blocage des déplacements** : la zone doit être la position actuelle
+    // (re-entrée immédiate depuis la sortie) OU adjacente à la position
+    // (hub en ville, ou donjon à la sortie d'une zone). Pas de téléportation
+    // d'un bout à l'autre de la carte.
+    if (game.currentNodeId !== dungeonId && !(await WorldService.isAdjacent(game.currentNodeId, dungeonId))) {
       throw new Error("Cette zone n'est pas accessible depuis votre position actuelle.");
     }
     const session = await this.buildSession(game.party, game.questSystem, dungeonId);
@@ -87,10 +92,11 @@ export class ExplorationSessionService {
    */
   static async enterDungeonRoom(roomId: string, dungeonId: string): Promise<any> {
     const game = await PartyRoomService.loadParty(roomId);
-    // **Blocage des déplacements** : la zone doit être adjacente à la position
-    // actuelle (hub en ville, ou donjon à la sortie d'une zone). Pas de
-    // téléportation d'un bout à l'autre de la carte.
-    if (!(await WorldService.isAdjacent(game.currentNodeId, dungeonId))) {
+    // **Blocage des déplacements** : la zone doit être la position actuelle
+    // (re-entrée immédiate depuis la sortie) OU adjacente à la position
+    // (hub en ville, ou donjon à la sortie d'une zone). Pas de téléportation
+    // d'un bout à l'autre de la carte.
+    if (game.currentNodeId !== dungeonId && !(await WorldService.isAdjacent(game.currentNodeId, dungeonId))) {
       throw new Error("Cette zone n'est pas accessible depuis votre position actuelle.");
     }
     const session = await this.buildSession(game.party, game.questSystem, dungeonId);
@@ -183,6 +189,16 @@ export class ExplorationSessionService {
     }
 
     session.party.moveTo(to);
+
+    // **Rencontre aléatoire** : à chaque pas, le moteur de rencontre décide si
+    // un combat se déclenche (formule du livret : aléatoire < P, P par biome).
+    // Si rencontre → on démarre un **combat interactif** (le front bascule sur
+    // la vue de combat et pilote le tour par tour).
+    const encounter = EncounterEngine.roll(zone, session.party);
+    if (encounter) {
+      const combatState = CombatSessionService.startCombat(sessionKey, session, encounter);
+      return { logs: ["⚔️ Rencontre !"], state: this.serialize(session), combat: combatState };
+    }
 
     // Détection de feu de camp sur la case.
     const camp = zone.checkpoints.find(
@@ -338,6 +354,11 @@ export class ExplorationSessionService {
     return session ? this.serialize(session) : null;
   }
 
+  /** Supprime la session d'exploration (ex. défaite → retour au hub). */
+  static deleteSession(sessionKey: string): void {
+    this.sessions.delete(sessionKey);
+  }
+
   // ── Helpers ──────────────────────────────────────────────────────────────
 
   private static require(sessionKey: string): DungeonSession {
@@ -363,6 +384,23 @@ export class ExplorationSessionService {
     }
   }
 
+  /**
+   * Persiste l'équipe après un combat (appelé par `CombatSessionService`).
+   * Public car le service de combat a besoin de sauvegarder l'état de l'équipe
+   * (PV, or, XP) une fois le combat terminé.
+   */
+  static async persistForCombat(session: DungeonSession): Promise<void> {
+    await this.persist(session);
+  }
+
+  /**
+   * Sérialise l'état d'exploration après un combat (appelé par
+   * `CombatSessionService`) pour que le front reprenne le déplacement.
+   */
+  static serializeForCombat(session: DungeonSession): any {
+    return this.serialize(session);
+  }
+
   /** Une case est praticable si elle est dans les bornes et `true` dans la map. */
   private static isWalkable(zone: Zone, pos: Position): boolean {
     const map = zone.tileMap;
@@ -370,6 +408,48 @@ export class ExplorationSessionService {
     const row = map[pos.row];
     if (!row || pos.col < 0 || pos.col >= row.length) return false;
     return row[pos.col] === true;
+  }
+
+  /**
+   * Résout un combat de rencontre (mode automatique).
+   *
+   * - **Victoire** : distribue le butin (gold + XP) aux survivants, log.
+   * - **Défaite (easy)** : l'équipe est ramenée au début du donjon (étage 1,
+   *   tuile de départ), les morts sont ressuscités à 1 PV.
+   *
+   * @returns l'objet à retourner au front (logs + état).
+   */
+  private static resolveCombat(
+    session: DungeonSession,
+    encounter: import("../../classes/Exploration/Encounter").Encounter
+  ): { logs: string[]; state: any } {
+    const battle = CombatService.buildBattle(encounter, session.party);
+    const outcome = CombatService.runCombat(battle);
+
+    const logs: string[] = [`⚔️ Rencontre : ${encounter.enemies.map((e) => e.name).join(", ")} !`];
+
+    if (outcome.result === "victory") {
+      const loot = LootEngine.distributeLoot(
+        outcome.survivors,
+        outcome.defeated,
+        () => "strength"
+      );
+      logs.push(...loot.logs);
+      logs.push("Victoire !");
+      return { logs, state: this.serialize(session) };
+    }
+
+    // Défaite (ou draw) : retour au début du donjon, morts ressuscités à 1 PV.
+    const firstZone = session.dungeon.levels[0];
+    session.currentFloor = 0;
+    session.party.moveTo({ ...firstZone.startTile });
+    session.party.members.forEach((m) => {
+      if (m.isDead()) m.currentHp = 1;
+    });
+    session.activeCampfire = undefined;
+    session.activeChest = undefined;
+    logs.push("Défaite… L'équipe est ramenée à l'entrée du donjon.");
+    return { logs, state: this.serialize(session) };
   }
 
   /** Sérialise la session pour le front (grille + position + résumé équipe). */
@@ -444,7 +524,7 @@ export class ExplorationSessionService {
 }
 
 /** État interne d'une session de donjon. */
-interface DungeonSession {
+export interface DungeonSession {
   party: Party;
   questSystem: QuestSystem;
   dungeon: Dungeon;

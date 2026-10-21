@@ -16,7 +16,7 @@ export class Warrior extends Job {
                     level: 1, skill:
                     {
                         name: "Bouclier impénétrable",
-                        formula: "this.currentHp += 3; resultArray.push('Il lève son bouclier pour se protéger lui et ses alliés pendant 3 tours');",
+                        formula: "this.currentHp += this.stats.endurance; resultArray.push('Il lève son bouclier pour se protéger lui et ses alliés pendant 3 tours');",
                         target: 'self',
                         type: "single",
                         range: 0,
@@ -24,9 +24,9 @@ export class Warrior extends Job {
                         mpCost: 0,
                         hpCost: 0,
                         roll: 0,
-                        status: [{ name: 'Bouclier Impénétrable', statusType: 'boon', nbTurnEffect: 3 }],
+                        status: [{ name: 'Bouclier Impénétrable', statusType: 'boon', nbTurnEffect: 4 }],
                         element: "",
-                        description: "lève son bouclier pour se protéger lui et ses alliés pendant 3 tours",
+                        description: "lève son bouclier pour se protéger lui et ses alliés pendant 4 tours",
                         move: 0
                     }
                 },
@@ -52,7 +52,7 @@ export class Warrior extends Job {
                     level: 7, skill:
                     {
                         name: "Percée",
-                        formula: `this.attack(target,5,1,this.rightHand.weaponStat-2, resultArray);`,
+                        formula: `this.attack(target,5,1,2, resultArray);`,
                         target: 'enemy',
                         type: "single",
                         range: 1,
@@ -70,7 +70,7 @@ export class Warrior extends Job {
                     level: 10, skill:
                     {
                         name: "Allonge",
-                        formula: `this.attack(target, 5, 1, 0, resultArray);`,
+                        formula: `this.attack(target, 5, 1, 1, resultArray);`,
                         target: 'enemy',
                         type: "single",
                         range: 2,
@@ -88,7 +88,7 @@ export class Warrior extends Job {
                     level: 12, skill:
                     {
                         name: "Frappe tournoyante",
-                        formula: `this.attack(target, 5 , 1, -2, resultArray);`,
+                        formula: `this.attack(target, 5 , 1, 0, resultArray);`,
                         target: 'enemy',
                         type: 'multi',
                         range: 2,

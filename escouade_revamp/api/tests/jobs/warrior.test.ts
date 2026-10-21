@@ -97,7 +97,8 @@ describe("Warrior Class Tests", () => {
         expect(log).toContain("TestWarrior utilise Frappe tournoyante sur "+enemy.name+","+enemy2.name);
         expect(warrior.currentAp).toBe(8);
         expect(enemy3.currentHp).toBe(20);
-        expect(enemy2.currentHp).toBe(100 - ((warrior.stats.strength + 5 - 2) * weapon.weaponStat));
-        expect(enemy.currentHp).toBe(20 - ((warrior.stats.strength + 5 - 2) * weapon.weaponStat));
+        // Formule de dégâts : (Force + roll + bonus) * weaponStat, bonus=0 ici.
+        expect(enemy2.currentHp).toBe(100 - ((warrior.stats.strength + 5) * weapon.weaponStat));
+        expect(enemy.currentHp).toBe(20 - ((warrior.stats.strength + 5) * weapon.weaponStat));
     });
 });

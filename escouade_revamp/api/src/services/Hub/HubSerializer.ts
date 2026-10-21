@@ -160,6 +160,27 @@ export class HubSerializer {
           equippableWeapons: m.job.weapons,
           // Peut-il tenir une arme en main gauche (passif Double Armement) ?
           canDualWield: this.canDualWield(m),
+          // Statistiques détaillées (pour le panneau de détail du personnage).
+          stats: m.stats,
+          // Compétences de classe débloquées (selon le niveau de classe).
+          skills: m.getAvailableAbilities().map((s) => ({
+            name: s.name,
+            apCost: s.apCost,
+            mpCost: s.mpCost,
+            target: s.target,
+            type: s.type,
+            range: s.range,
+            description: s.description,
+          })),
+          // Sorts débloqués (selon le niveau de classe).
+          spells: m.getAvailableSpells().map((s) => ({
+            name: s.name,
+            mpCost: s.mpCost,
+            hpCost: s.hpCost,
+            target: s.target,
+            element: s.element,
+            description: s.description,
+          })),
           rightHand: m.rightHandWeapon ? this.serializeWeapon(m.rightHandWeapon) : null,
           leftHand: m.leftHandWeapon ? this.serializeWeapon(m.leftHandWeapon) : null,
           bag: m.bag.map((i: Item) => ({

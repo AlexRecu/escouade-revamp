@@ -21,6 +21,19 @@ import { ItemFactory } from "../factory/ItemFactory";
  */
 export class ChestService {
   /**
+   * Objets de **classe** (liés à un job, pas des butins génériques) : ils ne
+   * doivent **jamais** tomber dans les coffres. Ils sont obtenus par d'autres
+   * moyens (recrutement, quêtes, équipement de départ).
+   */
+  private static readonly CLASS_ITEM_NAMES = new Set([
+    "Bois",
+    "Repousse",
+    "Corde Sortie",
+    "Monstronomicon",
+    "Pièce marquée",
+  ]);
+
+  /**
    * Tire le contenu d'un coffre : une liste d'objets (1 à 3).
    *
    * @param chestType "common" ou "rare".
@@ -84,15 +97,20 @@ export class ChestService {
     rand: () => number
   ): Item | null {
     const pool = ItemFactory.DATA.filter(
-      (d) => d.type === type && thresholdOk(d.zoneThreshold ?? 0)
+      (d) =>
+        d.type === type &&
+        !this.CLASS_ITEM_NAMES.has(d.name) &&
+        thresholdOk(d.zoneThreshold ?? 0)
     );
     if (pool.length > 0) {
       return ItemFactory.fromData(pool[Math.floor(rand() * pool.length)]);
     }
 
     // Fallback 1 : le plus proche du seuil (le plus faible au-dessus, sinon le
-    // plus élevé en dessous).
-    const ofType = ItemFactory.DATA.filter((d) => d.type === type);
+    // plus élevé en dessous). Les objets de classe restent exclus.
+    const ofType = ItemFactory.DATA.filter(
+      (d) => d.type === type && !this.CLASS_ITEM_NAMES.has(d.name)
+    );
     if (ofType.length === 0) return null;
     const sorted = [...ofType].sort(
       (a, b) => (a.zoneThreshold ?? 0) - (b.zoneThreshold ?? 0)

@@ -18,6 +18,27 @@ export type DiceRoller = () => number;
 export type BattleResult = "victory" | "defeat" | "fled" | "ongoing";
 
 /**
+ * Métadonnées de la **dernière action** exécutée (pour l'animation côté front).
+ * Le front compare ce champ entre deux états successifs pour déclencher le
+ * bon effet visuel (potion, sort, compétence, attaque de zone, etc.).
+ */
+export interface LastAction {
+    /** Id de l'unité qui agit. */
+    actorId: string;
+    /** Id de la cible principale (null si auto/zone). */
+    targetId: string | null;
+    /** Ids de **toutes** les cibles affectées (pour les attaques de zone). */
+    targetIds: string[];
+    /** Nature de l'action. */
+    kind: "attack" | "spell" | "skill" | "item" | "combo";
+    /** Nom de l'action (sort/compétence/objet) pour l'affichage. */
+    name?: string;
+    /** Compteur croissant pour que le front détecte un changement même si
+     *  deux actions identiques se suivent. */
+    seq: number;
+}
+
+/**
  * Représente l'état complet d'un combat : plateau, unités, tour courant,
  * log des événements et résultat.
  *
@@ -37,6 +58,10 @@ export class CombatState {
     log: string[];
     /** Résultat du combat. */
     result: BattleResult;
+    /** Métadonnées de la dernière action exécutée (animation front). */
+    lastAction: LastAction | null;
+    /** Compteur de séquence des actions (croît à chaque action). */
+    private actionSeq: number;
 
     constructor(units: Unit[]) {
         this.units = units;
@@ -45,6 +70,29 @@ export class CombatState {
         this.actionOrder = [];
         this.log = [];
         this.result = "ongoing";
+        this.lastAction = null;
+        this.actionSeq = 0;
+    }
+
+    /**
+     * Enregistre les métadonnées de la dernière action exécutée (pour
+     * l'animation front). Incrémente le compteur de séquence.
+     */
+    recordAction(
+        actorId: string,
+        targetId: string | null,
+        targetIds: string[],
+        kind: LastAction["kind"],
+        name?: string
+    ): void {
+        this.lastAction = {
+            actorId,
+            targetId,
+            targetIds,
+            kind,
+            name,
+            seq: ++this.actionSeq,
+        };
     }
 
     /** Les héros (unités de type "Hero"). */

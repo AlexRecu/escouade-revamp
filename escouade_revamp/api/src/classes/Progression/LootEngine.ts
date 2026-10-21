@@ -11,8 +11,9 @@ export interface LootResult {
   gold: number;
   xp: number;
   logs: string[];
-  /** Les montées de niveau obtenues (personnage + stat choisie). */
-  levelUps: { character: Character; stat: keyof Statistics }[];
+  /** Les montées de niveau obtenues (personnage + stat choisie). `stat` est
+   *  `null` quand le choix est **reporté** (écran de choix après combat). */
+  levelUps: { character: Character; stat: keyof Statistics | null }[];
 }
 
 /**
@@ -56,7 +57,8 @@ export class LootEngine {
     survivors: Character[],
     defeated: Monster[],
     statChoices: (character: Character) => keyof Statistics,
-    difficulty: Difficulty = "easy"
+    difficulty: Difficulty = "easy",
+    deferStats = false
   ): LootResult {
     const logs: string[] = [];
     const levelUps: LootResult["levelUps"] = [];
@@ -77,7 +79,7 @@ export class LootEngine {
       const x = shareXp + (i === 0 ? xpRemainder : 0);
       c.gold += g;
       logs.push(`${c.name} récupère ${g} gold et ${x} XP.`);
-      this.applyXp(c, x, statChoices, logs, levelUps);
+      this.applyXp(c, x, statChoices, logs, levelUps, deferStats);
     });
 
     return { gold, xp, logs, levelUps };
@@ -96,7 +98,8 @@ export class LootEngine {
     xp: number,
     statChoices: (character: Character) => keyof Statistics,
     logs: string[],
-    levelUps: LootResult["levelUps"]
+    levelUps: LootResult["levelUps"],
+    deferStats = false
   ): number {
     character.currentXp += xp;
     let count = 0;
@@ -111,12 +114,51 @@ export class LootEngine {
       // débloque les compétences/sorts/pactes et l'évolution (niveau 20).
       character.job.jobLevel += 1;
       count++;
-      const stat = statChoices(character);
-      character.stats[stat] += 1;
-      levelUps.push({ character, stat });
-      logs.push(`${character.name} monte au niveau ${character.characterLevel} et gagne +1 ${stat} !`);
+      if (deferStats) {
+        // Le choix de la stat est **reporté** : le front affiche un écran de
+        // choix après le combat et le serveur applique la stat via
+        // `applyPendingStat`. On enregistre la montée sans stat choisie.
+        levelUps.push({ character, stat: null as unknown as keyof Statistics });
+        logs.push(`${character.name} monte au niveau ${character.characterLevel} !`);
+      } else {
+        const stat = statChoices(character);
+        character.stats[stat] += 1;
+        this.recalcMaxFromStats(character);
+        levelUps.push({ character, stat });
+        logs.push(`${character.name} monte au niveau ${character.characterLevel} et gagne +1 ${stat} !`);
+      }
     }
 
     return count;
+  }
+
+  /**
+   * Applique la stat choisie par le joueur pour une montée de niveau reportée
+   * (voir `applyXp` avec `deferStats`). Incrémente la stat et, si c'est la
+   * dernière montée reportée du personnage, met à jour les PV/PM max (les
+   * stats Endurance/Mana influencent les max).
+   */
+  static applyPendingStat(character: Character, stat: keyof Statistics): void {
+    // Miroir exact de la branche non-reportée de `applyXp` : on incrémente la
+    // stat puis on recalcule les PV/PM max (Endurance/Mana influencent les max).
+    character.stats[stat] += 1;
+    this.recalcMaxFromStats(character);
+  }
+
+  /**
+   * Recalcule les PV/PM max à partir des stats courantes (formule du livret :
+   * 2 PV par point d'Endurance + 10, 1 PM par point de Mana + 10). Les PV/PM
+   * courants sont ajustés du même delta pour préserver le ratio (un soin ne
+   * doit pas être "perdu" quand le max augmente).
+   */
+  static recalcMaxFromStats(character: Character): void {
+    const newMaxHp = character.stats.endurance * 2 + 10;
+    const newMaxMp = character.stats.mana + 10;
+    const hpDelta = newMaxHp - character.maxHp;
+    const mpDelta = newMaxMp - character.maxMp;
+    character.maxHp = newMaxHp;
+    character.maxMp = newMaxMp;
+    character.currentHp = Math.max(0, Math.min(character.currentHp + hpDelta, character.maxHp));
+    character.currentMp = Math.max(0, Math.min(character.currentMp + mpDelta, character.maxMp));
   }
 }

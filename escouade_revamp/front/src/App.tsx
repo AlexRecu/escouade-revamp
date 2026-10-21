@@ -5,10 +5,13 @@ import type { WorldSummary, Hub } from './types/world';
 import WorldTree from './components/WorldTree';
 import City from './components/City';
 import DungeonView from './components/DungeonView';
+import CombatView from './components/CombatView';
 import AuthScreen from './components/AuthScreen';
 import PartySidebar from './components/PartySidebar';
 import LobbyScreen from './components/LobbyScreen';
 import CharacterCreationScreen from './components/CharacterCreationScreen';
+import StatChoiceModal from './components/StatChoiceModal';
+import CharacterDetailModal from './components/CharacterDetailModal';
 import { useGame } from './game/useGame';
 
 type View =
@@ -24,12 +27,14 @@ function App() {
   const [world, setWorld] = useState<WorldSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<View>({ name: 'world' });
+  // Membre sélectionné pour le panneau de détail (id, null = fermé).
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 
   // Partie temps réel (socket) : levée ici pour que l'équipe soit visible
   // sur la mappemonde ET en ville (colonne latérale permanente). Le token est
   // passé en paramètre : quand il devient disponible (premier login), le
   // socket est re-connecté avec le JWT (sinon il serait refusé par le back).
-  const { state, logs: gameLogs, connected, actions, rooms, error: gameError, inRoom, exploration, setExplorationExitedHandler, setAuthErrorHandler } = useGame(getToken());
+  const { state, logs: gameLogs, connected, actions, rooms, error: gameError, inRoom, exploration, combat, pendingLevelUps, setExplorationExitedHandler, setAuthErrorHandler } = useGame(getToken());
 
   // Identité du joueur connecté (pour savoir s'il a déjà un personnage dans
   // la partie, et s'il est spectateur).
@@ -41,6 +46,11 @@ function App() {
   const isSpectator = useMemo(
     () => state?.room?.members.find((m) => m.playerId === myPlayerId)?.isSpectator ?? false,
     [state, myPlayerId]
+  );
+  // Membre sélectionné (pour le panneau de détail) — résolu depuis l'état.
+  const selectedMember = useMemo(
+    () => (selectedMemberId ? (state?.party.members ?? []).find((m) => m.id === selectedMemberId) ?? null : null),
+    [selectedMemberId, state]
   );
   // Dans une partie, sans personnage, et non spectateur → écran de création.
   const needsCharacter = inRoom && !hasCharacter && !isSpectator;
@@ -152,7 +162,7 @@ function App() {
         <h1>ESCOUADE</h1>
         <span className="subtitle">
           {view.name === 'dungeon'
-            ? 'Exploration de donjon'
+            ? (combat ? 'Combat' : 'Exploration de donjon')
             : 'Mode ville — point-and-clic'}
         </span>
         <span className="spacer" />
@@ -183,7 +193,15 @@ function App() {
       </header>
       <div className="app-body">
         {/* Colonne latérale permanente : l'équipe (visible dans une partie). */}
-        {inRoom && <PartySidebar state={state} connected={connected} />}
+        {inRoom && (
+          <PartySidebar
+            state={state}
+            connected={connected}
+            exploration={exploration}
+            myPlayerId={myPlayerId}
+            onSelectMember={(id) => setSelectedMemberId(id)}
+          />
+        )}
         <main className="app-main">
           {/* Pas dans une partie → écran de lobby (créer / rejoindre / spectateur). */}
           {!inRoom && (
@@ -240,7 +258,19 @@ function App() {
             />
           )}
           {inRoom && !needsCharacter && view.name === 'dungeon' && (
-            exploration ? (
+            combat ? (
+              <CombatView
+                combat={combat}
+                logs={gameLogs}
+                onPlace={(unitId, position) => actions.combatPlace(unitId, position)}
+                onConfirmPlacement={() => actions.combatConfirmPlacement()}
+                onMove={(unitId, position) => actions.combatMove(unitId, position)}
+                onAct={(unitId, action, targetId, extra) => actions.combatAct(unitId, action, targetId, extra)}
+                onEndTurn={(unitId) => actions.combatEndTurn(unitId)}
+                onAiStep={() => actions.combatAiStep()}
+                onFlee={() => actions.combatFlee()}
+              />
+            ) : exploration ? (
               <DungeonView
                 exploration={exploration}
                 logs={gameLogs}
@@ -254,6 +284,20 @@ function App() {
           )}
         </main>
       </div>
+      {/* Écran de choix de stat (montée de niveau reportée après un combat). */}
+      {inRoom && pendingLevelUps.length > 0 && (
+        <StatChoiceModal
+          levelUps={pendingLevelUps}
+          onSubmit={(choices) => actions.combatSubmitStats(choices)}
+        />
+      )}
+      {/* Panneau de détail d'un personnage (stats, compétences, sorts, équipement). */}
+      {inRoom && selectedMember && (
+        <CharacterDetailModal
+          member={selectedMember}
+          onClose={() => setSelectedMemberId(null)}
+        />
+      )}
     </div>
   );
 }

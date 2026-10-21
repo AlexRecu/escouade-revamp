@@ -115,6 +115,13 @@ export class BattleManager {
         const bonus = extra.bonus ?? 0;
         const result: string[] = [];
 
+        // Snapshot des PV/PM **avant** l'action : le diff après l'action nous
+        // donne les unités réellement affectées (essentiel pour les attaques
+        // de zone, qui touchent les unités autour de l'acteur et non la cible
+        // sélectionnée).
+        const before = new Map<string, number>();
+        for (const u of this.state.units) before.set(u.id, u.currentHp);
+
         switch (action) {
             case "attack":
                 result.push(...unit.attack(targets[0], roll, critRoll, bonus));
@@ -148,6 +155,24 @@ export class BattleManager {
                 }
                 break;
         }
+
+        // Métadonnées de l'action pour l'animation côté front. On diff les
+        // PV/PM avant/après pour lister les unités **réellement** affectées
+        // (les attaques de zone touchent les unités autour de l'acteur, pas
+        // forcément la cible sélectionnée).
+        const affected: string[] = [];
+        for (const u of this.state.units) {
+            const b = before.get(u.id);
+            if (b !== undefined && u.currentHp !== b) affected.push(u.id);
+        }
+        const primary = targets[0] ?? null;
+        this.state.recordAction(
+            unit.id,
+            primary ? primary.id : null,
+            affected.length > 0 ? affected : primary ? [primary.id] : [],
+            action,
+            extra.spell?.name ?? extra.skill?.name ?? extra.item?.name
+        );
 
         this.state.pushLogMany(result);
         this.state.checkEnd();
@@ -401,6 +426,214 @@ export class BattleManager {
             this.state.pushLog("❌ La fuite échoue, le combat continue !");
         }
         return success;
+    }
+
+    // ── Mode interactif (contrôle joueur) ────────────────────────────────────
+    // Les méthodes ci-dessous pilotent le combat **acteur par acteur** : les
+    // ennemis (et les invocations autonomes) sont exécutés par l'IA, tandis que
+    // les héros attendent l'input du joueur (déplacement + action). C'est le
+    // mode utilisé par le flux temps réel (socket) — contrairement à `run()`
+    // qui simule tout en automatique.
+
+    /**
+     * Avance le combat en exécutant automatiquement les acteurs pilotés par
+     * l'IA, jusqu'à atteindre un héros (dont on démarre le tour) ou la fin du
+     * combat. À l'arrivée, `state.currentActor` est le héros dont le tour vient
+     * de commencer (ou null si le combat est terminé).
+     *
+     * @returns le log des actions exécutées pendant l'avancée.
+     */
+    stepToPlayer(): string[] {
+        let safety = 0;
+        while (!this.state.isOver && safety < 200) {
+            safety++;
+            const actor = this.state.currentActor;
+            if (!actor) {
+                // Fin de l'ordre d'action du tour → tour suivant.
+                this.state.nextTurn();
+                continue;
+            }
+            if (actor.isDead()) {
+                this.state.nextActor();
+                continue;
+            }
+            // Héros → contrôlé par le joueur : on démarre son tour et on s'arrête.
+            if (actor.type === "Hero") {
+                this.phases.startUnitTurn(actor);
+                break;
+            }
+            // Ennemi / invocation autonome → exécuté par l'IA.
+            this.phases.startUnitTurn(actor);
+            if (!this.phases.canAct(actor)) {
+                this.state.pushLog(`${actor.name} ne peut pas agir ce tour.`);
+                this.phases.endUnitTurn(actor);
+                this.state.nextActor();
+                continue;
+            }
+            const actionCount = this.phases.getActionCount(actor);
+            for (let i = 0; i < actionCount; i++) {
+                if (actor.isDead() || this.state.isOver) break;
+                this.executeActorAction(actor);
+            }
+            this.phases.endUnitTurn(actor);
+            this.state.nextActor();
+            this.cleanupFinishedInvocations();
+            if (this.state.isOver) break;
+        }
+        return this.state.log.slice(-30);
+    }
+
+    /**
+     * Exécute **un seul** tour d'acteur piloté par l'IA (ou démarre le tour du
+     * prochain héros), puis s'arrête. Contrairement à `stepToPlayer` (qui
+     * enchaîne tous les tours IA d'un coup), cette méthode permet au front
+     * d'animer les déplacements/attaques **une unité à la fois** : le client
+     * appelle `aiStep` à chaque état où l'acteur courant est un ennemi.
+     *
+     * @returns le log des actions exécutées pendant ce pas.
+     */
+    stepOneAiTurn(): string[] {
+        let safety = 0;
+        while (!this.state.isOver && safety < 200) {
+            safety++;
+            const actor = this.state.currentActor;
+            if (!actor) {
+                // Fin de l'ordre d'action du tour → tour suivant.
+                this.state.nextTurn();
+                continue;
+            }
+            if (actor.isDead()) {
+                this.state.nextActor();
+                continue;
+            }
+            // Héros → contrôlé par le joueur : on démarre son tour et on s'arrête.
+            if (actor.type === "Hero") {
+                this.phases.startUnitTurn(actor);
+                break;
+            }
+            // Ennemi / invocation autonome → on exécute **un seul** tour IA.
+            this.phases.startUnitTurn(actor);
+            if (!this.phases.canAct(actor)) {
+                this.state.pushLog(`${actor.name} ne peut pas agir ce tour.`);
+                this.phases.endUnitTurn(actor);
+                this.state.nextActor();
+                this.cleanupFinishedInvocations();
+                continue; // acteur bloqué → on passe au suivant (héros ou ennemi).
+            }
+            const actionCount = this.phases.getActionCount(actor);
+            for (let i = 0; i < actionCount; i++) {
+                if (actor.isDead() || this.state.isOver) break;
+                this.executeActorAction(actor);
+            }
+            this.phases.endUnitTurn(actor);
+            this.state.nextActor();
+            this.cleanupFinishedInvocations();
+            // Après le tour ennemi, si le prochain acteur est un héros, on
+            // démarre son tour (AP régénérée, statuts d'ouverture) pour que le
+            // front passe directement au joueur. Sinon on s'arrête : le front
+            // enchaînera avec le prochain ennemi via un nouvel appel.
+            const next = this.state.currentActor;
+            if (next && next.type === "Hero" && !next.isDead()) {
+                this.phases.startUnitTurn(next);
+            }
+            break; // un seul tour ennemi par appel → animation un par un.
+        }
+        return this.state.log.slice(-30);
+    }
+
+    /**
+     * Déplace le héros contrôlé par le joueur (tour courant).
+     * @returns le message de résultat.
+     */
+    playerMove(unitId: string, newPosition: Position): string {
+        const unit = this.state.units.find((u) => u.id === unitId);
+        if (!unit) return "Unité introuvable.";
+        if (unit.type !== "Hero") return "Seul un héros peut se déplacer manuellement.";
+        return this.moveUnit(unit, newPosition);
+    }
+
+    /**
+     * Exécute l'action du héros contrôlé par le joueur, termine son tour, puis
+     * avance le combat vers le prochain héros (en exécutant les IA au passage).
+     *
+     * @param unitId id du héros qui agit.
+     * @param action type d'action (attack / spell / skill / item / combo).
+     * @param targetId id de la cible (null si auto-cible / multi-cible).
+     * @param extra paramètres (spell, skill, item, combo).
+     * @returns le log de l'action + de l'avancée.
+     */
+    playerAct(
+        unitId: string,
+        action: "attack" | "spell" | "skill" | "item" | "combo",
+        targetId: string | null,
+        extra: { spell?: { name: string }; skill?: { name: string }; item?: any; combo?: string[] } = {}
+    ): string[] {
+        const unit = this.state.units.find((u) => u.id === unitId);
+        if (!unit) return ["Unité introuvable."];
+        const target = targetId ? this.state.units.find((u) => u.id === targetId) : null;
+        const targets = target ? [target] : [];
+        const logs = this.performAction(unit, action, targets, extra);
+        this.finishPlayerTurn(unit);
+        return logs;
+    }
+
+    /**
+     * Termine le tour du héros **sans agir** (ex. déplacement uniquement), puis
+     * avance le combat vers le prochain héros.
+     */
+    playerEndTurn(unitId: string): string[] {
+        const unit = this.state.units.find((u) => u.id === unitId);
+        if (!unit) return [];
+        this.finishPlayerTurn(unit);
+        return [];
+    }
+
+    /**
+     * Termine le tour d'un héros : fin de phase, passage à l'acteur suivant,
+     * nettoyage des invocations, puis avancée **sans exécuter les IA**.
+     *
+     * L'avancée s'arrête dès que l'acteur courant est un **ennemi** (le front
+     * le pilotera via `stepOneAiTurn`, un tour à la fois, pour l'animation) ou
+     * un **héros** (dont on démarre le tour pour rendre la main au joueur).
+     */
+    private finishPlayerTurn(unit: Unit): void {
+        this.phases.endUnitTurn(unit);
+        this.state.nextActor();
+        this.cleanupFinishedInvocations();
+        if (!this.state.isOver) {
+            this.advanceAfterPlayerTurn();
+        }
+    }
+
+    /**
+     * Avance l'ordre d'action jusqu'à un acteur « interactif » :
+     *  - un **héros** → on démarre son tour (AP/statuts) et on s'arrête ;
+     *  - un **ennemi** → on s'arrête **sans l'exécuter** (le front appellera
+     *    `stepOneAiTurn` pour l'animer un tour à la fois).
+     *
+     * @returns le log généré pendant l'avancée.
+     */
+    advanceAfterPlayerTurn(): string[] {
+        let safety = 0;
+        while (!this.state.isOver && safety < 200) {
+            safety++;
+            const actor = this.state.currentActor;
+            if (!actor) {
+                this.state.nextTurn();
+                continue;
+            }
+            if (actor.isDead()) {
+                this.state.nextActor();
+                continue;
+            }
+            if (actor.type === "Hero") {
+                this.phases.startUnitTurn(actor);
+                break;
+            }
+            // Ennemi → on s'arrête, le front le pilotera via stepOneAiTurn.
+            break;
+        }
+        return this.state.log.slice(-30);
     }
 
     /**

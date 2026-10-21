@@ -20,7 +20,7 @@ describe("White Mage Spell Tests", () => {
         expect(whiteMage.stats.strength).toBe(0);
         expect(whiteMage.stats.endurance).toBe(1);
         expect(whiteMage.stats.mana).toBe(3);
-        expect(whiteMage.currentHp).toBe(11);
+        expect(whiteMage.currentHp).toBe(12); // 2 PV/End + 10
         expect(whiteMage.currentMp).toBe(13);
         expect(whiteMage.currentAp).toBe(10);
     });

@@ -152,7 +152,7 @@ export class PartyRoomService {
       null
     );
     char.stats = stats;
-    char.maxHp = stats.endurance + 10;
+    char.maxHp = stats.endurance * 2 + 10;
     char.currentHp = char.maxHp;
     char.maxMp = stats.mana + 10;
     char.currentMp = char.maxMp;

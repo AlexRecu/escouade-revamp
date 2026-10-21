@@ -13,7 +13,9 @@ export class  Item {
         this.type=type;
         this.description=effect;
         this.purchasePrice=purchasePrice;
-        this.resaleBase=purchasePrice/2;
+        // L'or est toujours un nombre entier : on arrondit le prix de revente
+        // à l'entier inférieur (sinon un prix impair donne une fraction).
+        this.resaleBase=Math.floor(purchasePrice/2);
         this.zoneThreshold=zoneThreshold;
     }
 }  

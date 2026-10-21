@@ -96,6 +96,55 @@ export abstract class Unit {
     }
 
     /**
+     * Renvoie l'unité **adverse** (camp opposé) la plus proche.
+     *
+     * Contrairement à `getClosestUnit('Enemy')` — qui cherche un autre
+     * *ennemi* et retourne `null` quand l'appelant est le seul ennemi — cette
+     * méthode cherche l'unité du camp **opposé** à l'appelant : un monstre
+     * (Enemy) vise les héros, un héros (Hero) vise les monstres. C'est la
+     * sémantique attendue par les formules de charge des monstres (« Ruée
+     * mortelle », « Rapace », « Saut »…).
+     * @returns l'unité adverse la plus proche, ou null si aucune.
+     */
+    getClosestOpponent(units: Unit[]): Unit | null {
+        let closest: Unit | null = null;
+        let minDistance = Infinity;
+        for (const unit of units) {
+            if (unit.type !== this.type && unit !== this && !unit.isReplaced && !unit.isDead()) {
+                const distance = Math.abs(unit.position.row - this.position.row) + Math.abs(unit.position.col - this.position.col);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closest = unit;
+                }
+            }
+        }
+        return closest;
+    }
+
+    /**
+     * Renvoie l'unité **adverse** (camp opposé) la plus éloignée.
+     * Sémantique opposée de `getClosestOpponent` (utilisée par « Saut »).
+     * @returns l'unité adverse la plus éloignée, ou null si aucune.
+     */
+    getFarthestOpponent(units: Unit[]): Unit | null {
+        let farthest: Unit | null = null;
+        let maxDistance = -1;
+        for (const unit of units) {
+            if (unit.type !== this.type && unit !== this && !unit.isReplaced && !unit.isDead()) {
+                const distance = Math.max(
+                    Math.abs(unit.position.row - this.position.row),
+                    Math.abs(unit.position.col - this.position.col)
+                );
+                if (distance > maxDistance) {
+                    maxDistance = distance;
+                    farthest = unit;
+                }
+            }
+        }
+        return farthest;
+    }
+
+    /**
      * Retourne la position adjacente la plus proche de la cible
      * @param {Position} target La position de l'unité ciblée
      * @param units Contexte de toutes les unités

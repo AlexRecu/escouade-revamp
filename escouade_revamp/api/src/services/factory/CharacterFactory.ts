@@ -52,6 +52,16 @@ export class CharacterFactory {
     char.currentXp = data.currentXp ?? 0;
     char.gold = data.gold ?? 0;
     char.stats = data.stats ?? job.defaultStats;
+    // Migration : la formule des PV max a changé (2 PV par point d'Endurance
+    // + 10, au lieu de 1 PV). On recalcule les max depuis les stats et on
+    // ajuste les PV/PM courants du même delta pour préserver le ratio (un
+    // perso plein reste plein, un perso blessé garde sa blessure relative).
+    const newMaxHp = char.stats.endurance * 2 + 10;
+    const newMaxMp = char.stats.mana + 10;
+    char.currentHp = Math.max(0, Math.min(char.currentHp + (newMaxHp - char.maxHp), newMaxHp));
+    char.currentMp = Math.max(0, Math.min(char.currentMp + (newMaxMp - char.maxMp), newMaxMp));
+    char.maxHp = newMaxHp;
+    char.maxMp = newMaxMp;
     // Le constructeur écrase `job.jobLevel` à 1 (arg12 non fourni) : on le
     // restaure ici depuis les données sérialisées.
     char.job.jobLevel = data.classe?.jobLevel ?? 1;

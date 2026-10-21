@@ -274,7 +274,7 @@ export default function City({ hub, onBack, world, state, gameLogs, actions }: P
               <h4 className="building-title">
                 {activeBuilding ? BUILDING_LABEL[activeBuilding] : 'Interactions'}
                 {activeBuilding && state ? (
-                  <span className="building-gold">— Pot commun {state.party.gold} or</span>
+                  <span className="building-gold">— Pot commun {Math.round(state.party.gold * 100) / 100} or</span>
                 ) : null}
               </h4>
               <CityPanels

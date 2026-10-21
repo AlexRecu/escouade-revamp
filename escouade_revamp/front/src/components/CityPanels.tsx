@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import type { GameState, ShopItem } from '../types/game';
+import { useEffect, useMemo, useState } from 'react';
+import type { GameState, ShopItem, BagItem } from '../types/game';
 import type { GameActions } from '../game/useGame';
 import type { Status } from '../types/world';
 import { fetchStatuses } from '../api/client';
@@ -222,6 +222,32 @@ function ShopPanel({ state, actions, onClose }: { state: GameState; actions: Gam
   }
   const stockOf = (name: string) => stockByName.get(name) ?? 0;
 
+  // **Tri automatique du sac** : on suit l'ordre d'apparition de
+  // all_items.json (représenté par `state.shop`, déjà ordonné). Les objets
+  // absents de la boutique (armes rares, objets de classe…) sont rangés à la
+  // fin, triés par nom. Les **doublons** sont regroupés (x2, x3…) : on vend
+  // l'instance représentative, le compteur indique le stock.
+  const bagGroups = useMemo(() => {
+    const shopOrder = new Map<string, number>();
+    state.shop.forEach((s, i) => {
+      if (!shopOrder.has(s.name)) shopOrder.set(s.name, i);
+    });
+    const groups = new Map<string, { item: BagItem; count: number }>();
+    for (const it of buyer?.bag ?? []) {
+      const g = groups.get(it.name);
+      if (g) g.count += 1;
+      else groups.set(it.name, { item: it, count: 1 });
+    }
+    const arr = Array.from(groups.values());
+    arr.sort((a, b) => {
+      const ia = shopOrder.get(a.item.name) ?? Number.MAX_SAFE_INTEGER;
+      const ib = shopOrder.get(b.item.name) ?? Number.MAX_SAFE_INTEGER;
+      if (ia !== ib) return ia - ib;
+      return a.item.name.localeCompare(b.item.name, 'fr');
+    });
+    return arr;
+  }, [buyer?.bag, state.shop]);
+
   return (
     <div className="panel-scroll">
       <div className="shop-tabs">
@@ -239,7 +265,7 @@ function ShopPanel({ state, actions, onClose }: { state: GameState; actions: Gam
         </button>
       </div>
 
-      <p className="hint">Pot commun : <b>{gold}</b> or</p>
+      <p className="hint">Pot commun : <b>{Math.round(gold * 100) / 100}</b> or</p>
 
       {tab === 'buy' ? (
         <>
@@ -303,14 +329,17 @@ function ShopPanel({ state, actions, onClose }: { state: GameState; actions: Gam
         </>
       ) : (
         <>
-          {buyer && buyer.bag.length > 0 ? (
+          {buyer && bagGroups.length > 0 ? (
             <>
               <h5>Revendre (sac)</h5>
               <ul className="shop-list">
-                {buyer.bag.map((item) => (
+                {bagGroups.map(({ item, count }) => (
                   <li key={item.id} className="shop-item">
                     <div className="shop-item-row">
-                      <span className="shop-name">{item.name}</span>
+                      <span className="shop-name">
+                        {item.name}
+                        {count > 1 && <span className="bag-count"> ×{count}</span>}
+                      </span>
                       <span className="shop-price">~{Math.floor(item.purchasePrice / 2)} or</span>
                       <button onClick={() => actions.sell(item.id)}>Vendre</button>
                     </div>

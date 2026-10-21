@@ -3,6 +3,7 @@ import { authMiddlewareSocket } from './middleware/authMiddleware';
 import { HubSessionService } from './services/Hub/HubSessionService';
 import { PartyRoomService } from './services/Hub/PartyRoomService';
 import { ExplorationSessionService, Direction } from './services/dungeon/ExplorationSessionService';
+import { CombatSessionService } from './services/Battle/CombatSessionService';
 import { PlayerModel } from './models/player.model';
 
 /**
@@ -236,8 +237,27 @@ export const initializeSocket = (io: Server) => {
         const target = broadcast ? io.to(currentRoomId()!) : socket;
         if (result && result.state) target.emit('exploration:state', { state: result.state });
         if (result && result.logs) target.emit('exploration:log', { logs: result.logs });
+        // Rencontre → le front bascule sur la vue de combat.
+        if (result && result.combat) target.emit('combat:state', { state: result.combat });
         // Sortie de donjon (fin atteinte) → le front revient à la mappemonde.
         if (result && result.exited) target.emit('exploration:exited', {});
+        // Montées de niveau reportées → le front affiche l'écran de choix de
+        // stat (après une victoire avec montée de niveau).
+        if (result && result.pendingLevelUps) target.emit('exploration:levelUps', { levelUps: result.pendingLevelUps });
+      } catch (err: any) {
+        socket.emit('error', { message: err?.message ?? 'Erreur inconnue' });
+      }
+    };
+
+    /**
+     * Répond à une action de combat : émet l'état du combat (diffusé à la room
+     * en mode multi). En cas d'erreur, renvoie le message au client.
+     */
+    const replyCombat = (action: () => any, broadcast = false) => {
+      try {
+        const state = action();
+        const target = broadcast ? io.to(currentRoomId()!) : socket;
+        target.emit('combat:state', { state });
       } catch (err: any) {
         socket.emit('error', { message: err?.message ?? 'Erreur inconnue' });
       }
@@ -287,6 +307,61 @@ export const initializeSocket = (io: Server) => {
       replyExploration(async () => {
         const result = await ExplorationSessionService.exitDungeon(explorationKey());
         await refreshHub(currentRoomId() !== null);
+        return result;
+      }, currentRoomId() !== null)
+    );
+
+    // ── Combat interactif (temps réel, tour par tour) ───────────────────────
+    // Le front pilote le combat via ces événements. L'état du combat est
+    // renvoyé via `combat:state` (diffusé à la room en mode multi). Quand le
+    // combat est terminé, le front envoie `combat:end` → le serveur applique
+    // le butin / la défaite, persiste l'équipe et renvoie l'état
+    // d'exploration (le front reprend le déplacement).
+    // Phase de placement : repositionne un héros sur les 2 lignes du bas.
+    socket.on('combat:place', (data: { unitId: string; position: { row: number; col: number } }) =>
+      replyCombat(() => CombatSessionService.placeHero(explorationKey(), data.unitId, data.position), currentRoomId() !== null)
+    );
+    // Valide le placement et démarre le combat.
+    socket.on('combat:confirmPlacement', () =>
+      replyCombat(() => CombatSessionService.confirmPlacement(explorationKey()), currentRoomId() !== null)
+    );
+    socket.on('combat:move', (data: { unitId: string; position: { row: number; col: number } }) =>
+      replyCombat(() => CombatSessionService.move(explorationKey(), data.unitId, data.position), currentRoomId() !== null)
+    );
+    socket.on('combat:act', (data: { unitId: string; action: 'attack' | 'spell' | 'skill' | 'item' | 'combo'; targetId: string | null; extra?: any }) =>
+      replyCombat(() => CombatSessionService.act(explorationKey(), data.unitId, data.action, data.targetId, data.extra ?? {}), currentRoomId() !== null)
+    );
+    socket.on('combat:endTurn', (data: { unitId: string }) =>
+      replyCombat(() => CombatSessionService.endTurn(explorationKey(), data.unitId), currentRoomId() !== null)
+    );
+    // Un tour IA à la fois (animation des ennemis un par un). Le front
+    // enchaîne cet événement tant que l'acteur courant est un ennemi.
+    socket.on('combat:aiStep', () =>
+      replyCombat(() => CombatSessionService.aiStep(explorationKey()), currentRoomId() !== null)
+    );
+    socket.on('combat:flee', () =>
+      replyCombat(() => CombatSessionService.flee(explorationKey()), currentRoomId() !== null)
+    );
+    // Fin de combat : applique le résultat (butin / défaite), persiste, et
+    // renvoie l'état d'exploration pour reprendre le déplacement.
+    socket.on('combat:end', () =>
+      replyExploration(async () => {
+        const result = await CombatSessionService.applyEnd(explorationKey());
+        // Défaite → l'équipe est ramenée au hub d'origine : on resynchronise
+        // l'état de ville (PV à 1, or, position) pour que le front reparte de
+        // la mappemonde avec un état frais.
+        if (result.exited) await refreshHub(currentRoomId() !== null);
+        return result;
+      }, currentRoomId() !== null)
+    );
+    // Choix des stats de montée de niveau (après l'écran de choix du front).
+    // Applique les stats choisies et renvoie l'état d'exploration.
+    socket.on('combat:submitStats', (data: { choices: { characterId: string; stat: string }[] }) =>
+      replyExploration(async () => {
+        const result = await CombatSessionService.submitStatChoices(
+          explorationKey(),
+          (data.choices ?? []).map((c) => ({ characterId: c.characterId, stat: c.stat as any }))
+        );
         return result;
       }, currentRoomId() !== null)
     );

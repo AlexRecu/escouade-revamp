@@ -110,11 +110,14 @@ export function getValidTargets(user: Unit, skill: Skill | EonSkill, allUnits: U
             if (targetType === 'self') {
                 return unit === user;
             }
+            // Cibles relatives au camp de l'utilisateur : un monstre (Enemy)
+            // vise les héros, un héros (Hero) vise les monstres. On exclut
+            // l'utilisateur lui-même (sinon un monstre se ciblerait lui-même).
             if (targetType === 'ally') {
-                return unit.type === 'Hero' || unit === user;
+                return unit.type === user.type && unit !== user;
             }
             if (targetType === 'enemy') {
-                return unit.type === 'Enemy';
+                return unit.type !== user.type;
             }
 
             return false;

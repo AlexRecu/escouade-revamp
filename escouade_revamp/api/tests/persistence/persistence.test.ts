@@ -44,6 +44,13 @@ function makeRichDemonist(): Character {
   c.status.push(poison);
   c.bag.push(new Potion());
   c.bag.push(QuestItemFactory.create("Cœur de sang")!);
+  // Stats cohérentes avec les PV/PM max (formule : 2 PV/End + 10, 1 PM/Mana + 10)
+  // pour que la migration de `fromSerialized` soit un no-op (maxHp 30, maxMp 12).
+  // Défini **après** evolveJob/recruitDemon (qui modifient les stats).
+  c.stats = { strength: 5, dexterity: 5, endurance: 10, mana: 2, intelligence: 5, perception: 5, charisma: 5 };
+  c.maxHp = c.stats.endurance * 2 + 10;   // 30
+  c.maxMp = c.stats.mana + 10;             // 12
+  c.currentMp = c.maxMp;
   return c;
 }
 
@@ -113,6 +120,9 @@ describe("Persistance — round-trip ExplorationState", () => {
       "w1", "Guerrier", "Hero", { row: 7, col: 7 },
       30, 30, [], 10, 10, 10, 10, new Warrior(), null, null
     );
+    // Stats cohérentes avec les PV/PM (2 PV/End + 10, 1 PM/Mana + 10) pour que
+    // la migration de `fromSerialized` soit un no-op (maxHp 30, maxMp 10).
+    warrior.stats = { strength: 5, dexterity: 5, endurance: 10, mana: 0, intelligence: 5, perception: 5, charisma: 5 };
     const party = new Party("p1", [demonist, warrior], { row: 7, col: 8 });
     party.visitedTiles.add("7,8");
     party.defeatedEnemies = 5;
