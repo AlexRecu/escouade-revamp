@@ -512,6 +512,7 @@ export class ExplorationSessionService {
           id: m.id,
           name: m.name,
           job: m.job.name,
+          level: m.characterLevel,
           hp: m.currentHp,
           maxHp: m.maxHp,
           mp: m.currentMp,

@@ -176,6 +176,8 @@ export type DungeonMember = {
   id: string;
   name: string;
   job: string;
+  /** Niveau du personnage (à jour pendant le donjon, ex. après une montée). */
+  level?: number;
   hp: number;
   maxHp: number;
   mp: number;

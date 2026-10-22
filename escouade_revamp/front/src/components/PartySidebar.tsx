@@ -32,6 +32,7 @@ export default function PartySidebar({ state, connected, exploration, myPlayerId
       const exp = expMembers.find((e) => e.id === m.id);
       return {
         ...m,
+        level: exp?.level ?? m.level,
         hp: exp ? exp.hp : m.hp,
         maxHp: exp ? exp.maxHp : m.maxHp,
         mp: exp ? exp.mp : m.mp,

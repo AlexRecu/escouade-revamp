@@ -426,6 +426,10 @@ export class CombatSessionService {
       const loot = LootEngine.distributeLoot(survivors, defeated, () => "strength", "easy", true);
       logs.push(...loot.logs);
       logs.push("🏆 Victoire !");
+      // L'or gagné est d'abord sur les personnages : on le migre dans le pot
+      // commun pour que l'interface (qui affiche `party.gold`) soit à jour
+      // immédiatement, sans attendre la sortie du donjon.
+      exploration.party.consolidateGold();
       // Marque les monstres comme vus (bestiaire).
       defeated.forEach((m) => exploration.party.markMonsterSeen(m.name));
       // Montées reportées (stat = null) → à choisir par le joueur.
