@@ -3,6 +3,7 @@ import type { GameState, ShopItem, BagItem } from '../types/game';
 import type { GameActions } from '../game/useGame';
 import type { Status } from '../types/world';
 import { fetchStatuses } from '../api/client';
+import { weaponEmoji, weaponLabel, canEquip } from '../utils/weapons';
 
 type Props = {
   activeBuilding: string | null;
@@ -130,6 +131,7 @@ function ShopItemRow({
   onBuy,
   canBuy,
   statuses,
+  equippable,
 }: {
   item: ShopItem;
   subtitle?: string;
@@ -138,13 +140,23 @@ function ShopItemRow({
   canBuy: boolean;
   /** Statuts chargés depuis l'API (pour les tooltips + icônes des chips). */
   statuses: Map<string, Status>;
+  /**
+   * Pour une arme : le personnage courant peut-il l'équiper ? `false` → la
+   * ligne est grisée et l'achat désactivé (prévenir le "Cannot equip").
+   * `undefined` = pas une arme (pas de grisé).
+   */
+  equippable?: boolean;
 }) {
+  const isWeapon = item.kind === 'weapon';
   // « Atq X » : l'attaque de l'arme (seule, sans la stat — celle-ci est dans
   // le sous-titre de catégorie).
-  const atq = item.kind === 'weapon' && item.weaponStat ? `Atq ${item.weaponStat}` : null;
+  const atq = isWeapon && item.weaponStat ? `Atq ${item.weaponStat}` : null;
   // Chips statut / élément (armes) : affichées à côté de la catégorie.
-  const statusChip = item.kind === 'weapon' && item.status ? item.status : null;
-  const elementChip = item.kind === 'weapon' && item.element ? item.element : null;
+  const statusChip = isWeapon && item.status ? item.status : null;
+  const elementChip = isWeapon && item.element ? item.element : null;
+  // Emoji + libellé du type d'arme (ex. 🗡️ Épée).
+  const emoji = isWeapon ? weaponEmoji(item.weaponType) : null;
+  const typeLabel = isWeapon ? weaponLabel(item.weaponType) : null;
   // Tooltip du statut : effet + contre-statut (depuis statuses_data.json).
   const statusInfo = statusChip ? statuses.get(statusChip) : undefined;
   const statusTitle = statusInfo
@@ -152,13 +164,15 @@ function ShopItemRow({
       ? `${statusInfo.description} (Contre : ${statusInfo.counterItem})`
       : statusInfo.description
     : statusChip ?? '';
+  const greyed = equippable === false;
   return (
-    <li className="shop-item">
+    <li className={`shop-item${greyed ? ' shop-item-disabled' : ''}`}>
       <div className="shop-item-row">
         <span className="shop-name">
-          {item.name}
-          {(subtitle || statusChip || elementChip) ? (
+          {emoji ? <span className="shop-weapon-emoji">{emoji}</span> : null} {item.name}
+          {(typeLabel || subtitle || statusChip || elementChip) ? (
             <span className="shop-meta">
+              {typeLabel ? <span className="shop-type">{typeLabel}</span> : null}
               {subtitle ? <em className="shop-sub">{subtitle}</em> : null}
               {statusChip ? (
                 <span
@@ -181,7 +195,13 @@ function ShopItemRow({
         </span>
         {atq ? <span className="shop-atq">{atq}</span> : null}
         <span className="shop-price">{item.price} or</span>
-        <button onClick={onBuy} disabled={!canBuy}>Acheter</button>
+        <button
+          onClick={onBuy}
+          disabled={!canBuy || greyed}
+          title={greyed ? 'Votre classe ne peut pas équiper ce type d\'arme' : undefined}
+        >
+          Acheter
+        </button>
         <span className="shop-stock">En stock : {stock}</span>
       </div>
       {item.effect ? <p className="shop-desc">{item.effect}</p> : null}
@@ -282,6 +302,7 @@ function ShopPanel({ state, actions, onClose }: { state: GameState; actions: Gam
                     onBuy={() => actions.buy(item.name)}
                     canBuy={gold >= item.price}
                     statuses={statuses}
+                    equippable={canEquip(buyer?.equippableWeapons, item.weaponType)}
                   />
                 ))}
               </ul>

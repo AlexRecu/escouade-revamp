@@ -141,6 +141,15 @@ export class ItemFactory {
      * JAMAIS (le matching `job.weapons.some(w => weapon.weaponType === w)`
      * échoue) → impossible d'équiper une arme achetée.
      */
+    /**
+     * Clé normalisée du type d'arme à partir du libellé du JSON.
+     * Public : `HubSerializer.shopInventory` l'utilise pour exposer la clé
+     * (`weaponType`) au front, qui la compare à `equippableWeapons`.
+     */
+    static weaponTypeOf(subType: string | undefined): string {
+        return this.normalizeWeaponType(subType);
+    }
+
     private static normalizeWeaponType(subType: string | undefined): string {
         const key = (subType ?? "")
             .toLowerCase()

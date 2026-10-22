@@ -86,6 +86,28 @@ export class LootEngine {
   }
 
   /**
+   * Informations d'XP d'un personnage pour l'affichage (fiche personnage).
+   *
+   * - `xp` : XP **cumulée** (somme des seuils des niveaux précédents +
+   *   progression dans le niveau courant). `currentXp` est réduit à chaque
+   *   montée, d'où le calcul par `totalXp` du niveau précédent.
+   * - `xpToNext` : XP **restante** avant le prochain niveau (`null` si le
+   *   niveau maximum est atteint).
+   * - `xpNeeded` : XP **totale requise** pour le niveau courant (permet au
+   *   front de calculer la progression de la barre : `(xpNeeded - xpToNext)
+   *   / xpNeeded`). `null` si niveau maximum.
+   */
+  static xpInfo(character: Character): { xp: number; xpToNext: number | null; xpNeeded: number | null } {
+    const maxLevel = levelData.length;
+    const level = character.characterLevel;
+    const cumulative = (level >= 2 ? levelData[level - 2].totalXp : 0) + character.currentXp;
+    const atMax = level >= maxLevel;
+    const xpNeeded = atMax ? null : levelData[level - 1].xp;
+    const xpToNext = atMax ? null : Math.max(0, levelData[level - 1].xp - character.currentXp);
+    return { xp: cumulative, xpToNext, xpNeeded };
+  }
+
+  /**
    * Applique l'XP à un personnage et gère les montées de niveau en cascade.
    * À chaque montée : +1 stat au choix (via `statChoices`).
    *

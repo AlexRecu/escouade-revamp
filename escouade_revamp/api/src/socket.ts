@@ -100,6 +100,11 @@ export const initializeSocket = (io: Server) => {
       if (roomId) return reply(() => PartyRoomService.equip(roomId, data.memberId, data.itemId, data.hand), true);
       return reply(() => HubSessionService.equip(playerId, data.memberId, data.itemId, data.hand));
     });
+    socket.on('hub:useItem', (data: { memberId: string; itemId: string }) => {
+      const roomId = currentRoomId();
+      if (roomId) return reply(() => PartyRoomService.useItem(roomId, data.memberId, data.itemId), true);
+      return reply(() => HubSessionService.useItem(playerId, data.memberId, data.itemId));
+    });
     socket.on('hub:rest', () => {
       const roomId = currentRoomId();
       if (roomId) return reply(() => PartyRoomService.rest(roomId), true);

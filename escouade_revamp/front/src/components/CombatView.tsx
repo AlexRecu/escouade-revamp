@@ -478,6 +478,18 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
                           />
                         </div>
                         <span className="unit-hptext">{unit.currentHp}/{unit.maxHp}</span>
+                        {/* Barre d'AP (jaune) — visible pour les héros qui ont des AP. */}
+                        {unit.type === 'Hero' && unit.maxAp ? (
+                          <>
+                            <div className="unit-apbar">
+                              <div
+                                className="unit-apfill"
+                                style={{ width: `${(unit.currentAp! / unit.maxAp) * 100}%` }}
+                              />
+                            </div>
+                            <span className="unit-aptext">{unit.currentAp}/{unit.maxAp} AP</span>
+                          </>
+                        ) : null}
                         {(unit.status ?? []).length > 0 && (
                           <span className="unit-status-icons">
                             {unit.status.map((s, si) => (

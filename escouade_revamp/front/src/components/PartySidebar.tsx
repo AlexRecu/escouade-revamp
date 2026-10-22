@@ -33,6 +33,9 @@ export default function PartySidebar({ state, connected, exploration, myPlayerId
       return {
         ...m,
         level: exp?.level ?? m.level,
+        xp: exp?.xp ?? m.xp,
+        xpToNext: exp?.xpToNext ?? m.xpToNext,
+        xpNeeded: exp?.xpNeeded ?? m.xpNeeded,
         hp: exp ? exp.hp : m.hp,
         maxHp: exp ? exp.maxHp : m.maxHp,
         mp: exp ? exp.mp : m.mp,

@@ -513,6 +513,7 @@ export class ExplorationSessionService {
           name: m.name,
           job: m.job.name,
           level: m.characterLevel,
+          ...LootEngine.xpInfo(m),
           hp: m.currentHp,
           maxHp: m.maxHp,
           mp: m.currentMp,

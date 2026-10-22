@@ -434,6 +434,24 @@ export class PartyRoomService {
     }
   }
 
+  /** Utilise un consommable du sac sur le membre (soin, réanimation, statut). */
+  static async useItem(
+    roomId: string,
+    memberId: string,
+    itemId: string
+  ): Promise<{ logs: string[]; state: any }> {
+    const { room, session } = await this.getHubState(roomId);
+    const member = session.party.members.find((m) => m.id === memberId);
+    if (!member) return { logs: ["Personnage introuvable."], state: this.serializeRoom(room, session) };
+    const item = member.bag.find((i) => i.id === itemId);
+    if (!item || item.type !== "consumable") {
+      return { logs: ["Cet objet n'est pas utilisable."], state: this.serializeRoom(room, session) };
+    }
+    const logs = member.useItem(item, member);
+    await this.persistRoom(roomId, session);
+    return { logs, state: this.serializeRoom(room, session) };
+  }
+
   static async rest(roomId: string): Promise<{ logs: string[]; state: any }> {
     const { room, session } = await this.getHubState(roomId);
     const logs: string[] = [];

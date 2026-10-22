@@ -35,6 +35,9 @@ export const hubSell = (itemId: string): void => { socket?.emit('hub:sell', { it
 export const hubEquip = (memberId: string, itemId: string, hand: 'right' | 'left'): void => {
   socket?.emit('hub:equip', { memberId, itemId, hand });
 };
+export const hubUseItem = (memberId: string, itemId: string): void => {
+  socket?.emit('hub:useItem', { memberId, itemId });
+};
 export const hubRest = (): void => { socket?.emit('hub:rest', {}); };
 export const hubSanctuary = (targetId: string): void => { socket?.emit('hub:sanctuary', { targetId }); };
 export const hubQuestBoard = (): void => { socket?.emit('hub:questBoard', {}); };

@@ -200,6 +200,30 @@ export class HubSessionService {
   }
 
   /**
+   * Utilise un consommable du sac sur le membre (soin, réanimation, statut).
+   *
+   * L'objet doit être dans le sac du membre et de type `consumable`. L'effet
+   * est appliqué via `Character.useItem` (soins PV/MP, réanimation, purge de
+   * statut) ; l'objet est retiré du sac s'il a été effectivement consommé.
+   */
+  static async useItem(
+    playerId: string,
+    memberId: string,
+    itemId: string
+  ): Promise<{ logs: string[]; state: any }> {
+    const session = this.require(playerId);
+    const member = session.party.members.find((m) => m.id === memberId);
+    if (!member) return { logs: ["Personnage introuvable."], state: this.serialize(session) };
+    const item = member.bag.find((i) => i.id === itemId);
+    if (!item || item.type !== "consumable") {
+      return { logs: ["Cet objet n'est pas utilisable."], state: this.serialize(session) };
+    }
+    const logs = member.useItem(item, member);
+    await this.persist(playerId, session);
+    return { logs, state: this.serialize(session) };
+  }
+
+  /**
    * Nuit à l'auberge : soigne tout le monde (PV/MP) contre or.
    */
   static async rest(playerId: string): Promise<{ logs: string[]; state: any }> {

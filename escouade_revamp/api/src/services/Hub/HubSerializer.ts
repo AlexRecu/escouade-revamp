@@ -5,6 +5,7 @@ import { Item } from "../../classes/Items/Item";
 import { Quest } from "../../classes/Progression/QuestSystem";
 import { BlackMage } from "../../classes/Jobs/BlackMage";
 import { ItemFactory } from "../factory/ItemFactory";
+import { LootEngine } from "../../classes/Progression/LootEngine";
 
 /**
  * Sérialisation partagée de l'état de ville (`HubState`) pour le front.
@@ -31,6 +32,8 @@ export class HubSerializer {
     price: number;
     effect: string;
     subType?: string;
+    /** Clé normalisée du type d'arme (ex. "epee") — pour le grisé côté front. */
+    weaponType?: string;
     mainStat?: string;
     weaponStat?: number;
     element?: string;
@@ -42,6 +45,7 @@ export class HubSerializer {
       price: number;
       effect: string;
       subType?: string;
+      weaponType?: string;
       mainStat?: string;
       weaponStat?: number;
       element?: string;
@@ -65,6 +69,7 @@ export class HubSerializer {
           price: data.purchasePrice ?? 0,
           effect: data.effect ?? "",
           subType: data.subType,
+          weaponType: ItemFactory.weaponTypeOf(data.subType),
           mainStat: data.mainStat,
           weaponStat: data.weaponStat,
           element: data.element,
@@ -152,6 +157,8 @@ export class HubSerializer {
           maxMp: m.maxMp,
           gold: m.gold,
           level: m.characterLevel,
+          // XP cumulée + XP restante avant le prochain niveau (fiche perso).
+          ...LootEngine.xpInfo(m),
           isDead: m.isDead(),
           // Joueur qui contrôle ce perso + avatar (multi-joueurs).
           ownerId: m.ownerId ?? null,
@@ -194,6 +201,8 @@ export class HubSerializer {
             mainStat: (i as any).mainStat,
             weaponStat: (i as any).weaponStat,
             element: (i as any).element,
+            // Statut d'arme (ex. "Saignée") — affiché dans le sac / l'équipement.
+            status: (i as any).status ? (i as any).status.name : null,
           })),
         })),
       },

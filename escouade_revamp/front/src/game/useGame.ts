@@ -9,6 +9,7 @@ import {
   hubBuy,
   hubSell,
   hubEquip,
+  hubUseItem,
   hubRest,
   hubSanctuary,
   hubQuestBoard,
@@ -55,6 +56,7 @@ export type GameActions = {
   buy: (itemName: string) => void;
   sell: (itemId: string) => void;
   equip: (memberId: string, itemId: string, hand: 'right' | 'left') => void;
+  useItem: (memberId: string, itemId: string) => void;
   rest: () => void;
   sanctuary: (targetId: string) => void;
   questBoard: () => void;
@@ -269,6 +271,7 @@ export function useGame(token: string | null): UseGame {
     buy: hubBuy,
     sell: hubSell,
     equip: hubEquip,
+    useItem: hubUseItem,
     rest: hubRest,
     sanctuary: hubSanctuary,
     questBoard: hubQuestBoard,

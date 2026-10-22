@@ -48,10 +48,28 @@ function App() {
     [state, myPlayerId]
   );
   // Membre sélectionné (pour le panneau de détail) — résolu depuis l'état.
-  const selectedMember = useMemo(
-    () => (selectedMemberId ? (state?.party.members ?? []).find((m) => m.id === selectedMemberId) ?? null : null),
-    [selectedMemberId, state]
-  );
+  // Pendant le donjon, l'état de ville n'est pas mis à jour : on fusionne les
+  // données d'exploration (XP, PV, niveau…) sur le membre de base, comme le
+  // fait `PartySidebar`.
+  const selectedMember = useMemo(() => {
+    if (!selectedMemberId) return null;
+    const base = (state?.party.members ?? []).find((m) => m.id === selectedMemberId);
+    if (!base) return null;
+    const exp = exploration?.party.members.find((e) => e.id === base.id);
+    if (!exp) return base;
+    return {
+      ...base,
+      level: exp.level ?? base.level,
+      xp: exp.xp ?? base.xp,
+      xpToNext: exp.xpToNext ?? base.xpToNext,
+      xpNeeded: exp.xpNeeded ?? base.xpNeeded,
+      hp: exp.hp,
+      maxHp: exp.maxHp,
+      mp: exp.mp,
+      maxMp: exp.maxMp,
+      isDead: exp.isDead,
+    };
+  }, [selectedMemberId, state, exploration]);
   // Dans une partie, sans personnage, et non spectateur → écran de création.
   const needsCharacter = inRoom && !hasCharacter && !isSpectator;
 
@@ -296,6 +314,7 @@ function App() {
         <CharacterDetailModal
           member={selectedMember}
           onClose={() => setSelectedMemberId(null)}
+          actions={actions}
         />
       )}
     </div>

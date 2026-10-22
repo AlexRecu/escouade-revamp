@@ -14,6 +14,8 @@ export type BagItem = {
   mainStat?: string;
   weaponStat?: number;
   element?: string;
+  /** Statut d'arme (ex. "Saignée") — affiché dans le sac / l'équipement. */
+  status?: string | null;
 };
 
 /** Arme équipée (main droite ou gauche). */
@@ -39,6 +41,12 @@ export type PartyMember = {
   maxMp: number;
   gold: number;
   level: number;
+  /** XP cumulée (somme des niveaux précédents + progression courante). */
+  xp?: number;
+  /** XP restante avant le prochain niveau (`null` = niveau max). */
+  xpToNext?: number | null;
+  /** XP totale requise pour le niveau courant (`null` = niveau max). */
+  xpNeeded?: number | null;
   isDead: boolean;
   /** Types d'armes que ce personnage peut équiper (selon sa classe). */
   equippableWeapons: string[];
@@ -104,6 +112,8 @@ export type ShopItem = {
   effect: string;
   // Champs d'arme (présents si kind === "weapon").
   subType?: string;
+  /** Clé normalisée du type d'arme (ex. "epee") — pour le grisé côté front. */
+  weaponType?: string;
   mainStat?: string;
   weaponStat?: number;
   element?: string;
@@ -178,6 +188,12 @@ export type DungeonMember = {
   job: string;
   /** Niveau du personnage (à jour pendant le donjon, ex. après une montée). */
   level?: number;
+  /** XP cumulée (somme des niveaux précédents + progression courante). */
+  xp?: number;
+  /** XP restante avant le prochain niveau (`null` = niveau max). */
+  xpToNext?: number | null;
+  /** XP totale requise pour le niveau courant (`null` = niveau max). */
+  xpNeeded?: number | null;
   hp: number;
   maxHp: number;
   mp: number;
