@@ -3,6 +3,8 @@ import { Unit } from "../../classes/UnitTypes/Unit";
 import { Character } from "../../classes/UnitTypes/Character";
 import { Monster } from "../../classes/UnitTypes/Monster";
 import { Eon } from "../../classes/UnitTypes/Eon";
+import { Position } from "../../classes/Types";
+import { isAdjacentToGoal, isOccupied } from "../../utils/PositionUtils";
 
 /**
  * Service d'intelligence artificielle pour le combat.
@@ -46,40 +48,158 @@ export class AIService {
         const target = provoked ?? monster.getClosestUnit("Hero", this.state.units);
         if (!target) return;
 
-        // Se rapprocher de la cible (déplacement dépendant de la classe).
-        monster.moveTowards(target.position, monster.getMovementRange(), this.state.units);
+        const inMeleeRange = isAdjacentToGoal(monster.position, target.position);
 
-        // Snapshot des PV/PM avant l'action : le diff donne les unités
-        // réellement affectées (les attaques de zone touchent plusieurs héros).
+        // ── 1. Déplacement ────────────────────────────────────────────────
+        // Physique : se rapproche de la cible (pour pouvoir l'atteindre à
+        // portée 1). Magique : garde la distance — s'il est collé à un héros
+        // il s'immobilise, sinon il recule tous les 2-3 tours s'il le peut.
+        if (monster.attackType === "Physique") {
+            if (!inMeleeRange) {
+                monster.moveTowards(target.position, monster.getMovementRange(), this.state.units);
+            }
+        } else {
+            const heroAdjacent = this.state.aliveHeroes.some(
+                (u) => u instanceof Character && isAdjacentToGoal(u.position, monster.position)
+            );
+            if (!heroAdjacent && monster.turnCount % 3 === 0) {
+                monster.moveAwayFrom(target.position, monster.getMovementRange(), this.state.units);
+            }
+        }
+
+        // Snapshot des PV avant l'action : le diff donne les unités réellement
+        // affectées (les attaques de zone touchent plusieurs héros).
         const before = new Map<string, number>();
         for (const u of this.state.units) before.set(u.id, u.currentHp);
 
-        // Utiliser une compétence de monstre si disponible, sinon attaque simple.
-        if (monster.monsterSkills && monster.monsterSkills.length > 0 && Math.random() < 0.3) {
-            const log = monster.useRandomAbility(this.state.units);
-            this.state.pushLogMany(log);
-            const affected = this.state.units
-                .filter((u) => {
-                    const b = before.get(u.id);
-                    return b !== undefined && u.currentHp !== b;
-                })
-                .map((u) => u.id);
-            this.state.recordAction(monster.id, target.id, affected.length ? affected : [target.id], "skill");
-        } else {
-            // Un allié sous "Bouclier impénétrable" peut intercepter l'attaque.
-            if (this.tryProtect(target)) {
+        // ── 2. Capacité spéciale (PV < 33%) : Appel à la meute / Explosion ─
+        if (monster.currentHp < monster.maxHp / 3) {
+            const special = monster.getReadyAbilities().find(
+                (n) => monster.isSummonAbility(n) || monster.isExplosionAbility(n)
+            );
+            if (special) {
+                this.executeAbility(monster, special, target, before);
                 return;
             }
-            const log = monster.attack(target, this.roll(), this.rollCrit());
-            this.state.pushLogMany(log);
-            const affected = this.state.units
-                .filter((u) => {
-                    const b = before.get(u.id);
-                    return b !== undefined && u.currentHp !== b;
-                })
-                .map((u) => u.id);
-            this.state.recordAction(monster.id, target.id, affected.length ? affected : [target.id], "attack");
         }
+
+        // ── 3. Choix de l'action ──────────────────────────────────────────
+        // Le monstre alterne entre son attaque normale et ses capacités : une
+        // capacité prête est utilisée avec 50% de chance, sinon attaque
+        // normale. Au début du combat (tour 1), s'il ne peut pas toucher à
+        // portée, il privilégie une capacité à distance (sort) ou de
+        // rapprochement (Rapace, Ruée mortelle…).
+        const ready = monster.getUsableAbilities(this.state.units).filter(
+            (n) => !monster.isSummonAbility(n) && !monster.isExplosionAbility(n)
+        );
+        let ability: string | null = null;
+        if (ready.length > 0) {
+            if (monster.turnCount === 1 && !inMeleeRange) {
+                const ranged = ready.find((n) => monster.isRangedAbility(n));
+                const approach = ready.find((n) => monster.isApproachAbility(n));
+                ability = ranged ?? approach ?? (Math.random() < 0.5 ? ready[0] : null);
+            } else {
+                ability = Math.random() < 0.5 ? ready[Math.floor(Math.random() * ready.length)] : null;
+            }
+        }
+
+        if (ability) {
+            this.executeAbility(monster, ability, target, before);
+        } else {
+            this.executeBasicAttack(monster, target, before);
+        }
+    }
+
+    /**
+     * Exécute une capacité du monstre (skill ou sort), déclenche son cooldown
+     * et enregistre l'action pour l'animation front.
+     */
+    private executeAbility(monster: Monster, name: string, target: Unit, before: Map<string, number>): void {
+        const info = monster.getAbilityInfo(name);
+        if (!info) return;
+
+        // "Appel à la meute" : fait apparaître un congénère sur une case libre.
+        if (monster.isSummonAbility(name)) {
+            const log = monster.useAbilityByName(name, this.state.units);
+            this.state.pushLogMany(log);
+            this.trySummonAlly(monster);
+            this.state.recordAction(monster.id, target.id, [target.id], "skill", name);
+            return;
+        }
+
+        let log: string[];
+        let kind: "skill" | "spell";
+        if (info.kind === "spell") {
+            log = monster.useSpellFromName(name, target, this.roll(), this.rollCrit());
+            kind = "spell";
+        } else {
+            log = monster.useAbilityByName(name, this.state.units);
+            kind = "skill";
+        }
+        this.state.pushLogMany(log);
+        monster.startCooldown(name);
+        const affected = this.state.units
+            .filter((u) => {
+                const b = before.get(u.id);
+                return b !== undefined && u.currentHp !== b;
+            })
+            .map((u) => u.id);
+        this.state.recordAction(monster.id, target.id, affected.length ? affected : [target.id], kind, name);
+    }
+
+    /**
+     * Attaque normale du monstre (portée 1). Un monstre "Physique" ne touche
+     * que si la cible est à portée ; un "Magique" frappe à distance (kind
+     * "spell" → projectile côté front).
+     */
+    private executeBasicAttack(monster: Monster, target: Unit, before: Map<string, number>): void {
+        const inMeleeRange = isAdjacentToGoal(monster.position, target.position);
+        if (monster.attackType !== "Magique" && !inMeleeRange) {
+            this.state.pushLog(`${monster.name} est hors de portée de ${target.name}.`);
+            this.state.recordAction(monster.id, target.id, [target.id], "attack");
+            return;
+        }
+        if (this.tryProtect(target)) {
+            return;
+        }
+        const log = monster.attack(target, this.roll(), this.rollCrit());
+        this.state.pushLogMany(log);
+        const affected = this.state.units
+            .filter((u) => {
+                const b = before.get(u.id);
+                return b !== undefined && u.currentHp !== b;
+            })
+            .map((u) => u.id);
+        const kind = monster.attackType === "Magique" ? "spell" : "attack";
+        this.state.recordAction(monster.id, target.id, affected.length ? affected : [target.id], kind);
+    }
+
+    /**
+     * "Appel à la meute" : fait apparaître un congénère (même nom, même niveau
+     * de zone) sur une case libre du plateau.
+     */
+    private trySummonAlly(monster: Monster): void {
+        const pos = this.findFreePosition();
+        if (!pos) {
+            this.state.pushLog(`${monster.name} n'a pas d'espace pour appeler un congénère.`);
+            return;
+        }
+        const ally = new Monster(monster.name, pos, "Enemy", monster.zoneLevel);
+        this.state.units.push(ally);
+        this.state.pushLog(`${monster.name} appelle un congénère à la meute !`);
+    }
+
+    /** Trouve une case libre sur le plateau 8x8 (ou null si saturé). */
+    private findFreePosition(): Position | null {
+        const free: Position[] = [];
+        for (let row = 0; row < 8; row++) {
+            for (let col = 0; col < 8; col++) {
+                const pos = { row, col };
+                if (!isOccupied(pos, this.state.units)) free.push(pos);
+            }
+        }
+        if (free.length === 0) return null;
+        return free[Math.floor(Math.random() * free.length)];
     }
 
     /**

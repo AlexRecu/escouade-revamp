@@ -37,6 +37,8 @@ export interface CombatUnitView {
   maxAp?: number;
   /** Ennemi : rang (≈ vitesse). */
   rank?: number;
+  /** Ennemi : nature de l'attaque ("Physique" corps-à-corps / "Magique" à distance). */
+  attackType?: "Physique" | "Magique";
 }
 
 /** Cibles valides d'une action (ids d'unités). */
@@ -595,6 +597,7 @@ export class CombatSessionService {
     }
     if (u instanceof Monster) {
       view.rank = u.rank;
+      view.attackType = u.attackType;
     }
     return view;
   }

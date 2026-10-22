@@ -1,5 +1,6 @@
 import { MonsterSpawnRate } from "../classes/Types";
 import { ZoneType } from "../classes/World/Zone";
+import bestiary from "../config/bestiary_data.json";
 
 export const zoneTypes: ZoneType[] = ["Forest", "Cave", "Tower", "Castle", "Canyon", "FrozenLand"];
 
@@ -88,9 +89,44 @@ const SPAWN_BY_BIOME: Record<ZoneType, string[]> = {
 };
 
 /**
- * Retourne les taux de spawn (somme = 1) pour un biome donné.
+ * Correspondance entre le type de zone (code) et la clé de biome utilisée
+ * dans le champ `spawn_rates` du bestiaire.
+ */
+const BIOME_KEY_BY_ZONE_TYPE: Record<ZoneType, string> = {
+  Forest: "forest",
+  Cave: "cave",
+  Tower: "tower",
+  Castle: "castle",
+  Canyon: "gorge",
+  FrozenLand: "frozenEarth",
+  Lake: "lake",
+};
+
+/**
+ * Retourne les taux de spawn pour un biome donné.
+ *
+ * Les taux proviennent du **bestiaire** (`spawn_rates` par biome) : chaque
+ * monstre déclare son taux d'apparition dans chaque biome. Les monstres de
+ * haut rang (dragons…) y figurent à un taux faible (~2-3%), les monstres
+ * communs à un taux élevé (~13-17%). On ne retient que les monstres dont le
+ * taux est strictement positif dans le biome.
+ *
+ * Si le bestiaire ne fournit aucun taux pour le biome (données absentes), on
+ * retombe sur la liste uniforme `SPAWN_BY_BIOME` (taux égalitaire).
  */
 export function getSpawnRatesForZoneType(type: ZoneType): MonsterSpawnRate[] {
+  const biomeKey = BIOME_KEY_BY_ZONE_TYPE[type];
+  const fromBestiary: MonsterSpawnRate[] = [];
+  if (biomeKey) {
+    for (const m of bestiary) {
+      const rates = m.spawn_rates as Record<string, number> | undefined;
+      const rate = rates?.[biomeKey] ?? 0;
+      if (rate > 0) fromBestiary.push({ monsterName: m.name, rate });
+    }
+  }
+  if (fromBestiary.length > 0) return fromBestiary;
+
+  // Secours : liste uniforme (taux égalitaire).
   const names = SPAWN_BY_BIOME[type] ?? SPAWN_BY_BIOME.Forest;
   const rate = 1 / names.length;
   return names.map((monsterName) => ({ monsterName, rate }));

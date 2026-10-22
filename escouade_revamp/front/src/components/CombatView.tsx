@@ -227,6 +227,25 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
     return s;
   }, [actionFx, units]);
 
+  // Trajectoire du projectile (attaques à distance / sorts) : de la position de
+  // l'acteur à celle de la cible, en % de la couche d'unités (case = 12.5%).
+  // Affiché uniquement pour les actions de type "spell" (sorts de héros et
+  // attaques magiques des monstres).
+  const projectile = useMemo(() => {
+    if (!actionFx || actionFx.kind !== 'spell') return null;
+    const actor = units.find((u) => u.id === actionFx.actorId);
+    const target = units.find((u) => actionFx.targetIds.includes(u.id));
+    if (!actor || !target) return null;
+    const cell = 100 / gridSize;
+    const center = (p: { row: number; col: number }) => ({
+      x: (p.col + 0.5) * cell,
+      y: (p.row + 0.5) * cell,
+    });
+    const from = center(actor.position);
+    const to = center(target.position);
+    return { from, to, key: actionFx.actorId + actionFx.targetIds.join(',') };
+  }, [actionFx, units, gridSize]);
+
   // Icône de la dernière action (potion / sort / compétence / attaque).
   const actionIcon = (kind: string): string => {
     switch (kind) {
@@ -476,6 +495,21 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
                     </div>
                   );
                 })}
+              {/* Projectile d'attaque à distance / sort (acteur → cible). */}
+              {projectile && (
+                <div
+                  key={projectile.key}
+                  className="combat-projectile"
+                  style={{
+                    ['--from-x' as string]: `${projectile.from.x}%`,
+                    ['--from-y' as string]: `${projectile.from.y}%`,
+                    ['--to-x' as string]: `${projectile.to.x}%`,
+                    ['--to-y' as string]: `${projectile.to.y}%`,
+                  }}
+                >
+                  <span className="combat-projectile-core" />
+                </div>
+              )}
             </div>
           </div>
           <div className="combat-legend">

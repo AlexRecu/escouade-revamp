@@ -260,6 +260,8 @@ export type CombatUnit = {
   maxAp?: number;
   /** Ennemi : rang (≈ vitesse). */
   rank?: number;
+  /** Ennemi : nature de l'attaque ("Physique" / "Magique"). */
+  attackType?: 'Physique' | 'Magique';
 };
 
 /** Cibles valides d'une action (ids d'unités). */

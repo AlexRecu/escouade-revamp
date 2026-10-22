@@ -406,6 +406,13 @@ export abstract class Unit {
             allUnits: allUnits
         };
 
+        // Les formules appellent directement ces helpers (ex. `isAdjacentToGoal`
+        // dans « Rapace », « Ruée mortelle », « Glissade gelée »). Après
+        // compilation CommonJS, les imports ne sont pas visibles dans l'`eval`,
+        // on les expose donc comme variables locales du scope.
+        const isAdjacentToGoal = (a: Position, b: Position): boolean =>
+            Math.abs(a.row - b.row) <= 1 && Math.abs(a.col - b.col) <= 1;
+
         const safeFormula = skill.formula.replace(/this\./g, "context.user.").replace(/target\./g, "context.target.").replace(/allUnits\./g, "context.allUnits.");
 
         try {

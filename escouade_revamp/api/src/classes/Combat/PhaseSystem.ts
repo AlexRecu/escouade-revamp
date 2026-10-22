@@ -2,6 +2,7 @@ import { CombatState } from "./CombatState";
 import { Unit } from "../UnitTypes/Unit";
 import { Character } from "../UnitTypes/Character";
 import { Eon } from "../UnitTypes/Eon";
+import { Monster } from "../UnitTypes/Monster";
 import { manageStatusBeforePhase, manageStatusAfterPhase } from "../../utils/StatusUtils";
 
 /**
@@ -30,6 +31,12 @@ export class PhaseSystem {
         if (unit instanceof Eon && unit.damageBlocked) {
             unit.damageBlocked = false;
             log.push(`${unit.name} : le blocage de dégâts se dissipe.`);
+        }
+        // Monstre : on compte son tour (comportement "reculer tous les 2-3
+        // tours") et on fait avancer ses cooldowns de capacités.
+        if (unit instanceof Monster) {
+            unit.turnCount += 1;
+            unit.tickCooldowns();
         }
         this.regenerateAp(unit);
         return log;
