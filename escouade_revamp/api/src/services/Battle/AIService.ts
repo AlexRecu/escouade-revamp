@@ -123,6 +123,9 @@ export class AIService {
             const log = monster.useAbilityByName(name, this.state.units);
             this.state.pushLogMany(log);
             this.trySummonAlly(monster);
+            // Cooldown : sans ça, le monstre (toujours sous 33% PV) réutiliserait
+            // la capacité au tour suivant et invoquerait un 2e congénère.
+            monster.startCooldown(name);
             this.state.recordAction(monster.id, target.id, [target.id], "skill", name);
             return;
         }
