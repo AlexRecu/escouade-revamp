@@ -231,7 +231,10 @@ export class ExplorationSessionService {
       }
       // Porte de sortie (dernier étage) → donjon terminé + **auto-sortie**.
       session.completed = true;
-      session.party.completeZone(session.dungeon.id);
+      // Le Lac de Qual-Chen n'a pas de montée de niveau prévue (sinon le
+      // worldLevel dépasserait 6) : on marque la zone complétée sans incrémenter.
+      const isLake = session.dungeon.biome === "Lake";
+      session.party.completeZone(session.dungeon.id, !isLake);
       // **Position** : une zone de transition mène au hub au-delà ; une impasse
       // ramène l'équipe au hub de départ.
       const exit = await this.resolveExitPosition(session);

@@ -95,12 +95,15 @@ export class Party {
   /**
    * Marque une zone comme complétée et fait monter le niveau du monde.
    * Idempotent : ne monte qu'une fois par zone.
-   * @returns true si le niveau a monté (zone complétée pour la 1re fois).
+   * @param incrementLevel false pour les zones sans montée de niveau prévue
+   *   (ex. le Lac de Qual-Chen) : la zone est marquée complétée mais le
+   *   `worldLevel` ne bouge pas.
+   * @returns true si la zone a été complétée pour la 1re fois.
    */
-  completeZone(zoneName: string): boolean {
+  completeZone(zoneName: string, incrementLevel = true): boolean {
     if (this.completedZones.has(zoneName)) return false;
     this.completedZones.add(zoneName);
-    if (this.worldLevel < 6) this.worldLevel++;
+    if (incrementLevel && this.worldLevel < 6) this.worldLevel++;
     return true;
   }
 
