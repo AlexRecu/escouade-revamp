@@ -471,7 +471,7 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
                             {actionIcon(actionFx.kind)}
                           </span>
                         )}
-                        {/* Infos superposées sur le token (nom + PV + AP). */}
+                        {/* Infos superposées sur le token (nom + barres PV/AP avec valeurs). */}
                         <div className="unit-overlay">
                           <span className="unit-name">{unit.name}</span>
                           <div className="unit-hpbar">
@@ -479,19 +479,17 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
                               className="unit-hpfill"
                               style={{ width: `${(unit.currentHp / unit.maxHp) * 100}%` }}
                             />
+                            <span className="unit-barval unit-hpval">{unit.currentHp}/{unit.maxHp}</span>
                           </div>
-                          <span className="unit-hptext">{unit.currentHp}/{unit.maxHp}</span>
                           {/* Barre d'AP (jaune) — visible pour les héros qui ont des AP. */}
                           {unit.type === 'Hero' && unit.maxAp ? (
-                            <>
-                              <div className="unit-apbar">
-                                <div
-                                  className="unit-apfill"
-                                  style={{ width: `${(unit.currentAp! / unit.maxAp) * 100}%` }}
-                                />
-                              </div>
-                              <span className="unit-aptext">{unit.currentAp}/{unit.maxAp} AP</span>
-                            </>
+                            <div className="unit-apbar">
+                              <div
+                                className="unit-apfill"
+                                style={{ width: `${(unit.currentAp! / unit.maxAp) * 100}%` }}
+                              />
+                              <span className="unit-barval unit-apval">{unit.currentAp}/{unit.maxAp}</span>
+                            </div>
                           ) : null}
                         </div>
                         {(unit.status ?? []).length > 0 && (

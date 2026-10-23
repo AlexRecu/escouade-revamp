@@ -124,6 +124,18 @@ export class BattleManager {
 
         switch (action) {
             case "attack":
+                // Validation de portée : la cible doit être à portée de l'arme
+                // équipée (lance = 2, arc = 3, sinon 1).
+                {
+                    const target = targets[0];
+                    const dist = Math.max(
+                        Math.abs(target.position.row - unit.position.row),
+                        Math.abs(target.position.col - unit.position.col)
+                    );
+                    if (dist > unit.getAttackRange()) {
+                        return [`${unit.name} est hors de portée de ${target.name}.`];
+                    }
+                }
                 result.push(...unit.attack(targets[0], roll, critRoll, bonus));
                 break;
             case "combo":

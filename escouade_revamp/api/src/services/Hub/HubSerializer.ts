@@ -35,7 +35,10 @@ export class HubSerializer {
     /** Clé normalisée du type d'arme (ex. "epee") — pour le grisé côté front. */
     weaponType?: string;
     mainStat?: string;
+    subStat?: string;
     weaponStat?: number;
+    weaponSubStat?: number;
+    range?: number;
     element?: string;
     status?: string | null;
   }[] {
@@ -47,7 +50,10 @@ export class HubSerializer {
       subType?: string;
       weaponType?: string;
       mainStat?: string;
+      subStat?: string;
       weaponStat?: number;
+      weaponSubStat?: number;
+      range?: number;
       element?: string;
       status?: string | null;
     }[] = [];
@@ -71,7 +77,10 @@ export class HubSerializer {
           subType: data.subType,
           weaponType: ItemFactory.weaponTypeOf(data.subType),
           mainStat: data.mainStat,
+          subStat: data.subStat ?? null,
           weaponStat: data.weaponStat,
+          weaponSubStat: data.weaponSubStat ?? 0,
+          range: data.range ?? 1,
           element: data.element,
           status: data.status ?? null,
         });
@@ -117,7 +126,10 @@ export class HubSerializer {
       weaponType: w.weaponType,
       subType: w.weaponType,
       mainStat: w.mainStat,
+      subStat: w.subStat ?? "",
       weaponStat: w.weaponStat,
+      weaponSubStat: w.weaponSubStat ?? 0,
+      range: w.range ?? 1,
       element: w.element,
       status: w.status ? w.status.name : null,
     };
@@ -199,7 +211,10 @@ export class HubSerializer {
             // Détails d'arme (si l'objet est une arme) pour l'équipement.
             weaponType: (i as any).weaponType,
             mainStat: (i as any).mainStat,
+            subStat: (i as any).subStat ?? null,
             weaponStat: (i as any).weaponStat,
+            weaponSubStat: (i as any).weaponSubStat ?? 0,
+            range: (i as any).range ?? 1,
             element: (i as any).element,
             // Statut d'arme (ex. "Saignée") — affiché dans le sac / l'équipement.
             status: (i as any).status ? (i as any).status.name : null,

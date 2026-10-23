@@ -12,7 +12,13 @@ export type BagItem = {
   // Détails d'arme (présents si l'objet est une arme).
   weaponType?: string;
   mainStat?: string;
+  /** Stat secondaire (lances : Dextérité en plus de la Force). */
+  subStat?: string;
   weaponStat?: number;
+  /** Bonus de la stat secondaire (lances). */
+  weaponSubStat?: number;
+  /** Portée de l'arme (1 = mêlée, 2 = lance, 3 = arc). */
+  range?: number;
   element?: string;
   /** Statut d'arme (ex. "Saignée") — affiché dans le sac / l'équipement. */
   status?: string | null;
@@ -25,7 +31,10 @@ export type EquippedWeapon = {
   weaponType: string;
   subType: string;
   mainStat: string;
+  subStat: string;
   weaponStat: number;
+  weaponSubStat: number;
+  range: number;
   element: string;
   status: string | null;
 };
@@ -115,7 +124,13 @@ export type ShopItem = {
   /** Clé normalisée du type d'arme (ex. "epee") — pour le grisé côté front. */
   weaponType?: string;
   mainStat?: string;
+  /** Stat secondaire (lances : Dextérité en plus de la Force). */
+  subStat?: string;
   weaponStat?: number;
+  /** Bonus de la stat secondaire (lances). */
+  weaponSubStat?: number;
+  /** Portée de l'arme (1 = mêlée, 2 = lance, 3 = arc). */
+  range?: number;
   element?: string;
   status?: string | null;
 };

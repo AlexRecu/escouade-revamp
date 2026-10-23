@@ -57,3 +57,38 @@ export function canEquip(
   if (!weaponType) return false;
   return (equippableWeapons ?? []).includes(weaponType);
 }
+
+/**
+ * Libellé compact de la statistique d'attaque d'une arme.
+ *
+ * - Arme à une stat : `Force +5` / `Dextérité +5`.
+ * - Arme à deux stats (lance) : `Force/Dextérité +2/+2`.
+ *
+ * Remplace l'ancien affichage séparé « type d'arme + stat + Atq X ».
+ */
+export function weaponStatLabel(w: {
+  mainStat?: string;
+  subStat?: string;
+  weaponStat?: number;
+  weaponSubStat?: number;
+}): string {
+  const main = w.mainStat;
+  if (!main) return '';
+  const mainVal = w.weaponStat ?? 0;
+  const subVal = w.weaponSubStat ?? 0;
+  // Arme sans attaque (ex. bouclier) : pas de libellé de stat.
+  if (mainVal === 0 && subVal === 0) return '';
+  if (w.subStat && subVal > 0) {
+    return `${main}/${w.subStat} +${mainVal}/+${subVal}`;
+  }
+  return `${main} +${mainVal}`;
+}
+
+/**
+ * Libellé de la portée (affiché seulement si > 1, ex. lances et arcs).
+ * Un émoji + la valeur de range signale la portée augmentée.
+ */
+export function weaponRangeLabel(w: { range?: number }): string {
+  const r = w.range ?? 1;
+  return r > 1 ? `📏 ${r}` : '';
+}

@@ -263,6 +263,15 @@ export abstract class Unit {
         return 1;
     }
 
+    /**
+     * Portée d'attaque de l'unité en combat (distance de Chebyshev max pour
+     * toucher une cible). Règle de base : 1 case (corps-à-corps). Les classes
+     * surchargent selon l'arme équipée (ex. lance = 2, arc = 3).
+     */
+    getAttackRange(): number {
+        return 1;
+    }
+
     isDead(): boolean {
         return this.currentHp === 0;
     }

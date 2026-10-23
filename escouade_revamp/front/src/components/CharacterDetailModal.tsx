@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { PartyMember, Statistics } from '../types/game';
 import type { GameActions } from '../game/useGame';
 import { classTokenUrl, tokenUrl } from '../utils/tokens';
-import { weaponEmoji, weaponLabel } from '../utils/weapons';
+import { weaponEmoji, weaponLabel, weaponStatLabel, weaponRangeLabel } from '../utils/weapons';
 
 type Props = {
   /** Membre à afficher (null = modal fermé). */
@@ -11,6 +11,8 @@ type Props = {
   onClose: () => void;
   /** Actions de ville (équiper, utiliser un objet). */
   actions: GameActions;
+  /** true si un combat est en cours : désactive l'équipement/usage depuis le sac. */
+  inCombat?: boolean;
 };
 
 /** Libellés français des 7 stats (ordre d'affichage). */
@@ -34,7 +36,7 @@ const targetLabel = (t: string): string =>
  * statut) et sac (onglets Consommables / Armes, avec équipement et usage).
  * Ouvert en cliquant sur un membre de l'équipe dans la barre latérale.
  */
-export default function CharacterDetailModal({ member, onClose, actions }: Props) {
+export default function CharacterDetailModal({ member, onClose, actions, inCombat }: Props) {
   // Onglet actif du sac : consommables ou armes.
   const [bagTab, setBagTab] = useState<'consumable' | 'weapon'>('consumable');
 
@@ -197,8 +199,11 @@ export default function CharacterDetailModal({ member, onClose, actions }: Props
                   <span className="char-detail-weapon">
                     <span className="shop-weapon-emoji">{weaponEmoji(member.rightHand.weaponType)}</span>
                     {member.rightHand.name}
-                    {member.rightHand.weaponStat ? (
-                      <span className="char-detail-atq">Atq {member.rightHand.weaponStat}</span>
+                    {weaponStatLabel(member.rightHand) ? (
+                      <span className="char-detail-atq">{weaponStatLabel(member.rightHand)}</span>
+                    ) : null}
+                    {weaponRangeLabel(member.rightHand) ? (
+                      <span className="char-detail-range" title="Portée">{weaponRangeLabel(member.rightHand)}</span>
                     ) : null}
                     {member.rightHand.status ? (
                       <span className="char-detail-status">{member.rightHand.status}</span>
@@ -214,8 +219,11 @@ export default function CharacterDetailModal({ member, onClose, actions }: Props
                   <span className="char-detail-weapon">
                     <span className="shop-weapon-emoji">{weaponEmoji(member.leftHand.weaponType)}</span>
                     {member.leftHand.name}
-                    {member.leftHand.weaponStat ? (
-                      <span className="char-detail-atq">Atq {member.leftHand.weaponStat}</span>
+                    {weaponStatLabel(member.leftHand) ? (
+                      <span className="char-detail-atq">{weaponStatLabel(member.leftHand)}</span>
+                    ) : null}
+                    {weaponRangeLabel(member.leftHand) ? (
+                      <span className="char-detail-range" title="Portée">{weaponRangeLabel(member.leftHand)}</span>
                     ) : null}
                     {member.leftHand.status ? (
                       <span className="char-detail-status">{member.leftHand.status}</span>
@@ -258,6 +266,8 @@ export default function CharacterDetailModal({ member, onClose, actions }: Props
                       <button
                         className="char-detail-bag-btn"
                         onClick={() => actions.useItem(member.id, g.id)}
+                        disabled={inCombat}
+                        title={inCombat ? 'Indisponible pendant le combat (voir Objets)' : 'Utiliser'}
                       >
                         Utiliser
                       </button>
@@ -276,8 +286,11 @@ export default function CharacterDetailModal({ member, onClose, actions }: Props
                       <span className="char-detail-item-name">
                         <span className="shop-weapon-emoji">{weaponEmoji(item.weaponType)}</span>
                         {item.name}
-                        {item.weaponStat ? (
-                          <span className="char-detail-atq"> Atq {item.weaponStat}</span>
+                        {weaponStatLabel(item) ? (
+                          <span className="char-detail-atq"> {weaponStatLabel(item)}</span>
+                        ) : null}
+                        {weaponRangeLabel(item) ? (
+                          <span className="char-detail-range" title="Portée"> {weaponRangeLabel(item)}</span>
                         ) : null}
                         {item.status ? (
                           <span className="char-detail-status"> {item.status}</span>
@@ -287,19 +300,27 @@ export default function CharacterDetailModal({ member, onClose, actions }: Props
                         <button
                           className="char-detail-bag-btn"
                           onClick={() => actions.equip(member.id, item.id, 'right')}
-                          disabled={!canRight}
-                          title={canRight ? 'Équiper en main droite' : 'Type d\'arme non équipables par cette classe'}
+                          disabled={inCombat || !canRight}
+                          title={
+                            inCombat
+                              ? 'Indisponible pendant le combat'
+                              : canRight
+                                ? 'Équiper en main droite'
+                                : 'Type d\'arme non équipables par cette classe'
+                          }
                         >
                           Main D
                         </button>
                         <button
                           className="char-detail-bag-btn"
                           onClick={() => actions.equip(member.id, item.id, 'left')}
-                          disabled={!member.canDualWield}
+                          disabled={inCombat || !member.canDualWield}
                           title={
-                            member.canDualWield
-                              ? 'Équiper en main gauche'
-                              : 'Réservé au passif Double Armement'
+                            inCombat
+                              ? 'Indisponible pendant le combat'
+                              : member.canDualWield
+                                ? 'Équiper en main gauche'
+                                : 'Réservé au passif Double Armement'
                           }
                         >
                           Main G

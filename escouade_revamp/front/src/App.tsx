@@ -369,6 +369,7 @@ function App() {
           member={selectedMember}
           onClose={() => setSelectedMemberId(null)}
           actions={actions}
+          inCombat={!!combat}
         />
       )}
     </div>

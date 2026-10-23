@@ -3,7 +3,7 @@ import type { GameState, ShopItem, BagItem } from '../types/game';
 import type { GameActions } from '../game/useGame';
 import type { Status } from '../types/world';
 import { fetchStatuses } from '../api/client';
-import { weaponEmoji, weaponLabel, canEquip } from '../utils/weapons';
+import { weaponEmoji, weaponStatLabel, weaponRangeLabel, canEquip } from '../utils/weapons';
 
 type Props = {
   activeBuilding: string | null;
@@ -103,12 +103,6 @@ function CaravanPanel({
 
 // ── Boutique ───────────────────────────────────────────────────────────────
 
-/** Sous-titre d'une arme : la **catégorie** (Force / Dextérité). L'attaque
- *  (« Atq X ») est affichée séparément sur la même ligne. */
-function weaponSubtitle(item: { mainStat?: string }): string {
-  return item.mainStat ?? '';
-}
-
 /** Effet d'un élément (affiché au survol de la chip). */
 const ELEMENT_EFFECTS: Record<string, string> = {
   "Feu": "Élément Feu.",
@@ -126,7 +120,6 @@ const ELEMENT_EFFECTS: Record<string, string> = {
  */
 function ShopItemRow({
   item,
-  subtitle,
   stock,
   onBuy,
   canBuy,
@@ -134,7 +127,6 @@ function ShopItemRow({
   equippable,
 }: {
   item: ShopItem;
-  subtitle?: string;
   stock: number;
   onBuy: () => void;
   canBuy: boolean;
@@ -148,15 +140,14 @@ function ShopItemRow({
   equippable?: boolean;
 }) {
   const isWeapon = item.kind === 'weapon';
-  // « Atq X » : l'attaque de l'arme (seule, sans la stat — celle-ci est dans
-  // le sous-titre de catégorie).
-  const atq = isWeapon && item.weaponStat ? `Atq ${item.weaponStat}` : null;
-  // Chips statut / élément (armes) : affichées à côté de la catégorie.
+  // Stat compacte (ex. « Force +5 », « Force/Dextérité +2/+2 ») + portée.
+  const statLabel = isWeapon ? weaponStatLabel(item) : '';
+  const rangeLabel = isWeapon ? weaponRangeLabel(item) : '';
+  // Chips statut / élément (armes) : affichées à côté de la stat.
   const statusChip = isWeapon && item.status ? item.status : null;
   const elementChip = isWeapon && item.element ? item.element : null;
-  // Emoji + libellé du type d'arme (ex. 🗡️ Épée).
+  // Emoji du type d'arme (ex. 🗡️).
   const emoji = isWeapon ? weaponEmoji(item.weaponType) : null;
-  const typeLabel = isWeapon ? weaponLabel(item.weaponType) : null;
   // Tooltip du statut : effet + contre-statut (depuis statuses_data.json).
   const statusInfo = statusChip ? statuses.get(statusChip) : undefined;
   const statusTitle = statusInfo
@@ -169,11 +160,9 @@ function ShopItemRow({
     <li className={`shop-item${greyed ? ' shop-item-disabled' : ''}`}>
       <div className="shop-item-row">
         <span className="shop-name">
-          {emoji ? <span className="shop-weapon-emoji">{emoji}</span> : null} {item.name}
-          {(typeLabel || subtitle || statusChip || elementChip) ? (
+          {emoji ? <span className="shop-weapon-emoji">{emoji} {item.name}</span> : <span>{item.name}</span>} 
+          {(statusChip || elementChip) ? (
             <span className="shop-meta">
-              {typeLabel ? <span className="shop-type">{typeLabel}</span> : null}
-              {subtitle ? <em className="shop-sub">{subtitle}</em> : null}
               {statusChip ? (
                 <span
                   className={`shop-chip shop-chip-status ${statusInfo?.statusType === 'boon' ? 'shop-chip-boon' : ''}`}
@@ -193,7 +182,14 @@ function ShopItemRow({
             </span>
           ) : null}
         </span>
-        {atq ? <span className="shop-atq">{atq}</span> : null}
+        {(statLabel || rangeLabel) ? (
+            <span className="shop-meta">
+              {statLabel ? <span className="shop-stat">{statLabel}</span> : null}
+              {rangeLabel ? (
+                <span className="shop-range" title="Portée augmentée">{rangeLabel}</span>
+              ) : null}
+            </span>
+          ) : null}
         <span className="shop-price">{item.price} or</span>
         <button
           onClick={onBuy}
@@ -202,6 +198,9 @@ function ShopItemRow({
         >
           Acheter
         </button>
+      </div>
+      {/* Stock en dessous de l'or / acheter, aligné en fin de ligne. */}
+      <div className="shop-item-foot">
         <span className="shop-stock">En stock : {stock}</span>
       </div>
       {item.effect ? <p className="shop-desc">{item.effect}</p> : null}
@@ -310,7 +309,6 @@ function ShopPanel({ state, actions, onClose }: { state: GameState; actions: Gam
                   <ShopItemRow
                     key={item.name}
                     item={item}
-                    subtitle={weaponSubtitle(item)}
                     stock={stockOf(item.name)}
                     onBuy={() => actions.buy(item.name)}
                     canBuy={gold >= item.price}

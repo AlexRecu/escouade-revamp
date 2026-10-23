@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import type { GameState, ExplorationState } from '../types/game';
 import { classTokenUrl, tokenUrl } from '../utils/tokens';
-import { weaponEmoji } from '../utils/weapons';
+import { weaponEmoji, weaponStatLabel, weaponRangeLabel } from '../utils/weapons';
 
 type Props = {
   state: GameState | null;
@@ -118,8 +118,20 @@ export default function PartySidebar({ state, connected, exploration, myPlayerId
                 </div>
                 {(m.rightHand || m.leftHand) && (
                   <div className="party-weapons">
-                    {m.rightHand && <span title="Main droite">{weaponEmoji(m.rightHand.weaponType)} {m.rightHand.name}</span>}
-                    {m.leftHand && <span title="Main gauche">{weaponEmoji(m.leftHand.weaponType)} {m.leftHand.name}</span>}
+                    {m.rightHand && (
+                      <span title="Main droite">
+                        {weaponEmoji(m.rightHand.weaponType)} {m.rightHand.name}
+                        {weaponStatLabel(m.rightHand) && <span className="party-weapon-stat"> {weaponStatLabel(m.rightHand)}</span>}
+                        {weaponRangeLabel(m.rightHand) && <span className="party-weapon-range" title="Portée"> {weaponRangeLabel(m.rightHand)}</span>}
+                      </span>
+                    )}
+                    {m.leftHand && (
+                      <span title="Main gauche">
+                        {weaponEmoji(m.leftHand.weaponType)} {m.leftHand.name}
+                        {weaponStatLabel(m.leftHand) && <span className="party-weapon-stat"> {weaponStatLabel(m.leftHand)}</span>}
+                        {weaponRangeLabel(m.leftHand) && <span className="party-weapon-range" title="Portée"> {weaponRangeLabel(m.leftHand)}</span>}
+                      </span>
+                    )}
                   </div>
                 )}
               </li>

@@ -614,7 +614,9 @@ export class CombatSessionService {
   ): ActionsView {
     const alive = allUnits.filter((u) => !u.isDead() && !u.isReplaced);
 
-    // Attaque : ennemis adjacents (portée 1).
+    // Attaque : ennemis à portée de l'arme équipée (portée 1 par défaut,
+    // lance = 2, arc = 3).
+    const attackRange = unit.getAttackRange();
     const attackTargets = alive
       .filter(
         (u) =>
@@ -622,7 +624,7 @@ export class CombatSessionService {
           Math.max(
             Math.abs(u.position.row - unit.position.row),
             Math.abs(u.position.col - unit.position.col)
-          ) <= 1
+          ) <= attackRange
       )
       .map((u) => u.id);
 

@@ -141,8 +141,10 @@ export class Character extends Unit {
         let subStat = weapon.mainStat === 'Force' ? this.stats.dexterity : this.stats.strength;
         let damage = (mainStat + roll + bonus) * weapon.weaponStat;
 
+        // Stat secondaire (lances) : même logique que la principale, mais
+        // seulement si le roll atteint le seuil (weaponSubStat - subStat).
         if (weapon.weaponSubStat !== 0 && roll + bonus >= (weapon.weaponSubStat - subStat)) {
-            damage += (weapon.weaponSubStat + bonus) * subStat;
+            damage += (subStat + roll + bonus) * weapon.weaponSubStat;
         }
 
         if (roll >= this.calculateCritThreshold()) {
@@ -556,6 +558,20 @@ export class Character extends Unit {
             return Math.max(1, this.stats.dexterity);
         }
         return 1;
+    }
+
+    /**
+     * Portée d'attaque : la plus grande portée parmi les armes **offensives**
+     * équipées (un bouclier n'est pas une arme offensive). Sans arme offensive,
+     * le personnage frappe à mains nues (portée 1).
+     */
+    getAttackRange(): number {
+        let range = 1;
+        const right = this.rightHand && this.rightHand.type === 'weapon' && this.rightHand.weaponType !== 'bouclier' ? this.rightHand : null;
+        const left = this.leftHand && this.leftHand.type === 'weapon' && this.leftHand.weaponType !== 'bouclier' ? this.leftHand : null;
+        if (right && right.range > range) range = right.range;
+        if (left && left.range > range) range = left.range;
+        return range;
     }
 
     /**
