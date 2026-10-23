@@ -214,6 +214,34 @@ export const initializeSocket = (io: Server) => {
         .catch((err) => socket.emit('error', { message: err?.message ?? 'Erreur' }));
     });
 
+    // `party:save` — sauvegarde explicite (bouton disquette). Force une
+    // ré-persistance et renvoie une confirmation au joueur.
+    socket.on('party:save', () => {
+      const roomId = currentRoomId();
+      if (!roomId) return;
+      PartyRoomService.save(roomId)
+        .then((result) => socket.emit('hub:log', { logs: result.logs }))
+        .catch((err) => socket.emit('error', { message: err?.message ?? 'Erreur' }));
+    });
+
+    // `party:delete` — supprime définitivement la partie (bouton poubelle).
+    // Seul l'hôte peut le faire. La room est retirée de la base et les
+    // membres sont détachés (currentRoomId effacé). Le `roomId` est optionnel :
+    // s'il est fourni (suppression depuis le lobby), on l'utilise ; sinon on
+    // supprime la room courante du joueur.
+    socket.on('party:delete', (data?: { roomId?: string }) => {
+      const roomId = data?.roomId ?? currentRoomId();
+      if (!roomId) return;
+      PartyRoomService.deleteRoom(playerId, roomId)
+        .then(async () => {
+          socket.leave(roomId);
+          if (socket.data.roomId === roomId) socket.data.roomId = null;
+          io.emit('party:updated', {}); // rafraîchit le lobby de tous
+          socket.emit('party:left', {}); // le joueur retourne au lobby
+        })
+        .catch((err) => socket.emit('error', { message: err?.message ?? 'Erreur' }));
+    });
+
     // `party:createCharacter` — un joueur crée SON personnage (job + stats
     // réparties + avatar). Le perso est ajouté à l'équipe partagée et l'état
     // est diffusé à toute la partie (chaque joueur voit l'équipe se compléter
@@ -307,6 +335,20 @@ export const initializeSocket = (io: Server) => {
     );
     socket.on('exploration:chest', () =>
       replyExploration(() => ExplorationSessionService.openChest(explorationKey()), currentRoomId() !== null)
+    );
+    // Équipement / utilisation d'objet **pendant** le donjon : opère sur
+    // l'équipe en mémoire de la session (pas sur la partie DB, stale ici).
+    socket.on('exploration:equip', (data: { memberId: string; itemId: string; hand: 'right' | 'left' }) =>
+      replyExploration(
+        () => ExplorationSessionService.equip(explorationKey(), data.memberId, data.itemId, data.hand),
+        currentRoomId() !== null
+      )
+    );
+    socket.on('exploration:useItem', (data: { memberId: string; itemId: string }) =>
+      replyExploration(
+        () => ExplorationSessionService.useItem(explorationKey(), data.memberId, data.itemId),
+        currentRoomId() !== null
+      )
     );
     socket.on('exploration:exit', () =>
       replyExploration(async () => {

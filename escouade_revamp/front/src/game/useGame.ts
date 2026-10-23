@@ -23,6 +23,8 @@ import {
   explorationRest,
   explorationChest,
   explorationExit,
+  explorationEquip,
+  explorationUseItem,
   combatPlace,
   combatConfirmPlacement,
   combatMove,
@@ -36,6 +38,8 @@ import {
   partyCreate,
   partyJoin,
   partyLeave,
+  partySave,
+  partyDelete,
   partyCreateCharacter,
   type ExplorationDirection,
   onState,
@@ -92,6 +96,11 @@ export type GameActions = {
   partyCreate: (opts: { name?: string; isPublic?: boolean; maxPlayers?: number }) => void;
   partyJoin: (roomId: string, isSpectator?: boolean) => void;
   partyLeave: () => void;
+  /** Sauvegarde explicite de la partie (bouton disquette). */
+  partySave: () => void;
+  /** Supprime définitivement la partie (bouton poubelle, hôte uniquement).
+   *  `roomId` optionnel : suppression depuis le lobby (room ciblée) ou room courante. */
+  partyDelete: (roomId?: string) => void;
   /** Crée le personnage du joueur (job + stats réparties + avatar). */
   partyCreateCharacter: (data: {
     name: string;
@@ -270,8 +279,12 @@ export function useGame(token: string | null): UseGame {
     join: hubJoin,
     buy: hubBuy,
     sell: hubSell,
-    equip: hubEquip,
-    useItem: hubUseItem,
+    // En donjon, l'équipement/les objets opèrent sur l'équipe en mémoire de la
+    // session (pas sur la partie DB, stale pendant le donjon).
+    equip: (memberId, itemId, hand) =>
+      exploration ? explorationEquip(memberId, itemId, hand) : hubEquip(memberId, itemId, hand),
+    useItem: (memberId, itemId) =>
+      exploration ? explorationUseItem(memberId, itemId) : hubUseItem(memberId, itemId),
     rest: hubRest,
     sanctuary: hubSanctuary,
     questBoard: hubQuestBoard,
@@ -303,6 +316,8 @@ export function useGame(token: string | null): UseGame {
     partyCreate,
     partyJoin,
     partyLeave,
+    partySave,
+    partyDelete,
     partyCreateCharacter,
   };
 

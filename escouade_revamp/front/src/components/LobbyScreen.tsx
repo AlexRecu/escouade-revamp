@@ -4,8 +4,12 @@ import type { RoomSummary } from '../types/game';
 type Props = {
   rooms: RoomSummary[];
   connected: boolean;
+  /** Id du joueur connecté (pour savoir s'il est l'hôte d'une partie). */
+  myPlayerId: string | null;
   onCreate: (opts: { name?: string; isPublic?: boolean; maxPlayers?: number }) => void;
   onJoin: (roomId: string, isSpectator?: boolean) => void;
+  /** Supprime définitivement une partie (hôte uniquement). */
+  onDelete: (roomId: string) => void;
 };
 
 /**
@@ -14,7 +18,7 @@ type Props = {
  * spectateur). C'est la porte d'entrée du mode multi-joueurs : une fois dans
  * une partie, le joueur accède à la mappemonde / ville / donjons.
  */
-export default function LobbyScreen({ rooms, connected, onCreate, onJoin }: Props) {
+export default function LobbyScreen({ rooms, connected, myPlayerId, onCreate, onJoin, onDelete }: Props) {
   const [name, setName] = useState('');
   const [isPublic, setIsPublic] = useState(true);
   const [maxPlayers, setMaxPlayers] = useState(4);
@@ -73,6 +77,7 @@ export default function LobbyScreen({ rooms, connected, onCreate, onJoin }: Prop
         )}
         {rooms.map((r) => {
           const full = r.playerCount >= r.maxPlayers;
+          const isHost = myPlayerId != null && r.hostId === myPlayerId;
           return (
             <div key={r.roomId} className="lobby-room">
               <div className="lobby-room-info">
@@ -103,6 +108,19 @@ export default function LobbyScreen({ rooms, connected, onCreate, onJoin }: Prop
                 >
                   Spectateur
                 </button>
+                {isHost && (
+                  <button
+                    className="lobby-btn danger"
+                    onClick={() => {
+                      if (window.confirm(`Supprimer définitivement la partie « ${r.name} » ?`)) {
+                        onDelete(r.roomId);
+                      }
+                    }}
+                    title="Supprimer définitivement cette partie (hôte uniquement)"
+                  >
+                    🗑️
+                  </button>
+                )}
               </div>
             </div>
           );

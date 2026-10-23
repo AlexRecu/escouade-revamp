@@ -14,14 +14,14 @@ type Props = {
 };
 
 /** Libellés français des 7 stats (ordre d'affichage). */
-const STAT_LABELS: { key: keyof Statistics; label: string }[] = [
-  { key: 'strength', label: 'Force' },
-  { key: 'dexterity', label: 'Dextérité' },
-  { key: 'endurance', label: 'Endurance' },
-  { key: 'mana', label: 'Mana' },
-  { key: 'intelligence', label: 'Intelligence' },
-  { key: 'perception', label: 'Perception' },
-  { key: 'charisma', label: 'Charisme' },
+const STAT_LABELS: { key: keyof Statistics; label: string; desc: string }[] = [
+  { key: 'strength', label: 'Force', desc: 'Fait plus de dégâts avec les armes basées sur la Force.' },
+  { key: 'dexterity', label: 'Dextérité', desc: 'Augmente l\'initiative et les dégâts d\'armes basées sur la Dextérité.' },
+  { key: 'endurance', label: 'Endurance', desc: 'Détermine le nombre de points de vie (PV).' },
+  { key: 'mana', label: 'Mana', desc: 'Détermine la quantité de points de magie (PM).' },
+  { key: 'intelligence', label: 'Intelligence', desc: 'Fait plus de dégâts avec les sorts.' },
+  { key: 'perception', label: 'Perception', desc: 'Détecte les objets cachés et réduit les attaques des monstres.' },
+  { key: 'charisma', label: 'Charisme', desc: 'Permet de négocier (baisser) les prix chez les marchands.' },
 ];
 
 /** Libellé d'une cible (ally/self/enemy). */
@@ -124,7 +124,7 @@ export default function CharacterDetailModal({ member, onClose, actions }: Props
               <h4>📊 Statistiques</h4>
               <div className="char-detail-stats">
                 {STAT_LABELS.map((s) => (
-                  <div key={s.key} className="char-detail-stat">
+                  <div key={s.key} className="char-detail-stat" data-desc={s.desc}>
                     <span className="char-detail-stat-label">{s.label}</span>
                     <span className="char-detail-stat-value">{stats[s.key]}</span>
                   </div>
@@ -277,10 +277,10 @@ export default function CharacterDetailModal({ member, onClose, actions }: Props
                         <span className="shop-weapon-emoji">{weaponEmoji(item.weaponType)}</span>
                         {item.name}
                         {item.weaponStat ? (
-                          <span className="char-detail-atq">Atq {item.weaponStat}</span>
+                          <span className="char-detail-atq"> Atq {item.weaponStat}</span>
                         ) : null}
                         {item.status ? (
-                          <span className="char-detail-status">{item.status}</span>
+                          <span className="char-detail-status"> {item.status}</span>
                         ) : null}
                       </span>
                       <span className="char-detail-bag-actions">

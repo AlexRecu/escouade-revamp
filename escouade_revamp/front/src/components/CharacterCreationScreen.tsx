@@ -23,7 +23,7 @@ type Props = {
  */
 const STAT_META: { key: keyof Statistics; label: string; short: string; desc: string }[] = [
   { key: 'strength', label: 'Force', short: 'F', desc: 'Fait plus de dégâts avec les armes basées sur la Force.' },
-  { key: 'dexterity', label: 'Dextérité', short: 'D', desc: 'Fait plus de dégâts avec les armes basées sur la Dextérité.' },
+  { key: 'dexterity', label: 'Dextérité', short: 'D', desc: 'Augmente l\'initiative et les dégâts d\'armes basées sur la Dextérité.' },
   { key: 'endurance', label: 'Endurance', short: 'E', desc: 'Détermine le nombre de points de vie (PV).' },
   { key: 'mana', label: 'Mana', short: 'M', desc: 'Détermine la quantité de points de magie (PM).' },
   { key: 'intelligence', label: 'Intelligence', short: 'I', desc: 'Fait plus de dégâts avec les sorts.' },

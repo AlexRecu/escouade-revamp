@@ -92,6 +92,14 @@ export class HubService {
             logs.push(`"${item.name}" est un objet de classe : il ne peut pas être revendu.`);
             return logs;
         }
+        // Une arme équipée reste dans le sac (référence partagée) : on ne peut
+        // pas la revendre tant qu'elle est portée (main droite ou gauche).
+        const equipped =
+            seller.rightHandWeapon?.id === item.id || seller.leftHandWeapon?.id === item.id;
+        if (equipped) {
+            logs.push(`"${item.name}" est équipée : déséquipez-la avant de la revendre.`);
+            return logs;
+        }
         const idx = seller.bag.findIndex((i) => i.id === item.id);
         if (idx === -1) {
             logs.push(`${seller.name} n'a pas cet objet.`);

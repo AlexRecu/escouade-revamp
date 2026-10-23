@@ -231,14 +231,21 @@ function ShopPanel({ state, actions, onClose }: { state: GameState; actions: Gam
   const bagWeapons = (buyer?.bag ?? []).filter((i) => i.type === 'weapon');
 
   // Nombre d'objets déjà en stock, **sur toute l'équipe** (sacs + armes
-  // équipées en main droite/gauche), par nom.
+  // équipées en main droite/gauche), par nom. Une arme équipée reste dans le
+  // sac (référence partagée) ET dans la main → on **dédoublonne par id** pour
+  // ne la compter qu'une fois (le bouclier de classe, lui, n'est que dans la
+  // main gauche).
   const stockByName = new Map<string, number>();
   for (const m of state.party.members) {
-    for (const it of m.bag) {
+    const seen = new Set<string>();
+    const add = (it: { id: string; name: string }) => {
+      if (seen.has(it.id)) return;
+      seen.add(it.id);
       stockByName.set(it.name, (stockByName.get(it.name) ?? 0) + 1);
-    }
-    if (m.rightHand) stockByName.set(m.rightHand.name, (stockByName.get(m.rightHand.name) ?? 0) + 1);
-    if (m.leftHand) stockByName.set(m.leftHand.name, (stockByName.get(m.leftHand.name) ?? 0) + 1);
+    };
+    for (const it of m.bag) add(it);
+    if (m.rightHand) add(m.rightHand);
+    if (m.leftHand) add(m.leftHand);
   }
   const stockOf = (name: string) => stockByName.get(name) ?? 0;
 
@@ -252,8 +259,14 @@ function ShopPanel({ state, actions, onClose }: { state: GameState; actions: Gam
     state.shop.forEach((s, i) => {
       if (!shopOrder.has(s.name)) shopOrder.set(s.name, i);
     });
+    // Une arme équipée reste dans le sac (référence partagée) : on l'exclut du
+    // sac à revendre (on ne peut pas revendre une arme qu'on porte).
+    const equippedIds = new Set<string>();
+    if (buyer?.rightHand) equippedIds.add(buyer.rightHand.id);
+    if (buyer?.leftHand) equippedIds.add(buyer.leftHand.id);
     const groups = new Map<string, { item: BagItem; count: number }>();
     for (const it of buyer?.bag ?? []) {
+      if (equippedIds.has(it.id)) continue;
       const g = groups.get(it.name);
       if (g) g.count += 1;
       else groups.set(it.name, { item: it, count: 1 });

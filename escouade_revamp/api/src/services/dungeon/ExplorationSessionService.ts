@@ -15,6 +15,8 @@ import { EncounterEngine } from "../../classes/Exploration/EncounterEngine";
 import { CombatService } from "../Battle/CombatService";
 import { CombatSessionService } from "../Battle/CombatSessionService";
 import { LootEngine } from "../../classes/Progression/LootEngine";
+import { HubSerializer } from "../Hub/HubSerializer";
+import { Weapon } from "../../classes/Items/Weapon";
 
 /** Direction de déplacement (4 directions, pas de diagonale). */
 export type Direction = "north" | "south" | "east" | "west";
@@ -333,6 +335,57 @@ export class ExplorationSessionService {
   }
 
   /**
+   * Équipe une arme du sac en main droite/gauche **pendant** le donjon.
+   *
+   * Opère directement sur `session.party` (l'équipe en mémoire du donjon) —
+   * et non via `PartyRoomService.equip` qui rechargerait la partie depuis la
+   * DB (état **stale** pendant le donjon, risque d'écraser la progression).
+   * Persiste ensuite pour conserver l'équipement.
+   */
+  static async equip(sessionKey: string, memberId: string, itemId: string, hand: "right" | "left"): Promise<any> {
+    const session = this.require(sessionKey);
+    const member = session.party.members.find((m) => m.id === memberId);
+    if (!member) return { logs: ["Personnage introuvable."], state: this.serialize(session) };
+    const item = member.bag.find((i) => i.id === itemId);
+    if (!item || item.type !== "weapon") {
+      return { logs: ["Cette arme n'est pas dans le sac."], state: this.serialize(session) };
+    }
+    if (hand === "left" && !HubSerializer.canDualWield(member)) {
+      return {
+        logs: [`${member.name} ne peut pas s'équiper d'une arme en main gauche (passif Double Armement requis).`],
+        state: this.serialize(session),
+      };
+    }
+    try {
+      const weapon = item as unknown as Weapon;
+      if (hand === "right") member.equipRightHand(weapon);
+      else member.equipLeftHand(weapon);
+      const logs = [`${member.name} équipe ${item.name} en main ${hand === "right" ? "droite" : "gauche"}.`];
+      await this.persist(session);
+      return { logs, state: this.serialize(session) };
+    } catch (err: any) {
+      return { logs: [err?.message ?? "Impossible d'équiper cette arme."], state: this.serialize(session) };
+    }
+  }
+
+  /**
+   * Utilise un consommable du sac sur un membre **pendant** le donjon (soin,
+   * réanimation, statut). Opère sur `session.party` puis persiste.
+   */
+  static async useItem(sessionKey: string, memberId: string, itemId: string): Promise<any> {
+    const session = this.require(sessionKey);
+    const member = session.party.members.find((m) => m.id === memberId);
+    if (!member) return { logs: ["Personnage introuvable."], state: this.serialize(session) };
+    const item = member.bag.find((i) => i.id === itemId);
+    if (!item || item.type !== "consumable") {
+      return { logs: ["Cet objet n'est pas utilisable."], state: this.serialize(session) };
+    }
+    const logs = member.useItem(item, member);
+    await this.persist(session);
+    return { logs, state: this.serialize(session) };
+  }
+
+  /**
    * Quitte le donjon : persiste l'équipe (or, HP, zones complétées) et libère
    * la session. Le front revient à la mappemonde et resynchronise la ville.
    */
@@ -506,6 +559,8 @@ export class ExplorationSessionService {
           }
         : null,
       // Résumé de l'équipe (pour l'affichage dans la vue donjon).
+      // Inclut le sac + l'équipement + les détails de fiche pour que la fiche
+      // perso reste à jour **pendant** le donjon (coffres, équipement, soins).
       party: {
         gold: session.party.gold,
         members: session.party.members.map((m) => ({
@@ -519,6 +574,43 @@ export class ExplorationSessionService {
           mp: m.currentMp,
           maxMp: m.maxMp,
           isDead: m.isDead(),
+          // Fiche perso (détails) — mêmes champs que la sérialisation de ville.
+          ownerId: m.ownerId ?? null,
+          avatar: m.avatar ?? null,
+          equippableWeapons: m.job.weapons,
+          canDualWield: HubSerializer.canDualWield(m),
+          stats: m.stats,
+          skills: m.getAvailableAbilities().map((s) => ({
+            name: s.name,
+            apCost: s.apCost,
+            mpCost: s.mpCost,
+            target: s.target,
+            type: s.type,
+            range: s.range,
+            description: s.description,
+          })),
+          spells: m.getAvailableSpells().map((s) => ({
+            name: s.name,
+            mpCost: s.mpCost,
+            hpCost: s.hpCost,
+            target: s.target,
+            element: s.element,
+            description: s.description,
+          })),
+          rightHand: m.rightHandWeapon ? HubSerializer.serializeWeapon(m.rightHandWeapon) : null,
+          leftHand: m.leftHandWeapon ? HubSerializer.serializeWeapon(m.leftHandWeapon) : null,
+          bag: m.bag.map((i: any) => ({
+            id: i.id,
+            name: i.name,
+            type: i.type,
+            description: i.description,
+            purchasePrice: i.purchasePrice,
+            weaponType: i.weaponType,
+            mainStat: i.mainStat,
+            weaponStat: i.weaponStat,
+            element: i.element,
+            status: i.status ? i.status.name : null,
+          })),
         })),
       },
     };

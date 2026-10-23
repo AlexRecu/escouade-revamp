@@ -453,6 +453,7 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
                       <div
                         className={`combat-unit ${unit.type === 'Hero' ? 'unit-hero' : 'unit-enemy'} ${isCurrent ? 'unit-active' : ''} ${isPlacingHero ? 'unit-placing' : ''}${fxCls}`}
                       >
+                        {/* Token en image de fond (remplit la case). */}
                         <img
                           className="unit-token"
                           src={unitTokenUrl(unit)}
@@ -470,26 +471,29 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
                             {actionIcon(actionFx.kind)}
                           </span>
                         )}
-                        <span className="unit-name">{unit.name}</span>
-                        <div className="unit-hpbar">
-                          <div
-                            className="unit-hpfill"
-                            style={{ width: `${(unit.currentHp / unit.maxHp) * 100}%` }}
-                          />
+                        {/* Infos superposées sur le token (nom + PV + AP). */}
+                        <div className="unit-overlay">
+                          <span className="unit-name">{unit.name}</span>
+                          <div className="unit-hpbar">
+                            <div
+                              className="unit-hpfill"
+                              style={{ width: `${(unit.currentHp / unit.maxHp) * 100}%` }}
+                            />
+                          </div>
+                          <span className="unit-hptext">{unit.currentHp}/{unit.maxHp}</span>
+                          {/* Barre d'AP (jaune) — visible pour les héros qui ont des AP. */}
+                          {unit.type === 'Hero' && unit.maxAp ? (
+                            <>
+                              <div className="unit-apbar">
+                                <div
+                                  className="unit-apfill"
+                                  style={{ width: `${(unit.currentAp! / unit.maxAp) * 100}%` }}
+                                />
+                              </div>
+                              <span className="unit-aptext">{unit.currentAp}/{unit.maxAp} AP</span>
+                            </>
+                          ) : null}
                         </div>
-                        <span className="unit-hptext">{unit.currentHp}/{unit.maxHp}</span>
-                        {/* Barre d'AP (jaune) — visible pour les héros qui ont des AP. */}
-                        {unit.type === 'Hero' && unit.maxAp ? (
-                          <>
-                            <div className="unit-apbar">
-                              <div
-                                className="unit-apfill"
-                                style={{ width: `${(unit.currentAp! / unit.maxAp) * 100}%` }}
-                              />
-                            </div>
-                            <span className="unit-aptext">{unit.currentAp}/{unit.maxAp} AP</span>
-                          </>
-                        ) : null}
                         {(unit.status ?? []).length > 0 && (
                           <span className="unit-status-icons">
                             {unit.status.map((s, si) => (

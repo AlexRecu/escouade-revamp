@@ -132,6 +132,7 @@ export type RoomMember = {
 export type RoomInfo = {
   roomId: string;
   name: string;
+  hostId: string;
   hostName: string;
   isPublic: boolean;
   maxPlayers: number;
@@ -142,6 +143,7 @@ export type RoomInfo = {
 export type RoomSummary = {
   roomId: string;
   name: string;
+  hostId: string;
   hostName: string;
   isPublic: boolean;
   maxPlayers: number;
@@ -199,6 +201,17 @@ export type DungeonMember = {
   mp: number;
   maxMp: number;
   isDead: boolean;
+  // ── Détails de fiche (présents en donjon pour que la fiche perso soit à jour) ──
+  ownerId?: string | null;
+  avatar?: string | null;
+  equippableWeapons?: string[];
+  canDualWield?: boolean;
+  stats?: Statistics;
+  skills?: { name: string; apCost: number; mpCost: number; target: string; type: string; range: number; description: string }[];
+  spells?: { name: string; mpCost: number | null; hpCost: number | null; target: string; element: string; description: string }[];
+  rightHand?: EquippedWeapon | null;
+  leftHand?: EquippedWeapon | null;
+  bag?: BagItem[];
 };
 
 /** Feu de camp présent sur la grille. */

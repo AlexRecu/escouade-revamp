@@ -49,7 +49,6 @@ export default function AuthScreen({ onAuthed }: Props) {
       />
       <form className="auth-card" onSubmit={submit}>
         <h2>ESCOUADE</h2>
-        <p className="auth-sub">Mode ville — point-and-clic</p>
 
         <div className="auth-tabs">
           <button

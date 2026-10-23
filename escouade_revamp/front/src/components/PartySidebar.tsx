@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { GameState, ExplorationState } from '../types/game';
 import { classTokenUrl, tokenUrl } from '../utils/tokens';
+import { weaponEmoji } from '../utils/weapons';
 
 type Props = {
   state: GameState | null;
@@ -101,16 +102,24 @@ export default function PartySidebar({ state, connected, exploration, myPlayerId
                     {m.job} · niv.{m.level}
                   </span>
                 </div>
-                <div className="bar" title={`PV ${m.hp}/${m.maxHp}`}>
-                  <div className="bar-hp" style={{ width: `${(m.hp / m.maxHp) * 100}%` }} />
+                <div className="bar-row">
+                  <span className="bar-label">PV</span>
+                  <div className="bar">
+                    <div className="bar-hp" style={{ width: `${(m.hp / m.maxHp) * 100}%` }} />
+                  </div>
+                  <span className="bar-value">{m.hp}/{m.maxHp}</span>
                 </div>
-                <div className="bar" title={`MP ${m.mp}/${m.maxMp}`}>
-                  <div className="bar-mp" style={{ width: `${(m.mp / m.maxMp) * 100}%` }} />
+                <div className="bar-row">
+                  <span className="bar-label">MP</span>
+                  <div className="bar">
+                    <div className="bar-mp" style={{ width: `${(m.mp / m.maxMp) * 100}%` }} />
+                  </div>
+                  <span className="bar-value">{m.mp}/{m.maxMp}</span>
                 </div>
                 {(m.rightHand || m.leftHand) && (
                   <div className="party-weapons">
-                    {m.rightHand && <span title="Main droite">🗡️ {m.rightHand.name}</span>}
-                    {m.leftHand && <span title="Main gauche">🛡️ {m.leftHand.name}</span>}
+                    {m.rightHand && <span title="Main droite">{weaponEmoji(m.rightHand.weaponType)} {m.rightHand.name}</span>}
+                    {m.leftHand && <span title="Main gauche">{weaponEmoji(m.leftHand.weaponType)} {m.leftHand.name}</span>}
                   </div>
                 )}
               </li>

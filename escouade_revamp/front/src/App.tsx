@@ -29,6 +29,9 @@ function App() {
   const [view, setView] = useState<View>({ name: 'world' });
   // Membre sélectionné pour le panneau de détail (id, null = fermé).
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  // Menu déroulant du bandeau (bouton pseudo → Changer de partie / Déconnexion).
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
 
   // Partie temps réel (socket) : levée ici pour que l'équipe soit visible
   // sur la mappemonde ET en ville (colonne latérale permanente). Le token est
@@ -47,6 +50,17 @@ function App() {
     () => state?.room?.members.find((m) => m.playerId === myPlayerId)?.isSpectator ?? false,
     [state, myPlayerId]
   );
+  // Ferme le menu déroulant quand on clique en dehors.
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [userMenuOpen]);
   // Membre sélectionné (pour le panneau de détail) — résolu depuis l'état.
   // Pendant le donjon, l'état de ville n'est pas mis à jour : on fusionne les
   // données d'exploration (XP, PV, niveau…) sur le membre de base, comme le
@@ -68,6 +82,16 @@ function App() {
       mp: exp.mp,
       maxMp: exp.maxMp,
       isDead: exp.isDead,
+      // Détails de fiche à jour pendant le donjon (coffres, équipement, soins).
+      avatar: exp.avatar ?? base.avatar,
+      equippableWeapons: exp.equippableWeapons ?? base.equippableWeapons,
+      canDualWield: exp.canDualWield ?? base.canDualWield,
+      stats: exp.stats ?? base.stats,
+      skills: exp.skills ?? base.skills,
+      spells: exp.spells ?? base.spells,
+      rightHand: exp.rightHand ?? base.rightHand,
+      leftHand: exp.leftHand ?? base.leftHand,
+      bag: exp.bag ?? base.bag,
     };
   }, [selectedMemberId, state, exploration]);
   // Dans une partie, sans personnage, et non spectateur → écran de création.
@@ -178,11 +202,22 @@ function App() {
     <div className="app">
       <header className="app-header">
         <h1>ESCOUADE</h1>
-        <span className="subtitle">
-          {view.name === 'dungeon'
-            ? (combat ? 'Combat' : 'Exploration de donjon')
-            : 'Mode ville — point-and-clic'}
-        </span>
+        {inRoom && state?.room ? (
+          <span className="room-badge" title="Partie en cours">
+            🎮 {state.room.name}
+            <button
+              className="room-icon"
+              onClick={() => actions.partySave()}
+              title="Sauvegarder la partie"
+            >
+              💾
+            </button>
+          </span>
+        ) : (
+          <span className="room-badge" title="Pas de partie en cours">
+            ⚪ Hors ligne
+          </span>
+        )}
         <span className="spacer" />
         {view.name === 'city' && (
           <span className="subtitle">📍 {view.hub.name}</span>
@@ -192,22 +227,39 @@ function App() {
             ⚔️ {exploration.dungeonName} — Étage {exploration.floor}/{exploration.totalFloors}
           </span>
         )}
-        <span className="subtitle">👤 {user}</span>
-        {inRoom && state?.room && (
-          <>
-            <span className="subtitle room-badge" title="Partie en cours">
-              🎮 {state.room.name}
-            </span>
-            <button
-              className="logout room-switch"
-              onClick={() => actions.partyLeave()}
-              title="Quitter cette partie et revenir au lobby"
-            >
-              Changer de partie
-            </button>
-          </>
-        )}
-        <button className="logout" onClick={logout}>Déconnexion</button>
+        <div className="user-menu" ref={userMenuRef}>
+          <button
+            className="user-menu-toggle"
+            onClick={() => setUserMenuOpen((o) => !o)}
+            title="Menu"
+          >
+            👤 {user} ▾
+          </button>
+          {userMenuOpen && (
+            <div className="user-menu-dropdown">
+              {inRoom && (
+                <button
+                  className="user-menu-item"
+                  onClick={() => {
+                    setUserMenuOpen(false);
+                    actions.partyLeave();
+                  }}
+                >
+                  Changer de partie
+                </button>
+              )}
+              <button
+                className="user-menu-item"
+                onClick={() => {
+                  setUserMenuOpen(false);
+                  logout();
+                }}
+              >
+                Déconnexion
+              </button>
+            </div>
+          )}
+        </div>
       </header>
       <div className="app-body">
         {/* Colonne latérale permanente : l'équipe (visible dans une partie). */}
@@ -226,8 +278,10 @@ function App() {
             <LobbyScreen
               rooms={rooms}
               connected={connected}
+              myPlayerId={myPlayerId}
               onCreate={(opts) => actions.partyCreate(opts)}
               onJoin={(roomId, isSpectator) => actions.partyJoin(roomId, isSpectator)}
+              onDelete={(roomId) => actions.partyDelete(roomId)}
             />
           )}
           {inRoom && error && <div className="worldmap">Erreur : {error}</div>}

@@ -316,7 +316,10 @@ export class Character extends Unit {
      */
     equipRightHand(weapon: Weapon | null) {
         if (this.job.weapons.some((equipable) => weapon?.weaponType === equipable) || weapon === null) {
+            const prevRight = this.rightHand;
+            const prevLeft = this.leftHand;
             this.rightHand = weapon;
+            this.syncBagWithHands(prevRight, prevLeft);
         } else {
             throw new Error(`Cannot equip this type of weapon ${weapon?.weaponType} only ${this.job.weapons}`);
         }
@@ -330,6 +333,8 @@ export class Character extends Unit {
      */
     equipLeftHand(weapon: Weapon | null) {
         if (this.job.weapons.some((equipable) => weapon?.weaponType === equipable) || weapon === null) {
+            const prevRight = this.rightHand;
+            const prevLeft = this.leftHand;
             if (this.rightHand && this.job.specialAbility.startsWith("Double Armement")) {
                 // Double Armement : on peut tenir une arme en main droite ET une en main gauche
                 this.leftHand = weapon;
@@ -341,8 +346,35 @@ export class Character extends Unit {
                 // Main droite vide : on équipe simplement la main gauche (arme ou déséquipement)
                 this.leftHand = weapon;
             }
+            this.syncBagWithHands(prevRight, prevLeft);
         } else {
             throw new Error(`Cannot equip this type of weapon ${weapon?.weaponType} only ${this.job.weapons}`);
+        }
+    }
+
+    /**
+     * Synchronise le sac avec les mains après un changement d'équipement.
+     *
+     * Modèle **déplacement** : une arme équipée n'est **pas** dans le sac, et
+     * une arme déséquipée y revient. Sans ça, une arme achetée puis équipée
+     * resterait dans le sac ET dans la main (référence partagée) → comptée 2×
+     * au stock boutique et revendable alors qu'elle est portée.
+     *
+     * @param prevRight arme qui était en main droite AVANT le changement.
+     * @param prevLeft  arme qui était en main gauche AVANT le changement.
+     */
+    private syncBagWithHands(prevRight: Weapon | null, prevLeft: Weapon | null): void {
+        // 1. Retire du sac toute arme actuellement portée (main droite/gauche).
+        const equippedIds = new Set<string>();
+        if (this.rightHand) equippedIds.add(this.rightHand.id);
+        if (this.leftHand) equippedIds.add(this.leftHand.id);
+        this.bag = this.bag.filter((it) => !(it instanceof Weapon && equippedIds.has(it.id)));
+        // 2. Remet dans le sac les armes qui étaient portées avant et ne le sont
+        //    plus (déséquipées ou déplacées).
+        for (const prev of [prevRight, prevLeft]) {
+            if (prev && !equippedIds.has(prev.id) && !this.bag.some((it) => it.id === prev.id)) {
+                this.bag.push(prev);
+            }
         }
     }
 

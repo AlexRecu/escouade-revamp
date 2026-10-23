@@ -60,6 +60,14 @@ export const explorationMove = (direction: ExplorationDirection): void => {
 export const explorationRest = (): void => { socket?.emit('exploration:rest', {}); };
 export const explorationChest = (): void => { socket?.emit('exploration:chest', {}); };
 export const explorationExit = (): void => { socket?.emit('exploration:exit', {}); };
+/** Équipe une arme du sac en main droite/gauche pendant le donjon. */
+export const explorationEquip = (memberId: string, itemId: string, hand: 'right' | 'left'): void => {
+  socket?.emit('exploration:equip', { memberId, itemId, hand });
+};
+/** Utilise un consommable du sac pendant le donjon. */
+export const explorationUseItem = (memberId: string, itemId: string): void => {
+  socket?.emit('exploration:useItem', { memberId, itemId });
+};
 
 // ── Combat interactif (client → serveur) ───────────────────────────────────
 
@@ -158,6 +166,14 @@ export const partyJoin = (roomId: string, isSpectator = false): void => {
 
 /** Quitte la partie courante (retour au lobby). */
 export const partyLeave = (): void => { socket?.emit('party:leave', {}); };
+
+/** Sauvegarde explicite de la partie (bouton disquette). */
+export const partySave = (): void => { socket?.emit('party:save', {}); };
+
+/** Supprime définitivement la partie (bouton poubelle, hôte uniquement).
+ *  `roomId` optionnel : s'il est fourni (suppression depuis le lobby), on
+ *  supprime cette room ; sinon on supprime la room courante du joueur. */
+export const partyDelete = (roomId?: string): void => { socket?.emit('party:delete', roomId ? { roomId } : {}); };
 
 /** Crée le personnage du joueur (job + stats réparties + avatar). */
 export const partyCreateCharacter = (data: {

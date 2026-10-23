@@ -49,6 +49,12 @@ button {
   padding: 8px 14px;
   border-radius: 6px;
   transition: background 0.15s, border-color 0.15s;
+  /* Centre le contenu (icône seule ou icône + texte) — corrige les icônes
+     décalées (✕, +/−, etc.). */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 button:hover {
   background: #2a2338;
@@ -577,17 +583,39 @@ button:disabled {
 }
 /* Token de classe (image) à gauche du nom du membre. */
 .party-token {
-  width: 30px;
-  height: 30px;
-  border-radius: 6px;
-  object-fit: cover;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  /* contain : on voit tout le personnage (tête + pieds), pas un recadrage. */
+  object-fit: contain;
+  object-position: center;
   border: 1px solid var(--border);
   flex-shrink: 0;
   background: var(--bg);
 }
 .party-job { color: var(--text-dim); font-size: 11px; margin-left: auto; }
 .party-gold { font-size: 12px; margin-top: 4px; color: var(--accent); }
-.bar { height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; margin: 3px 0; }
+/* Ligne PV/MP : libellé + barre fine + valeur (ex. 19/22). */
+.bar-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0;
+}
+.bar-label {
+  font-size: 10px;
+  color: var(--text-dim);
+  width: 18px;
+  flex-shrink: 0;
+}
+.bar { flex: 1; height: 5px; background: var(--bg); border-radius: 3px; overflow: hidden; }
+.bar-value {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
 .bar-hp { height: 100%; background: var(--hp, #e0524d); }
 .bar-mp { height: 100%; background: var(--mp, #4d7de0); }
 
@@ -1189,6 +1217,15 @@ button:disabled {
 .lobby-btn.ghost {
   background: transparent;
 }
+.lobby-btn.danger {
+  background: transparent;
+  border-color: rgba(220, 60, 60, 0.5);
+  color: #ff6b6b;
+}
+.lobby-btn.danger:hover:not(:disabled) {
+  background: rgba(220, 60, 60, 0.15);
+  filter: none;
+}
 .lobby-list {
   display: flex;
   flex-direction: column;
@@ -1229,14 +1266,64 @@ button:disabled {
   gap: 8px;
   flex-shrink: 0;
 }
-/* Badge de partie courante dans le header. */
+/* Badge de partie courante dans le header (nom + icônes disquette/poubelle). */
 .room-badge {
   color: var(--accent, #7c5cff);
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
-.room-switch {
-  margin-left: 8px;
+.room-icon {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 7px;
+  font-size: 13px;
+  cursor: pointer;
+  line-height: 1;
 }
+.room-icon:hover:not(:disabled) { border-color: var(--accent); }
+.room-icon:disabled { opacity: 0.4; cursor: default; }
+
+/* Menu déroulant du bandeau (bouton pseudo → Changer de partie / Déconnexion). */
+.user-menu {
+  position: relative;
+}
+.user-menu-toggle {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-dim);
+  padding: 4px 12px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.user-menu-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.user-menu-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 180px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  overflow: hidden;
+}
+.user-menu-item {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  text-align: left;
+  padding: 9px 14px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.user-menu-item:hover { background: rgba(124, 92, 255, 0.12); }
 
 /* ── Écran de création de personnage (multi-joueurs) ─────────────────────── */
 .creation {
@@ -1587,40 +1674,53 @@ button:disabled {
 }
 /* Héros sélectionné pendant le placement. */
 .combat-unit.unit-placing {
-  box-shadow: 0 0 12px rgba(201, 162, 39, 0.9);
-  border-color: var(--accent);
+  box-shadow: inset 0 0 0 2px var(--accent), 0 0 12px rgba(201, 162, 39, 0.9);
 }
 
+/* L'unité remplit sa case : le token est en image de fond, les infos
+   (nom / PV / AP) sont superposées en bas. */
 .combat-unit {
+  position: relative;
+  width: 92%;
+  height: 92%;
+  border-radius: 6px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.combat-unit.unit-hero {
+  box-shadow: inset 0 0 0 1px var(--accent-2);
+}
+.combat-unit.unit-enemy {
+  box-shadow: inset 0 0 0 1px var(--hp);
+}
+.combat-unit.unit-active {
+  box-shadow: inset 0 0 0 2px var(--accent), 0 0 10px rgba(201, 162, 39, 0.8);
+}
+/* Token en image de fond : remplit toute la case. */
+.unit-token {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* contain : tout le personnage visible (tête + pieds) dans la case. */
+  object-fit: contain;
+  object-position: center;
+  border-radius: 6px;
+  background: var(--bg);
+}
+/* Infos superposées en bas du token (nom + barres PV/AP). */
+.unit-overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1px;
-  width: 92%;
-  padding: 2px;
-  border-radius: 5px;
-  pointer-events: none;
-}
-.combat-unit.unit-hero {
-  background: rgba(124, 92, 255, 0.22);
-  border: 1px solid var(--accent-2);
-}
-.combat-unit.unit-enemy {
-  background: rgba(214, 69, 69, 0.18);
-  border: 1px solid var(--hp);
-}
-.combat-unit.unit-active {
-  box-shadow: 0 0 10px rgba(201, 162, 39, 0.8);
-  border-color: var(--accent);
-}
-.unit-token {
-  width: clamp(18px, 4vw, 34px);
-  height: clamp(18px, 4vw, 34px);
-  border-radius: 50%;
-  object-fit: cover;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  flex-shrink: 0;
+  padding: 2px 3px 3px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.55) 60%, rgba(0, 0, 0, 0) 100%);
+  z-index: 2;
 }
 .unit-name {
   font-size: clamp(7px, 1.1vw, 10px);
@@ -1628,6 +1728,8 @@ button:disabled {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
 }
 .unit-hpbar {
   width: 100%;
@@ -1643,7 +1745,8 @@ button:disabled {
 }
 .unit-hptext {
   font-size: clamp(6px, 0.9vw, 9px);
-  color: var(--text-dim);
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
 }
 /* Barre d'AP (jaune) — sous la barre de PV, pour les héros. */
 .unit-apbar {
@@ -1662,7 +1765,8 @@ button:disabled {
 .unit-aptext {
   font-size: clamp(6px, 0.8vw, 8px);
   color: #f5c518;
-  opacity: 0.85;
+  opacity: 0.9;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
 }
 /* ── Effets visuels de combat ─────────────────────────────────────────── */
 /* Flash de dégâts : le token clignote en rouge + secousse. */
@@ -2187,11 +2291,14 @@ button:disabled {
   margin-bottom: 14px;
 }
 .char-detail-token {
-  width: 56px;
-  height: 56px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
-  object-fit: cover;
+  /* contain : tout le personnage visible (tête + pieds) dans le cercle. */
+  object-fit: contain;
+  object-position: center;
   border: 2px solid var(--accent);
+  flex-shrink: 0;
 }
 .char-detail-id {
   flex: 1;
@@ -2241,6 +2348,7 @@ button:disabled {
   gap: 6px;
 }
 .char-detail-stat {
+  position: relative;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -2248,6 +2356,7 @@ button:disabled {
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--border);
   border-radius: 6px;
+  cursor: help;
 }
 .char-detail-stat-label {
   font-size: 13px;
@@ -2257,6 +2366,36 @@ button:disabled {
   font-size: 15px;
   font-weight: 700;
   color: var(--accent);
+}
+/* Tooltip visible au survol : description de la stat (data-desc). */
+.char-detail-stat::after {
+  content: attr(data-desc);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  width: max-content;
+  max-width: 220px;
+  padding: 6px 10px;
+  background: #0a0810;
+  border: 1px solid var(--accent-2);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.35;
+  text-align: left;
+  white-space: normal;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.12s, transform 0.12s;
+  z-index: 20;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+}
+.char-detail-stat:hover::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
 }
 /* XP (cumulée + progression vers le prochain niveau). */
 .char-detail-xp {

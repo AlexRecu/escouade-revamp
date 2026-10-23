@@ -37,6 +37,7 @@ import { getSpawnRatesForZoneType } from "../../utils/RandomUtils";
 export type RoomSummary = {
   roomId: string;
   name: string;
+  hostId: string;
   hostName: string;
   isPublic: boolean;
   maxPlayers: number;
@@ -253,6 +254,41 @@ export class PartyRoomService {
     room.savedAt = new Date();
     await room.save();
     await this.setPlayerRoom(playerId, null);
+  }
+
+  /**
+   * Sauvegarde explicite de la partie (bouton disquette). L'état est déjà
+   * persisté à chaque action ; cette méthode force une ré-persistance (met à
+   * jour `savedAt`) et renvoie une confirmation au joueur.
+   */
+  static async save(roomId: string): Promise<{ logs: string[] }> {
+    const room = await this.model.findOne({ roomId });
+    if (!room) throw new Error("Partie introuvable.");
+    room.savedAt = new Date();
+    await room.save();
+    return { logs: ["💾 Partie sauvegardée."] };
+  }
+
+  /**
+   * Supprime définitivement la partie (bouton poubelle). **Seul l'hôte** peut
+   * la supprimer. La room est retirée de la base et le `currentRoomId` de tous
+   * ses membres est effacé (sinon ils seraient ré-attachés à une room
+   * inexistante à la reconnexion).
+   */
+  static async deleteRoom(playerId: string, roomId: string): Promise<void> {
+    const room = await this.model.findOne({ roomId });
+    if (!room) return;
+    if (room.hostId.toString() !== playerId) {
+      throw new Error("Seul l'hôte de la partie peut la supprimer.");
+    }
+    const memberIds = room.members.map((m) => m.playerId);
+    await this.model.deleteOne({ roomId });
+    if (memberIds.length > 0) {
+      await PlayerModel.updateMany(
+        { _id: { $in: memberIds }, currentRoomId: roomId },
+        { $set: { currentRoomId: null } }
+      );
+    }
   }
 
   /**
@@ -565,6 +601,7 @@ export class PartyRoomService {
     return {
       roomId: room.roomId,
       name: room.name,
+      hostId: room.hostId.toString(),
       hostName: room.hostName,
       isPublic: room.isPublic,
       maxPlayers: room.maxPlayers,
@@ -583,6 +620,7 @@ export class PartyRoomService {
     base.room = {
       roomId: room.roomId,
       name: room.name,
+      hostId: room.hostId.toString(),
       hostName: room.hostName,
       isPublic: room.isPublic,
       maxPlayers: room.maxPlayers,
