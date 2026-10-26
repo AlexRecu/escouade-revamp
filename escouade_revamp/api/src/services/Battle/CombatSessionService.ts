@@ -12,6 +12,7 @@ import {
   ExplorationSessionService,
   DungeonSession,
 } from "../dungeon/ExplorationSessionService";
+import { PartyRoomService } from "../Hub/PartyRoomService";
 
 /**
  * Vue sérialisée d'une unité pour le front (plateau de combat).
@@ -39,6 +40,22 @@ export interface CombatUnitView {
   rank?: number;
   /** Ennemi : nature de l'attaque ("Physique" corps-à-corps / "Magique" à distance). */
   attackType?: "Physique" | "Magique";
+}
+
+/**
+ * Récapitulatif de **game over** (mode difficile, équipe anéantie sans or).
+ * Affiché au front : le dernier héros tombé (sprite vaincu) + l'ennemi qui
+ * l'a tué (sprite) + le log du dernier tour de combat.
+ */
+export interface GameOverRecap {
+  /** Nom du dernier héros tombé. */
+  heroName: string;
+  /** Classe du dernier héros (pour le sprite vaincu). */
+  heroJob: string;
+  /** Nom de l'ennemi qui l'a tué (pour son sprite). */
+  killerName: string;
+  /** Log du dernier tour de combat (les dernières entrées du journal). */
+  lastTurnLog: string[];
 }
 
 /** Cibles valides d'une action (ids d'unités). */
@@ -404,7 +421,7 @@ export class CombatSessionService {
    * @returns l'état d'exploration mis à jour (pour que le front reprenne le
    *          déplacement) + les logs de fin.
    */
-  static async applyEnd(sessionKey: string): Promise<{ state: any; logs: string[]; exited?: boolean; pendingLevelUps?: PendingLevelUpView[] }> {
+  static async applyEnd(sessionKey: string): Promise<{ state: any; logs: string[]; exited?: boolean; pendingLevelUps?: PendingLevelUpView[]; gameOver?: GameOverRecap }> {
     const session = this.sessions.get(sessionKey);
     if (!session) throw new Error("Aucun combat en cours.");
     const { battle, exploration } = session;
@@ -446,19 +463,99 @@ export class CombatSessionService {
         session.pendingLevelUps = pendingLevelUps;
       }
     } else if (result === "defeat") {
-      // Défaite : l'équipe est ramenée à la **première ville du donjon** (le
-      // hub d'où l'on est entré), morts ressuscités à 1 PV. On quitte le
-      // donjon (exited) pour que le front revienne à la mappemonde.
-      exploration.party.members.forEach((m) => {
-        if (m.isDead()) m.currentHp = 1;
-      });
+      // **Défaite (wipe)** : toute l'équipe est KO. Logique à 3 paliers :
+      //  1. Or ≥ 200 × nb de morts → on déduit, on ranime **tous** à la
+      //     moitié des PV max (comme le sanctuaire).
+      //  2. Or ≥ 200 mais < total → on ranime autant que l'or permet
+      //     (200 chacun, à la moitié des PV max), le reste reste à 0 PV
+      //     (à ranimer au sanctuaire en ville).
+      //  3. Or < 200 (personne ne peut être ranimé) :
+      //     - **easy** : seul le dernier à mourir revient à 1 PV.
+      //     - **hard** : game over → partie supprimée + écran de récap.
+      const difficulty = exploration.difficulty ?? "easy";
+      const dead = exploration.party.members.filter((m) => m.isDead());
+      const SANCTUARY_COST = 200;
+      const totalCost = dead.length * SANCTUARY_COST;
+      let revived: string[] = [];
+
+      if (exploration.party.gold >= totalCost) {
+        // Cas 1 : assez d'or pour tout le monde.
+        exploration.party.gold -= totalCost;
+        dead.forEach((m) => {
+          m.currentHp = Math.floor(m.maxHp / 2);
+          revived.push(m.name);
+        });
+        logs.push(`💰 ${totalCost} or dépensés pour ranimer toute l'équipe.`);
+      } else {
+        // Cas 2 : on ranime autant que l'or permet (200 chacun).
+        for (const m of dead) {
+          if (exploration.party.gold >= SANCTUARY_COST) {
+            exploration.party.gold -= SANCTUARY_COST;
+            m.currentHp = Math.floor(m.maxHp / 2);
+            revived.push(m.name);
+          }
+        }
+        if (revived.length > 0) {
+          logs.push(`💰 ${revived.length} allié(s) ranimé(s) avec l'or disponible.`);
+        }
+      }
+
+      const stillDead = exploration.party.members.filter((m) => m.isDead());
+      if (stillDead.length > 0) {
+        if (difficulty === "hard") {
+          // Cas 3 + hard : **game over**. On renvoie le récap ; le socket
+          // supprime la room et diffuse l'écran à tous les membres.
+          const lastDeath = battle.combatState.lastHeroDeath;
+          const lastTurnLog = this.extractLastTurnLog(battle.combatState.log);
+          const gameOver: GameOverRecap = {
+            heroName: lastDeath?.heroName ?? stillDead[stillDead.length - 1].name,
+            heroJob: lastDeath?.heroJob ?? "",
+            killerName: lastDeath?.killerName ?? "",
+            lastTurnLog,
+          };
+          logs.push("💀 Game over… L'équipe est anéantie.");
+          // On ne sort pas du donjon normalement : le front bascule sur
+          // l'écran de récap (la room sera supprimée par le socket).
+          return { state: null, logs, exited: true, gameOver };
+        }
+        // Cas 3 + easy : seul le dernier à mourir revient à 1 PV.
+        const lastDeath = battle.combatState.lastHeroDeath;
+        const lastHero = lastDeath
+          ? exploration.party.members.find((m) => m.id === lastDeath.heroId)
+          : stillDead[stillDead.length - 1];
+        if (lastHero) {
+          lastHero.currentHp = 1;
+          logs.push(`💀 Défaite… ${lastHero.name} revient à 1 PV. L'équipe est ramenée à la dernière ville.`);
+        } else {
+          logs.push("💀 Défaite… L'équipe est ramenée à la dernière ville.");
+        }
+      } else {
+        logs.push("💀 Défaite… L'équipe est ramenée à la dernière ville.");
+      }
+
+      // Retour au hub d'origine (sortie du donjon) — sauf game over (retour
+      // ci-dessus). Les membres restés à 0 PV seront ranimés au sanctuaire.
       exploration.currentNodeId = exploration.hubId ?? "";
       exploration.activeCampfire = undefined;
       exploration.activeChest = undefined;
-      logs.push("💀 Défaite… L'équipe est ramenée à la dernière ville.");
       exited = true;
     } else if (result === "fled") {
       logs.push("💨 L'équipe s'est échappée du combat.");
+    }
+
+    // **Re-détection de la case** : si le combat s'est déclenché en marchant
+    // sur un coffre / un feu / une échelle / une porte, l'événement de la case
+    // doit être re-calculé à la fin du combat (sinon il faudrait se déplacer
+    // d'une case et revenir). On ne le fait pas en cas de défaite (on sort du
+    // donjon) ni si des stats sont à choisir (re-détecté dans submitStatChoices).
+    let finalState = ExplorationSessionService.serializeForCombat(exploration);
+    if (result !== "defeat" && !pendingLevelUps) {
+      const tileResult = await ExplorationSessionService.resolveTileEvents(
+        exploration, exploration.party.position, sessionKey
+      );
+      logs.push(...(tileResult.logs ?? []));
+      finalState = tileResult.state;
+      if (tileResult.exited) exited = true;
     }
 
     // Persiste l'équipe (PV, or, XP mis à jour). En cas de défaite, la
@@ -468,7 +565,7 @@ export class CombatSessionService {
     // On supprime la session **sauf** s'il reste des stats à choisir.
     if (!pendingLevelUps) this.sessions.delete(sessionKey);
     if (exited) ExplorationSessionService.deleteSession(sessionKey);
-    return { state: ExplorationSessionService.serializeForCombat(exploration), logs, exited, pendingLevelUps };
+    return { state: finalState, logs, exited, pendingLevelUps };
   }
 
   /**
@@ -478,7 +575,7 @@ export class CombatSessionService {
    * @param choices Tableau de `{ characterId, stat }` (un par montée reportée).
    * @returns l'état d'exploration mis à jour + les logs.
    */
-  static async submitStatChoices(sessionKey: string, choices: { characterId: string; stat: keyof import("../../classes/Types").Statistics }[]): Promise<{ state: any; logs: string[] }> {
+  static async submitStatChoices(sessionKey: string, choices: { characterId: string; stat: keyof import("../../classes/Types").Statistics }[]): Promise<{ state: any; logs: string[]; exited?: boolean }> {
     const session = this.sessions.get(sessionKey);
     if (!session) throw new Error("Aucun combat en cours.");
     const { exploration } = session;
@@ -499,12 +596,41 @@ export class CombatSessionService {
       logs.push(`${character.name} gagne +1 ${choice.stat} (niveau ${character.characterLevel}).`);
     });
 
+    // **Re-détection de la case** (comme dans applyEnd) : le combat s'est
+    // terminé après le choix des stats, l'événement de la case doit être
+    // re-calculé (coffre / feu / échelle / porte).
+    let finalState = ExplorationSessionService.serializeForCombat(exploration);
+    let exited = false;
+    const tileResult = await ExplorationSessionService.resolveTileEvents(
+      exploration, exploration.party.position, sessionKey
+    );
+    logs.push(...(tileResult.logs ?? []));
+    finalState = tileResult.state;
+    if (tileResult.exited) exited = true;
+
     await ExplorationSessionService.persistForCombat(exploration);
     this.sessions.delete(sessionKey);
-    return { state: ExplorationSessionService.serializeForCombat(exploration), logs };
+    if (exited) ExplorationSessionService.deleteSession(sessionKey);
+    return { state: finalState, logs, exited };
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────
+
+  /**
+   * Extrait le log du **dernier tour** de combat (pour l'écran de récap de
+   * game over). Le log est structuré par marqueurs `--- Tour N ---` : on
+   * prend tout ce qui suit le dernier marqueur.
+   */
+  private static extractLastTurnLog(log: string[]): string[] {
+    let lastTurnIdx = -1;
+    for (let i = log.length - 1; i >= 0; i--) {
+      if (log[i].startsWith("--- Tour")) {
+        lastTurnIdx = i;
+        break;
+      }
+    }
+    return lastTurnIdx >= 0 ? log.slice(lastTurnIdx) : log.slice(-10);
+  }
 
   private static require(sessionKey: string): CombatSession {
     const session = this.sessions.get(sessionKey);

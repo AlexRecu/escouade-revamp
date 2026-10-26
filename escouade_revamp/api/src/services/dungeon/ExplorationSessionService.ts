@@ -105,6 +105,7 @@ export class ExplorationSessionService {
     session.storage = { kind: "room", roomId };
     session.hubId = game.currentHubId;
     session.currentNodeId = dungeonId; // la position de l'équipe devient la zone
+    session.difficulty = game.difficulty;
     this.sessions.set(roomId, session);
     // Persiste la position (nœud = la zone) + le snapshot du donjon (seed,
     // étage, position) pour que la reconnexion restaure le donjon en cours.
@@ -169,6 +170,7 @@ export class ExplorationSessionService {
       activeCampfire: undefined,
       completed: false,
       storage: { kind: "player", playerId: "" }, // rempli par l'appelant
+      woodCampfires: [],
     };
   }
 
@@ -213,6 +215,29 @@ export class ExplorationSessionService {
       const combatState = CombatSessionService.startCombat(sessionKey, session, encounter);
       return { logs: ["⚔️ Rencontre !"], state: this.serialize(session), combat: combatState };
     }
+
+    // Événements de la case (feu de camp, coffre, escalier, porte de sortie).
+    return this.resolveTileEvents(session, to, sessionKey);
+  }
+
+  /**
+   * Résout les **événements de la case** courante : feu de camp, coffre,
+   * escalier (étage suivant) ou porte de sortie (fin du donjon).
+   *
+   * Appelé après **chaque déplacement** ET **après un combat** : si un combat
+   * s'est déclenché en marchant sur un coffre / un feu / une échelle / une
+   * porte, la détection est re-faite à la fin du combat pour que l'événement
+   * soit disponible sans avoir à se déplacer d'une case et revenir.
+   *
+   * @returns l'objet à retourner au front (état courant, transition d'étage,
+   *          ou sortie du donjon avec `exited: true`).
+   */
+  static async resolveTileEvents(
+    session: DungeonSession,
+    to: Position,
+    sessionKey: string
+  ): Promise<any> {
+    const zone = session.dungeon.levels[session.currentFloor];
 
     // Détection de feu de camp sur la case.
     const camp = zone.checkpoints.find(
@@ -314,6 +339,53 @@ export class ExplorationSessionService {
   }
 
   /**
+   * Utilise l'objet **« Bois »** : crée un feu de camp sur la **case courante**
+   * (qui doit être **vide** : pas de feu, pas de coffre, pas de sortie/escalier)
+   * et s'y repose immédiatement (50% PV max, 50% PM max, comme un feu de camp
+   * normal). Le feu est consommé (il laisse une **bûche**, `isUsed = true`).
+   *
+   * Le bois est consommé depuis le **sac commun** de l'équipe. Le feu créé est
+   * persisté dans le snapshot (`woodCampfires`) pour survivre à la reconnexion.
+   */
+  static async useWood(sessionKey: string): Promise<any> {
+    const session = this.require(sessionKey);
+    const zone = session.dungeon.levels[session.currentFloor];
+    const pos = session.party.position;
+
+    // La case doit être **vide** : pas de feu de camp, pas de coffre, pas de
+    // sortie/escalier.
+    if (zone.checkpoints.some((c) => c.position?.row === pos.row && c.position?.col === pos.col)) {
+      return { logs: ["Il y a déjà un feu de camp sur cette case."], state: this.serialize(session) };
+    }
+    if (zone.chests.some((c) => c.position.row === pos.row && c.position.col === pos.col)) {
+      return { logs: ["Il y a un coffre sur cette case."], state: this.serialize(session) };
+    }
+    if (pos.row === zone.endTile.row && pos.col === zone.endTile.col) {
+      return { logs: ["On ne peut pas allumer un feu sur la sortie."], state: this.serialize(session) };
+    }
+
+    // Consomme un « Bois » du sac commun.
+    const woodIdx = session.party.bag.findIndex((i) => i.name === "Bois");
+    if (woodIdx === -1) {
+      return { logs: ["Vous n'avez pas de bois dans le sac commun."], state: this.serialize(session) };
+    }
+    session.party.bag.splice(woodIdx, 1);
+
+    // Crée le feu de camp sur la case courante et s'y repose (50% PV/MP max,
+    // saute les morts). `rest()` marque le feu comme consommé (bûche).
+    const camp = new Campfire("Feu de bois", 0.5, 0.5, { row: pos.row, col: pos.col });
+    camp.createdByWood = true;
+    camp.rest(session.party.members);
+    zone.checkpoints.push(camp);
+    session.woodCampfires.push({ row: pos.row, col: pos.col, floor: session.currentFloor });
+    session.activeCampfire = camp;
+
+    const logs = ["🪵 Vous allumez un feu de bois et vous reposez (+50% PV/MP)."];
+    await this.persistAll(session);
+    return { logs, state: this.serialize(session) };
+  }
+
+  /**
    * Ouvre le coffre sur la case courante (si l'équipe est dessus et qu'il est
    * encore fermé). Le contenu (1 à 3 objets) est tiré selon le type de coffre
    * et le niveau de la zone, puis ajouté au sac du premier membre (pot commun
@@ -405,6 +477,21 @@ export class ExplorationSessionService {
   }
 
   /**
+   * Lance un **sort de soin** (cible alliée) **hors combat** pendant le donjon :
+   * le lanceur (`casterId`) soigne/ranime un allié (`targetId`). Opère sur
+   * l'équipe en mémoire de la session (pas sur la partie DB, stale ici).
+   */
+  static async castSpell(sessionKey: string, casterId: string, targetId: string, spellName: string): Promise<any> {
+    const session = this.require(sessionKey);
+    const caster = session.party.members.find((m) => m.id === casterId);
+    const target = session.party.members.find((m) => m.id === targetId);
+    if (!caster || !target) return { logs: ["Personnage introuvable."], state: this.serialize(session) };
+    const logs = caster.castHealSpell(spellName, target);
+    await this.persist(session);
+    return { logs, state: this.serialize(session) };
+  }
+
+  /**
    * Quitte le donjon : persiste l'équipe (or, HP, zones complétées) et libère
    * la session. Le front revient à la mappemonde et resynchronise la ville.
    */
@@ -457,6 +544,8 @@ export class ExplorationSessionService {
       completed: session.completed,
       openedChests,
       usedCampfires,
+      // Feux de camp créés par l'objet « Bois » (hors grille régénérée).
+      woodCampfires: session.woodCampfires ?? [],
     };
   }
 
@@ -473,6 +562,7 @@ export class ExplorationSessionService {
       session.storage = { kind: "room", roomId };
       session.hubId = game.currentHubId;
       session.currentNodeId = snapshot.dungeonId;
+      session.difficulty = game.difficulty;
       session.currentFloor = snapshot.currentFloor ?? 0;
       session.completed = snapshot.completed ?? false;
       // Réapplique l'état des coffres ouverts et feux de camp utilisés.
@@ -487,6 +577,19 @@ export class ExplorationSessionService {
         if (!zone) continue;
         const camp = zone.checkpoints.find((c) => c.position?.row === uc.row && c.position?.col === uc.col);
         if (camp) camp.isUsed = true;
+      }
+      // Restaure les feux de camp créés par l'objet « Bois » (hors grille).
+      session.woodCampfires = (snapshot.woodCampfires ?? []).map((w: any) => ({ ...w }));
+      for (const w of session.woodCampfires) {
+        const zone = session.dungeon.levels[w.floor];
+        if (!zone) continue;
+        // Ne recrée pas un feu déjà présent (idempotent).
+        if (!zone.checkpoints.some((c) => c.position?.row === w.row && c.position?.col === w.col)) {
+          zone.checkpoints.push(new Campfire("Feu de bois", 0.5, 0.5, { row: w.row, col: w.col }));
+          const created = zone.checkpoints[zone.checkpoints.length - 1];
+          created.isUsed = true;
+          created.createdByWood = true;
+        }
       }
       // Re-dérive le coffre/feu de camp actif depuis la position courante.
       const pos = session.party.position;
@@ -776,4 +879,12 @@ export interface DungeonSession {
   hubId?: string;
   /** Nœud de position courant (l'id de la zone explorée). */
   currentNodeId?: string;
+  /** Difficulté de la partie (easy/hard) — pour la gestion de la défaite. */
+  difficulty?: "easy" | "hard";
+  /**
+   * Feux de camp **créés par l'objet « Bois »** (position + étage). Ils ne
+   * font pas partie de la grille régénérée (seed) → persistés séparément dans
+   * le snapshot pour survivre à la reconnexion.
+   */
+  woodCampfires: { row: number; col: number; floor: number }[];
 }

@@ -7,6 +7,7 @@ type Props = {
   logs: string[];
   onMove: (direction: ExplorationDirection) => void;
   onRest: () => void;
+  onUseWood: () => void;
   onOpenChest: () => void;
 };
 
@@ -18,8 +19,14 @@ type Props = {
  * déplacement se fait aux flèches (clavier ou boutons). Le combat n'est pas
  * encore branché.
  */
-export default function DungeonView({ exploration, logs, onMove, onRest, onOpenChest }: Props) {
+export default function DungeonView({ exploration, logs, onMove, onRest, onUseWood, onOpenChest }: Props) {
   const { tileMap, position, startTile, endTile, exitType, campfires, chests, activeChest, visited, activeCampfire, completed } = exploration;
+
+  // Nombre d'objets « Bois » dans le sac partagé de l'équipe.
+  const woodCount = useMemo(
+    () => exploration.party.bag.filter((i) => i.name === 'Bois').length,
+    [exploration.party.bag]
+  );
 
   // Index des cases visitées (row,col) pour un accès O(1).
   const visitedSet = useMemo(() => {
@@ -156,6 +163,17 @@ export default function DungeonView({ exploration, logs, onMove, onRest, onOpenC
                 : activeChest.type === 'rare'
                   ? '💎 Ouvrir le coffre rare'
                   : '📦 Ouvrir le coffre'}
+            </button>
+          )}
+
+          {woodCount > 0 && (
+            <button
+              className="dungeon-rest-btn"
+              onClick={onUseWood}
+              disabled={completed}
+              title="Allume un feu de camp sur la case courante (qui doit être vide) et s'y repose (+50% PV/MP)."
+            >
+              🪵 Allumer un feu de bois ({woodCount})
             </button>
           )}
 

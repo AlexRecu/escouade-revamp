@@ -151,6 +151,8 @@ export type RoomInfo = {
   hostName: string;
   isPublic: boolean;
   maxPlayers: number;
+  /** Difficulté de la partie (easy/hard). */
+  difficulty?: 'easy' | 'hard';
   members: RoomMember[];
 };
 
@@ -165,6 +167,18 @@ export type RoomSummary = {
   playerCount: number;
   memberCount: number;
   members: { username: string; isSpectator: boolean }[];
+};
+
+/** Récapitulatif de **game over** (mode difficile, équipe anéantie sans or). */
+export type GameOverRecap = {
+  /** Nom du dernier héros tombé. */
+  heroName: string;
+  /** Classe du dernier héros (pour le sprite vaincu). */
+  heroJob: string;
+  /** Nom de l'ennemi qui l'a tué (pour son sprite). */
+  killerName: string;
+  /** Log du dernier tour de combat. */
+  lastTurnLog: string[];
 };
 
 export type GameState = {

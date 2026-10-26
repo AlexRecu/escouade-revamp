@@ -6,7 +6,7 @@ type Props = {
   connected: boolean;
   /** Id du joueur connecté (pour savoir s'il est l'hôte d'une partie). */
   myPlayerId: string | null;
-  onCreate: (opts: { name?: string; isPublic?: boolean; maxPlayers?: number }) => void;
+  onCreate: (opts: { name?: string; isPublic?: boolean; maxPlayers?: number; difficulty?: 'easy' | 'hard' }) => void;
   onJoin: (roomId: string, isSpectator?: boolean) => void;
   /** Supprime définitivement une partie (hôte uniquement). */
   onDelete: (roomId: string) => void;
@@ -22,9 +22,10 @@ export default function LobbyScreen({ rooms, connected, myPlayerId, onCreate, on
   const [name, setName] = useState('');
   const [isPublic, setIsPublic] = useState(true);
   const [maxPlayers, setMaxPlayers] = useState(4);
+  const [difficulty, setDifficulty] = useState<'easy' | 'hard'>('easy');
 
   const create = () => {
-    onCreate({ name: name.trim() || undefined, isPublic, maxPlayers });
+    onCreate({ name: name.trim() || undefined, isPublic, maxPlayers, difficulty });
     setName('');
   };
 
@@ -62,6 +63,18 @@ export default function LobbyScreen({ rooms, connected, myPlayerId, onCreate, on
             {[2, 3, 4, 5, 6].map((n) => (
               <option key={n} value={n}>{n}</option>
             ))}
+          </select>
+        </label>
+        <label className="lobby-check">
+          Difficulté :
+          <select
+            className="lobby-select"
+            value={difficulty}
+            onChange={(e) => setDifficulty(e.target.value as 'easy' | 'hard')}
+            title="Facile : défaite = ranimation payante (ou dernier survivant à 1 PV). Difficile : défaite sans or = game over, partie supprimée."
+          >
+            <option value="easy">Facile</option>
+            <option value="hard">Difficile</option>
           </select>
         </label>
         <button className="lobby-btn primary" onClick={create} disabled={!connected}>

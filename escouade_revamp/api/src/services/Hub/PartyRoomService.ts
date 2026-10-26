@@ -64,7 +64,8 @@ export class PartyRoomService {
     hostName: string,
     name: string,
     isPublic = true,
-    maxPlayers = 4
+    maxPlayers = 4,
+    difficulty: "easy" | "hard" = "easy"
   ): Promise<PartyRoomDocument> {
     // Équipe **vide** : chaque joueur crée son propre personnage (voir
     // `createCharacter`). L'équipe se constitue au fil des créations.
@@ -83,6 +84,7 @@ export class PartyRoomService {
       questSystem: game.questSystem.toSerialized(),
       currentHubId: game.currentHubId,
       currentNodeId: game.currentNodeId,
+      difficulty,
       isPublic,
       maxPlayers,
       savedAt: new Date(),
@@ -292,6 +294,24 @@ export class PartyRoomService {
   }
 
   /**
+   * Supprime une room **sans vérifier l'hôte** (game over en mode difficile :
+   * l'équipe est anéantie, la partie est terminée et supprimée de la
+   * persistance). Vide aussi le `currentRoomId` des membres.
+   */
+  static async deleteRoomById(roomId: string): Promise<void> {
+    const room = await this.model.findOne({ roomId });
+    if (!room) return;
+    const memberIds = room.members.map((m) => m.playerId);
+    await this.model.deleteOne({ roomId });
+    if (memberIds.length > 0) {
+      await PlayerModel.updateMany(
+        { _id: { $in: memberIds }, currentRoomId: roomId },
+        { $set: { currentRoomId: null } }
+      );
+    }
+  }
+
+  /**
    * Nettoie les rooms **vides** trop anciennes (supprime les parties
    * abandonnées). Appelé périodiquement au démarrage du serveur.
    *
@@ -393,6 +413,7 @@ export class PartyRoomService {
     questSystem: QuestSystem;
     currentHubId: string;
     currentNodeId: string;
+    difficulty: "easy" | "hard";
   }> {
     const room = await this.model.findOne({ roomId });
     if (!room) throw new Error("Partie introuvable.");
@@ -409,7 +430,7 @@ export class PartyRoomService {
       const world = await WorldService.getWorld();
       for (const n of world.nodes) if (n instanceof Hub) party.markHubVisited(n.id);
     }
-    return { party, questSystem, currentHubId, currentNodeId };
+    return { party, questSystem, currentHubId, currentNodeId, difficulty: (room.difficulty ?? "easy") as "easy" | "hard" };
   }
 
   /**
@@ -540,6 +561,21 @@ export class PartyRoomService {
     return { logs, state: this.serializeRoom(room, session) };
   }
 
+  /**
+   * Lance un **sort de soin** (cible alliée) **hors combat** en ville : le
+   * lanceur (`casterId`) soigne/ranime un allié (`targetId`). Le soin est
+   * garanti (pas de roll) — voir `Character.castHealSpell`.
+   */
+  static async castSpell(roomId: string, casterId: string, targetId: string, spellName: string): Promise<{ logs: string[]; state: any }> {
+    const { room, session } = await this.getHubState(roomId);
+    const caster = session.party.members.find((m) => m.id === casterId);
+    const target = session.party.members.find((m) => m.id === targetId);
+    if (!caster || !target) return { logs: ["Personnage introuvable."], state: this.serializeRoom(room, session) };
+    const logs = caster.castHealSpell(spellName, target);
+    await this.persistRoom(roomId, session);
+    return { logs, state: this.serializeRoom(room, session) };
+  }
+
   static async questBoard(roomId: string): Promise<{ quests: any[] }> {
     const { session } = await this.getHubState(roomId);
     const recruited = HubSerializer.recruitedDemons(session.party);
@@ -656,6 +692,7 @@ export class PartyRoomService {
       hostName: room.hostName,
       isPublic: room.isPublic,
       maxPlayers: room.maxPlayers,
+      difficulty: room.difficulty ?? "easy",
       members: room.members.map((m) => ({
         playerId: m.playerId.toString(),
         username: m.username,

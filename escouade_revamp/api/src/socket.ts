@@ -124,6 +124,13 @@ export const initializeSocket = (io: Server) => {
       if (roomId) return reply(() => PartyRoomService.sanctuary(roomId, data.targetId), true);
       return reply(() => HubSessionService.sanctuary(playerId, data.targetId));
     });
+    // Sort de soin (cible alliée) **hors combat** en ville : le lanceur soigne
+    // un allié (Soin/Grâce/Vie). Le soin est garanti (pas de roll).
+    socket.on('hub:castSpell', (data: { casterId: string; targetId: string; spellName: string }) => {
+      const roomId = currentRoomId();
+      if (roomId) return reply(() => PartyRoomService.castSpell(roomId, data.casterId, data.targetId, data.spellName), true);
+      return reply(() => HubSessionService.castSpell(playerId, data.casterId, data.targetId, data.spellName));
+    });
     socket.on('hub:questBoard', () => {
       const roomId = currentRoomId();
       if (roomId) return reply(() => PartyRoomService.questBoard(roomId));
@@ -169,13 +176,14 @@ export const initializeSocket = (io: Server) => {
         .catch((err) => socket.emit('error', { message: err?.message ?? 'Erreur' }));
     });
 
-    socket.on('party:create', (data: { name?: string; isPublic?: boolean; maxPlayers?: number }) => {
+    socket.on('party:create', (data: { name?: string; isPublic?: boolean; maxPlayers?: number; difficulty?: 'easy' | 'hard' }) => {
       PartyRoomService.create(
         playerId,
         username,
         data?.name ?? '',
         data?.isPublic ?? true,
-        data?.maxPlayers ?? 4
+        data?.maxPlayers ?? 4,
+        data?.difficulty ?? 'easy'
       )
         .then(async (room) => {
           socket.data.roomId = room.roomId;
@@ -342,6 +350,11 @@ export const initializeSocket = (io: Server) => {
     socket.on('exploration:rest', () =>
       replyExploration(() => ExplorationSessionService.restAtCampfire(explorationKey()), currentRoomId() !== null)
     );
+    // Utilise l'objet « Bois » : allume un feu de camp sur la case courante
+    // (qui doit être vide) et s'y repose. Laisse une bûche (feu consommé).
+    socket.on('exploration:useWood', () =>
+      replyExploration(() => ExplorationSessionService.useWood(explorationKey()), currentRoomId() !== null)
+    );
     socket.on('exploration:chest', () =>
       replyExploration(() => ExplorationSessionService.openChest(explorationKey()), currentRoomId() !== null)
     );
@@ -356,6 +369,14 @@ export const initializeSocket = (io: Server) => {
     socket.on('exploration:useItem', (data: { memberId: string; itemId: string }) =>
       replyExploration(
         () => ExplorationSessionService.useItem(explorationKey(), data.memberId, data.itemId),
+        currentRoomId() !== null
+      )
+    );
+    // Sort de soin (cible alliée) **hors combat** pendant le donjon : opère sur
+    // l'équipe en mémoire de la session (pas sur la partie DB, stale ici).
+    socket.on('exploration:castSpell', (data: { casterId: string; targetId: string; spellName: string }) =>
+      replyExploration(
+        () => ExplorationSessionService.castSpell(explorationKey(), data.casterId, data.targetId, data.spellName),
         currentRoomId() !== null
       )
     );
@@ -400,16 +421,31 @@ export const initializeSocket = (io: Server) => {
     );
     // Fin de combat : applique le résultat (butin / défaite), persiste, et
     // renvoie l'état d'exploration pour reprendre le déplacement.
-    socket.on('combat:end', () =>
-      replyExploration(async () => {
+    socket.on('combat:end', async () => {
+      try {
         const result = await CombatSessionService.applyEnd(explorationKey());
-        // Défaite → l'équipe est ramenée au hub d'origine : on resynchronise
-        // l'état de ville (PV à 1, or, position) pour que le front reparte de
-        // la mappemonde avec un état frais.
-        if (result.exited) await refreshHub(currentRoomId() !== null);
-        return result;
-      }, currentRoomId() !== null)
-    );
+        // **Game over** (mode difficile) : on supprime la room et on diffuse
+        // l'écran de récap à tous les membres.
+        if (result.gameOver) {
+          const roomId = currentRoomId();
+          if (roomId) {
+            await PartyRoomService.deleteRoomById(roomId);
+            io.to(roomId).emit('game:over', { recap: result.gameOver });
+          }
+          return;
+        }
+        const target = currentRoomId() !== null ? io.to(currentRoomId()!) : socket;
+        if (result.state) target.emit('exploration:state', { state: result.state });
+        if (result.logs) target.emit('exploration:log', { logs: result.logs });
+        if (result.exited) {
+          target.emit('exploration:exited', {});
+          await refreshHub(currentRoomId() !== null);
+        }
+        if (result.pendingLevelUps) target.emit('exploration:levelUps', { levelUps: result.pendingLevelUps });
+      } catch (err: any) {
+        socket.emit('error', { message: err?.message ?? 'Erreur inconnue' });
+      }
+    });
     // Choix des stats de montée de niveau (après l'écran de choix du front).
     // Applique les stats choisies et renvoie l'état d'exploration.
     socket.on('combat:submitStats', (data: { choices: { characterId: string; stat: string }[] }) =>

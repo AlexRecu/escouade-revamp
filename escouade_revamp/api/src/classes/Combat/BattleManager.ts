@@ -177,6 +177,21 @@ export class BattleManager {
             const b = before.get(u.id);
             if (b !== undefined && u.currentHp !== b) affected.push(u.id);
         }
+        // **Suivi du dernier héros tombé** (pour l'écran de récap de game over
+        // en mode difficile) : si un héros passe de vivant à mort, on enregistre
+        // le dernier + l'ennemi qui l'a tué (l'unité qui agit).
+        for (const u of this.state.units) {
+            const b = before.get(u.id);
+            if (b !== undefined && b > 0 && u.currentHp <= 0 && u.type === "Hero") {
+                this.state.lastHeroDeath = {
+                    heroId: u.id,
+                    heroName: u.name,
+                    heroJob: u instanceof Character ? u.job.name : "",
+                    killerId: unit.id,
+                    killerName: unit.name,
+                };
+            }
+        }
         const primary = targets[0] ?? null;
         this.state.recordAction(
             unit.id,

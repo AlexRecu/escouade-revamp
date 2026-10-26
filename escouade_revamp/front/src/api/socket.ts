@@ -40,6 +40,10 @@ export const hubUseItem = (memberId: string, itemId: string): void => {
 };
 export const hubRest = (): void => { socket?.emit('hub:rest', {}); };
 export const hubSanctuary = (targetId: string): void => { socket?.emit('hub:sanctuary', { targetId }); };
+/** Lance un sort de soin (cible alliée) hors combat en ville. */
+export const hubCastSpell = (casterId: string, targetId: string, spellName: string): void => {
+  socket?.emit('hub:castSpell', { casterId, targetId, spellName });
+};
 export const hubQuestBoard = (): void => { socket?.emit('hub:questBoard', {}); };
 export const hubAcceptQuest = (questId: string): void => { socket?.emit('hub:acceptQuest', { questId }); };
 export const hubChangeHub = (hubId: string): void => { socket?.emit('hub:changeHub', { hubId }); };
@@ -58,6 +62,8 @@ export const explorationMove = (direction: ExplorationDirection): void => {
   socket?.emit('exploration:move', { direction });
 };
 export const explorationRest = (): void => { socket?.emit('exploration:rest', {}); };
+/** Utilise l'objet « Bois » : allume un feu de camp sur la case courante (vide). */
+export const explorationUseWood = (): void => { socket?.emit('exploration:useWood', {}); };
 export const explorationChest = (): void => { socket?.emit('exploration:chest', {}); };
 export const explorationExit = (): void => { socket?.emit('exploration:exit', {}); };
 /** Équipe une arme du sac en main droite/gauche pendant le donjon. */
@@ -67,6 +73,10 @@ export const explorationEquip = (memberId: string, itemId: string, hand: 'right'
 /** Utilise un consommable du sac pendant le donjon. */
 export const explorationUseItem = (memberId: string, itemId: string): void => {
   socket?.emit('exploration:useItem', { memberId, itemId });
+};
+/** Lance un sort de soin (cible alliée) hors combat pendant le donjon. */
+export const explorationCastSpell = (casterId: string, targetId: string, spellName: string): void => {
+  socket?.emit('exploration:castSpell', { casterId, targetId, spellName });
 };
 
 // ── Combat interactif (client → serveur) ───────────────────────────────────
@@ -155,7 +165,7 @@ import type { RoomSummary } from '../types/game';
 export const partyList = (): void => { socket?.emit('party:list', {}); };
 
 /** Crée une nouvelle partie (l'appelant en devient l'hôte). */
-export const partyCreate = (opts: { name?: string; isPublic?: boolean; maxPlayers?: number }): void => {
+export const partyCreate = (opts: { name?: string; isPublic?: boolean; maxPlayers?: number; difficulty?: 'easy' | 'hard' }): void => {
   socket?.emit('party:create', opts);
 };
 
@@ -196,4 +206,11 @@ export function onPartyUpdated(cb: () => void): void {
 /** Émis quand le joueur quitte sa partie → retour au lobby. */
 export function onPartyLeft(cb: () => void): void {
   socket?.on('party:left', () => cb());
+}
+
+/** Émis en cas de **game over** (mode difficile, équipe anéantie sans or) :
+ *  récapitulatif (dernier héros tombé + tueur + log du dernier tour). La
+ *  partie est supprimée côté serveur. */
+export function onGameOver(cb: (recap: { heroName: string; heroJob: string; killerName: string; lastTurnLog: string[] }) => void): void {
+  socket?.on('game:over', ({ recap }: { recap: { heroName: string; heroJob: string; killerName: string; lastTurnLog: string[] } }) => cb(recap));
 }

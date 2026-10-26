@@ -15,6 +15,11 @@ type Props = {
   actions: GameActions;
   /** true si un combat est en cours : désactive l'équipement/usage depuis le sac. */
   inCombat?: boolean;
+  /**
+   * Liste des membres de l'équipe (PV/MP à jour) — pour cibler un allié avec
+   * un sort de soin hors combat (Soin/Grâce/Vie).
+   */
+  members?: PartyMember[];
 };
 
 /** Libellés français des 7 stats (ordre d'affichage). */
@@ -33,14 +38,26 @@ const targetLabel = (t: string): string =>
   t === 'self' ? 'soi' : t === 'ally' ? 'allié' : t === 'enemy' ? 'ennemi' : t;
 
 /**
+ * Un sort est **lançable hors combat** s'il est un sort de soin (cible
+ * alliée/soi) : Soin / Grâce / Vie et leurs variantes. Les sorts offensifs
+ * (cible ennemie) ne le sont pas.
+ */
+const isOutOfCombatHeal = (s: { name: string; target: string }): boolean =>
+  (s.name.startsWith('Soin') || s.name.startsWith('Grace') || s.name.startsWith('Vie')) &&
+  (s.target === 'ally' || s.target === 'self');
+
+/**
  * Panneau de détail d'un personnage : statistiques (7 stats), compétences de
  * classe, sorts, types d'armes équipables, armes équipées (avec attaque et
  * statut) et sac (onglets Consommables / Armes, avec équipement et usage).
  * Ouvert en cliquant sur un membre de l'équipe dans la barre latérale.
  */
-export default function CharacterDetailModal({ member, sharedBag, onClose, actions, inCombat }: Props) {
+export default function CharacterDetailModal({ member, sharedBag, onClose, actions, inCombat, members }: Props) {
   // Onglet actif du sac : consommables ou armes.
   const [bagTab, setBagTab] = useState<'consumable' | 'weapon'>('consumable');
+  // Sort de soin en cours de ciblage (nom du sort, null = aucun). Quand non
+  // null, on affiche la liste des alliés à cibler.
+  const [healSpell, setHealSpell] = useState<string | null>(null);
 
   // Consommables du **sac commun** groupés par nom (les doublons identiques
   // sont empilés ×N). On garde un id représentatif pour l'usage.
@@ -168,17 +185,73 @@ export default function CharacterDetailModal({ member, sharedBag, onClose, actio
             <h4>🔮 Sorts</h4>
             {member.spells && member.spells.length > 0 ? (
               <ul className="char-detail-list">
-                {member.spells.map((s) => (
-                  <li key={s.name} title={s.description}>
-                    <span className="char-detail-item-name">{s.name}</span>
-                    <span className="char-detail-item-meta">
-                      {s.mpCost != null ? `${s.mpCost} PM` : '—'} · {targetLabel(s.target)}
-                    </span>
-                  </li>
-                ))}
+                {member.spells.map((s) => {
+                  const canCast = !inCombat && isOutOfCombatHeal(s);
+                  const isRevive = s.name.startsWith('Vie');
+                  return (
+                    <li key={s.name} title={s.description} className="char-detail-spell-row">
+                      <span className="char-detail-item-name">{s.name}</span>
+                      <span className="char-detail-item-meta">
+                        {s.mpCost != null ? `${s.mpCost} PM` : '—'} · {targetLabel(s.target)}
+                      </span>
+                      {canCast && (
+                        <button
+                          className="char-detail-bag-btn"
+                          onClick={() => setHealSpell(healSpell === s.name ? null : s.name)}
+                          title={isRevive ? 'Ranime un allié mort' : 'Soigne un allié (hors combat)'}
+                        >
+                          {healSpell === s.name ? 'Annuler' : 'Lancer'}
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             ) : (
               <p className="char-detail-empty">Aucun sort débloqué.</p>
+            )}
+
+            {/* Ciblage d'un sort de soin : liste des alliés à soigner/ranimer. */}
+            {healSpell && members && (
+              <div className="char-detail-heal-targets">
+                <p className="char-detail-heal-title">
+                  Cible de <b>{healSpell}</b> :
+                </p>
+                <div className="char-detail-heal-list">
+                  {members.map((m) => {
+                    const isRevive = healSpell.startsWith('Vie');
+                    // Soin/Grâce : allié vivant pas à PV pleins. Vie : allié mort.
+                    const valid = isRevive
+                      ? m.isDead
+                      : !m.isDead && m.hp < m.maxHp;
+                    return (
+                      <button
+                        key={m.id}
+                        className="char-detail-heal-target"
+                        disabled={!valid}
+                        title={
+                          valid
+                            ? `Lancer ${healSpell} sur ${m.name}`
+                            : isRevive
+                              ? `${m.name} n'est pas mort`
+                              : m.isDead
+                                ? `${m.name} est KO`
+                                : `${m.name} est à PV pleins`
+                        }
+                        onClick={() => {
+                          actions.castSpell(member.id, m.id, healSpell);
+                          setHealSpell(null);
+                        }}
+                      >
+                        <span>{m.name}</span>
+                        <span className="char-detail-heal-hp">
+                          {m.isDead ? 'KO' : `${m.hp}/${m.maxHp} PV`}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             )}
           </section>
 

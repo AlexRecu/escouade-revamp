@@ -8,6 +8,13 @@ export class Campfire {
   isUsed: boolean;
   usedAt?: Date;
   position?: Position; // Tuile du feu de camp dans la zone (si en donjon)
+  /**
+   * true si ce feu a été **créé par l'objet « Bois »** (et non généré par la
+   * grille). Un feu de bois est créé ET consommé en une seule action (il
+   * laisse une bûche, `isUsed = true`). Persisté séparément dans le snapshot
+   * (les feux de bois ne font pas partie de la grille régénérée).
+   */
+  createdByWood?: boolean;
 
   constructor(locationName: string, restoredHealth = 0.5, restoredMana = 0.5, position?: Position) {
     this.locationName = locationName;

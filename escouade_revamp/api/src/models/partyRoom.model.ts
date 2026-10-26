@@ -54,7 +54,14 @@ export interface PartyRoomDocument extends Document {
    * `currentNodeId === currentHubId` ; quand elle est dans une zone
    * d'exploration, `currentNodeId` est l'id du donjon.
    */
-  currentNodeId: string;  /**
+  currentNodeId: string;
+  /**
+   * **Difficulté** de la partie : `easy` (défaite = ranimation payante /
+   * dernier survivant à 1 PV) ou `hard` (défaite sans or = game over, partie
+   * supprimée). Choisie à la création de la partie.
+   */
+  difficulty: "easy" | "hard";
+  /**
    * **Session d'exploration persistée** (donjon en cours). Snapshot de l'état
    * du donjon (seed, étage, position, tuiles visitées, coffres ouverts, feux
    * de camp utilisés) pour survivre à une reconnexion / redémarrage. `null`
@@ -89,6 +96,8 @@ const PartyRoomSchema = new Schema<PartyRoomDocument>(
     questSystem: { type: Schema.Types.Mixed, required: true },
     currentHubId: { type: String, default: '' },
     currentNodeId: { type: String, default: '' },
+    // Difficulté de la partie (easy/hard) — choisie à la création.
+    difficulty: { type: String, default: 'easy' },
     // Session d'exploration persistée (donjon en cours) — null si hors donjon.
     exploration: { type: Schema.Types.Mixed, default: null },
     isPublic: { type: Boolean, default: true },

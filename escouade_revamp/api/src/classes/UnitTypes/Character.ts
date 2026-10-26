@@ -313,6 +313,66 @@ export class Character extends Unit {
     }
 
     /**
+     * Lance un **sort de soin** (cible alliée) **hors combat** : Soin / Grâce /
+     * Vie et leurs variantes. Contrairement à `useSpellFromName` (qui fait des
+     * rolls de réussite offensifs), le soin hors combat est **garanti** : on
+     * déduit le MP et on applique l'effet directement.
+     *
+     * Règles :
+     *  - Le lanceur doit connaître le sort et avoir assez de MP.
+     *  - **Soin / Grâce** : soigne un allié vivant (bloqué si la cible est à
+     *    PV pleins — pas d'utilisation inutile).
+     *  - **Vie** : ranime un allié mort (bloqué si la cible est vivante).
+     *
+     * @returns le log de l'opération (ou un message d'erreur).
+     */
+    castHealSpell(spellName: string, target: Unit): string[] {
+        const spell = this.spellsMap.get(spellName);
+        const resultArray: string[] = [`${this.name} lance ${spellName} sur ${target.name}`];
+        if (!spell) {
+            resultArray.push("Ce sort n'existe pas.");
+            return resultArray;
+        }
+        if (spell.target !== "ally" && spell.target !== "self") {
+            resultArray.push("Ce sort ne peut pas être lancé hors combat.");
+            return resultArray;
+        }
+        if (this.currentMp < (spell.mpCost ?? 0)) {
+            resultArray.push("Pas assez de mana !");
+            return resultArray;
+        }
+
+        const isHeal = spell.name.startsWith("Soin") || spell.name.startsWith("Grace");
+        const isRevive = spell.name.startsWith("Vie");
+
+        // Validation de la cible selon le type de sort.
+        if (isHeal && target.currentHp >= target.maxHp) {
+            resultArray.push(`${target.name} est déjà à PV pleins.`);
+            return resultArray;
+        }
+        if (isHeal && target.isDead()) {
+            resultArray.push(`${target.name} est KO (utilisez un sort de Vie).`);
+            return resultArray;
+        }
+        if (isRevive && !target.isDead()) {
+            resultArray.push(`${target.name} n'est pas mort.`);
+            return resultArray;
+        }
+
+        // Déduit le mana et applique l'effet (garanti, pas de roll).
+        this.currentMp -= spell.mpCost ?? 0;
+        if (isHeal && spell.hp) {
+            const healed = Math.min(spell.hp, target.maxHp - target.currentHp);
+            target.currentHp += healed;
+            resultArray.push(`${target.name} récupère ${healed} PV.`);
+        } else if (isRevive && spell.hp) {
+            target.currentHp = spell.hp;
+            resultArray.push(`${target.name} revient à la vie avec ${spell.hp} PV !`);
+        }
+        return resultArray;
+    }
+
+    /**
      * Permet de s'équiper de l'arme choisie en main droite
      * @param weapon null si déséquipé
      */

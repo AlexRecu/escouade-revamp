@@ -60,6 +60,12 @@ export class CombatState {
     result: BattleResult;
     /** Métadonnées de la dernière action exécutée (animation front). */
     lastAction: LastAction | null;
+    /**
+     * **Dernier héros tombé** (pour l'écran de récap de game over en mode
+     * difficile) : le héros qui est mort en dernier + l'ennemi qui l'a tué.
+     * Mis à jour à chaque fois qu'un héros passe de vivant à mort.
+     */
+    lastHeroDeath: { heroId: string; heroName: string; heroJob: string; killerId: string; killerName: string } | null;
     /** Compteur de séquence des actions (croît à chaque action). */
     private actionSeq: number;
 
@@ -71,6 +77,7 @@ export class CombatState {
         this.log = [];
         this.result = "ongoing";
         this.lastAction = null;
+        this.lastHeroDeath = null;
         this.actionSeq = 0;
     }
 

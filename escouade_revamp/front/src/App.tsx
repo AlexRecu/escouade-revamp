@@ -12,6 +12,7 @@ import LobbyScreen from './components/LobbyScreen';
 import CharacterCreationScreen from './components/CharacterCreationScreen';
 import StatChoiceModal from './components/StatChoiceModal';
 import CharacterDetailModal from './components/CharacterDetailModal';
+import GameOverScreen from './components/GameOverScreen';
 import { useGame } from './game/useGame';
 
 type View =
@@ -37,7 +38,7 @@ function App() {
   // sur la mappemonde ET en ville (colonne latérale permanente). Le token est
   // passé en paramètre : quand il devient disponible (premier login), le
   // socket est re-connecté avec le JWT (sinon il serait refusé par le back).
-  const { state, logs: gameLogs, connected, actions, rooms, error: gameError, inRoom, exploration, combat, pendingLevelUps, setExplorationExitedHandler, setAuthErrorHandler } = useGame(getToken());
+  const { state, logs: gameLogs, connected, actions, rooms, error: gameError, inRoom, exploration, combat, pendingLevelUps, gameOver, dismissGameOver, setExplorationExitedHandler, setAuthErrorHandler } = useGame(getToken());
 
   // Identité du joueur connecté (pour savoir s'il a déjà un personnage dans
   // la partie, et s'il est spectateur). Dépend de `user` : `<App />` n'est pas
@@ -99,6 +100,29 @@ function App() {
       bag: exp?.bag ?? base.bag,
     };
   }, [selectedMemberId, state, exploration, combat]);
+
+  // Liste des membres avec PV/MP **à jour** (fusion exploration/combat sur
+  // l'état de ville) — pour le ciblage des sorts de soin hors combat dans la
+  // fiche perso. Même logique de fusion que `PartySidebar`.
+  const mergedMembers = useMemo(() => {
+    if (!state) return [];
+    const base = state.party.members;
+    const expMembers = exploration?.party.members ?? [];
+    const combatUnits = combat?.units ?? [];
+    return base.map((m) => {
+      const exp = expMembers.find((e) => e.id === m.id);
+      const cu = combatUnits.find((u) => u.id === m.id);
+      return {
+        ...m,
+        hp: cu ? cu.currentHp : exp ? exp.hp : m.hp,
+        maxHp: cu ? cu.maxHp : exp ? exp.maxHp : m.maxHp,
+        mp: cu ? (cu.currentMp ?? m.mp) : exp ? exp.mp : m.mp,
+        maxMp: cu ? (cu.maxMp ?? m.maxMp) : exp ? exp.maxMp : m.maxMp,
+        isDead: cu ? cu.isDead : exp ? exp.isDead : m.isDead,
+      };
+    });
+  }, [state, exploration, combat]);
+
   // Dans une partie, sans personnage, et non spectateur → écran de création.
   const needsCharacter = inRoom && !hasCharacter && !isSpectator;
 
@@ -374,6 +398,7 @@ function App() {
                 logs={gameLogs}
                 onMove={(dir) => actions.explorationMove(dir)}
                 onRest={() => actions.explorationRest()}
+                onUseWood={() => actions.explorationUseWood()}
                 onOpenChest={() => actions.explorationChest()}
               />
             ) : (
@@ -395,10 +420,16 @@ function App() {
         <CharacterDetailModal
           member={selectedMember}
           sharedBag={exploration ? exploration.party.bag : state?.party.bag ?? []}
+          members={mergedMembers}
           onClose={() => setSelectedMemberId(null)}
           actions={actions}
           inCombat={!!combat}
         />
+      )}
+      {/* Écran de game over (mode difficile) : overlay global, affiché même
+          quand la room est supprimée (inRoom devient false). */}
+      {gameOver && (
+        <GameOverScreen recap={gameOver} onDismiss={dismissGameOver} />
       )}
     </div>
   );

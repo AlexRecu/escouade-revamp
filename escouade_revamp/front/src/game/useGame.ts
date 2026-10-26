@@ -1,7 +1,7 @@
 // Hook de partie : gère la connexion Socket.IO et l'état de session (temps réel).
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { GameState, ExplorationState, RoomSummary, CombatState } from '../types/game';
+import type { GameState, ExplorationState, RoomSummary, CombatState, GameOverRecap } from '../types/game';
 import {
   connectSocket,
   disconnectSocket,
@@ -12,6 +12,7 @@ import {
   hubUseItem,
   hubRest,
   hubSanctuary,
+  hubCastSpell,
   hubQuestBoard,
   hubAcceptQuest,
   hubCompleteZone,
@@ -21,10 +22,12 @@ import {
   explorationEnter,
   explorationMove,
   explorationRest,
+  explorationUseWood,
   explorationChest,
   explorationExit,
   explorationEquip,
   explorationUseItem,
+  explorationCastSpell,
   combatPlace,
   combatConfirmPlacement,
   combatMove,
@@ -53,6 +56,7 @@ import {
   onPartyList,
   onPartyUpdated,
   onPartyLeft,
+  onGameOver,
 } from '../api/socket';
 
 export type GameActions = {
@@ -63,6 +67,8 @@ export type GameActions = {
   useItem: (memberId: string, itemId: string) => void;
   rest: () => void;
   sanctuary: (targetId: string) => void;
+  /** Lance un sort de soin (cible alliée) hors combat (ville ou donjon). */
+  castSpell: (casterId: string, targetId: string, spellName: string) => void;
   questBoard: () => void;
   acceptQuest: (questId: string) => void;
   completeZone: (zoneId: string) => void;
@@ -73,6 +79,7 @@ export type GameActions = {
   explorationEnter: (dungeonId: string) => void;
   explorationMove: (direction: ExplorationDirection) => void;
   explorationRest: () => void;
+  explorationUseWood: () => void;
   explorationChest: () => void;
   explorationExit: () => void;
   // Combat interactif.
@@ -128,6 +135,10 @@ export type UseGame = {
   /** Montées de niveau reportées (stat à choisir) — non vide = afficher
    *  l'écran de choix de stat. */
   pendingLevelUps: { characterId: string; name: string; level: number }[];
+  /** Récap de **game over** (mode difficile) — non null = afficher l'écran. */
+  gameOver: GameOverRecap | null;
+  /** Ferme l'écran de game over (retour au lobby). */
+  dismissGameOver: () => void;
   /**
    * Enregistre un callback appelé quand le donjon est terminé (porte de
    * sortie atteinte) → le front peut revenir à la mappemonde (auto-sortie).
@@ -157,6 +168,7 @@ export function useGame(token: string | null): UseGame {
   const [exploration, setExploration] = useState<ExplorationState | null>(null);
   const [combat, setCombat] = useState<CombatState | null>(null);
   const [pendingLevelUps, setPendingLevelUps] = useState<{ characterId: string; name: string; level: number }[]>([]);
+  const [gameOver, setGameOver] = useState<GameOverRecap | null>(null);
   const [rooms, setRooms] = useState<RoomSummary[]>([]);
   // Dernière erreur serveur (ex. création de personnage refusée) — affichée
   // dans l'écran courant puis effacée au prochain état valide.
@@ -178,6 +190,14 @@ export function useGame(token: string | null): UseGame {
 
   const setAuthErrorHandler = useCallback((cb: (() => void) | null) => {
     authErrorHandlerRef.current = cb;
+  }, []);
+
+  const dismissGameOver = useCallback(() => {
+    setGameOver(null);
+    setState(null);
+    setExploration(null);
+    setCombat(null);
+    partyList();
   }, []);
 
   useEffect(() => {
@@ -253,6 +273,13 @@ export function useGame(token: string | null): UseGame {
       setExploration(null);
       partyList();
     });
+    // Game over (mode difficile) : on affiche l'écran de récap. La partie est
+    // supprimée côté serveur ; le joueur retourne au lobby en fermant l'écran.
+    onGameOver((recap) => {
+      setCombat(null);
+      setExploration(null);
+      setGameOver(recap);
+    });
 
     // Une fois connecté : demande l'état de la room courante (si le joueur en
     // est dans une) + la liste des parties pour le lobby.
@@ -287,6 +314,10 @@ export function useGame(token: string | null): UseGame {
       exploration ? explorationUseItem(memberId, itemId) : hubUseItem(memberId, itemId),
     rest: hubRest,
     sanctuary: hubSanctuary,
+    // Sort de soin hors combat : en donjon, opère sur l'équipe en mémoire de
+    // la session ; sinon (ville / mappemonde), sur la partie.
+    castSpell: (casterId, targetId, spellName) =>
+      exploration ? explorationCastSpell(casterId, targetId, spellName) : hubCastSpell(casterId, targetId, spellName),
     questBoard: hubQuestBoard,
     acceptQuest: hubAcceptQuest,
     completeZone: hubCompleteZone,
@@ -296,6 +327,7 @@ export function useGame(token: string | null): UseGame {
     explorationEnter,
     explorationMove,
     explorationRest,
+    explorationUseWood,
     explorationChest,
     explorationExit,
     combatPlace,
@@ -321,5 +353,5 @@ export function useGame(token: string | null): UseGame {
     partyCreateCharacter,
   };
 
-  return { state, logs, connected, actions, rooms, error, inRoom, exploration, combat, pendingLevelUps, setExplorationExitedHandler, setAuthErrorHandler };
+  return { state, logs, connected, actions, rooms, error, inRoom, exploration, combat, pendingLevelUps, gameOver, dismissGameOver, setExplorationExitedHandler, setAuthErrorHandler };
 }

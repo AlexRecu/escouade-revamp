@@ -250,6 +250,19 @@ export class HubSessionService {
   }
 
   /**
+   * Lance un **sort de soin** (cible alliée) **hors combat** en mode solo.
+   */
+  static async castSpell(playerId: string, casterId: string, targetId: string, spellName: string): Promise<{ logs: string[]; state: any }> {
+    const session = this.require(playerId);
+    const caster = session.party.members.find((m) => m.id === casterId);
+    const target = session.party.members.find((m) => m.id === targetId);
+    if (!caster || !target) return { logs: ["Personnage introuvable."], state: this.serialize(session) };
+    const logs = caster.castHealSpell(spellName, target);
+    await this.persist(playerId, session);
+    return { logs, state: this.serialize(session) };
+  }
+
+  /**
    * Tableau des quêtes : liste les quêtes disponibles.
    */
   static async questBoard(playerId: string): Promise<{ quests: any[] }> {
