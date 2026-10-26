@@ -593,8 +593,13 @@ button:disabled {
   flex-shrink: 0;
   background: var(--bg);
 }
-/* Token vaincu (sprite sheet) : le fond du sprite remplace le fond de base. */
+/* Token vaincu (sprite sheet) : le fond du sprite remplace le fond de base.
+   Le sprite est un rectangle très large (ratio ~3.75) → le token vaincu est
+   un rectangle (pas un carré) pour ne pas écraser le personnage au sol. */
 .party-token-defeated {
+  width: 90px;
+  height: 24px;
+  border-radius: 4px;
   background-color: transparent;
   background-position: center;
 }
@@ -1730,8 +1735,17 @@ button:disabled {
   background: var(--bg);
 }
 /* Token vaincu (héros) : cellule du sprite sheet `defeated.png` sélectionnée
-   via `background-position` (style inline). Remplit la case. */
+   via `background-position` (style inline). Le sprite est un rectangle très
+   large (ratio ~3.75) → le token vaincu est un rectangle centré dans la case
+   (largeur pleine, hauteur ~27%) pour ne pas écraser le personnage au sol. */
 .unit-token-defeated {
+  inset: auto;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 27%;
+  transform: translateY(-50%);
+  border-radius: 4px;
   background-color: transparent;
 }
 /* Unité morte : le token (monstre, sans sprite vaincu) est grisé + estompé
@@ -2349,8 +2363,14 @@ button:disabled {
   border: 2px solid var(--accent);
   flex-shrink: 0;
 }
-/* Token vaincu (sprite sheet) : le fond du sprite remplace le fond de base. */
+/* Token vaincu (sprite sheet) : le fond du sprite remplace le fond de base.
+   Le sprite est un rectangle très large (ratio ~3.75) → le token vaincu est
+   un rectangle (pas un cercle) pour ne pas écraser le personnage au sol. */
 .char-detail-token-defeated {
+  width: 150px;
+  height: 40px;
+  border-radius: 8px;
+  border: 2px solid var(--border);
   background-color: transparent;
   background-position: center;
 }
