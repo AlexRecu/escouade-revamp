@@ -24,7 +24,10 @@ export class Campfire {
   rest(characters: Character[]): void {
     if (this.isUsed) return;
 
+    // Les morts ne sont PAS soignés : le feu de camp ne ressuscite pas
+    // (la réanimation reste l'apanage du sanctuaire / d'un objet dédié).
     characters.forEach(character => {
+      if (character.isDead()) return;
       character.currentHp = Math.min(
         character.maxHp,
         character.currentHp + character.maxHp * this.restoredHealthPercentage

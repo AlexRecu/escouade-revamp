@@ -185,6 +185,8 @@ export type GameState = {
     gold: number;
     /** Monstres déjà vus (bestiaire, persisté côté serveur). */
     seenMonsters: string[];
+    /** Sac commun de l'équipe (objets partagés, accessibles par tous). */
+    bag: BagItem[];
     members: PartyMember[];
   };
   quests: {
@@ -279,6 +281,8 @@ export type ExplorationState = {
   } | null;
   party: {
     gold: number;
+    /** Sac commun de l'équipe (objets partagés, accessibles par tous). */
+    bag: BagItem[];
     members: DungeonMember[];
   };
 };

@@ -236,6 +236,13 @@ export class PartyService {
     // (les parties antérieures stockaient l'or sur chaque `Character`).
     party.gold = partyData.gold ?? 0;
     party.consolidateGold();
+    // Sac commun : restaure les objets partagés (persisté), puis migre le
+    // contenu des sacs individuels (données antérieures au sac commun, où le
+    // butin était dans `members[0].bag`). Idempotent : no-op si déjà migré.
+    party.bag = (partyData.bag ?? []).map((i: any) =>
+      CharacterFactory.deserializeItem(i)
+    );
+    party.migrateMemberBags();
 
     const questSystem = QuestSystem.fromSerialized(questData, "fr");
     // Nœud de position (fallback : le hub courant si non précisé).

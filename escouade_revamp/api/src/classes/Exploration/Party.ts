@@ -1,5 +1,6 @@
 // src/classes/Exploration/Party.ts
 import { Character } from "../UnitTypes/Character";
+import { Item } from "../Items/Item";
 import { Position } from "../Types";
 import { IdGenerator } from "../../utils/IdGeneratorUtils";
 
@@ -8,6 +9,13 @@ export class Party {
   members: Character[];
   position: Position; // Position actuelle du groupe dans la zone
   visitedTiles: Set<string>; // Historique des positions explorées
+  /**
+   * **Sac commun** de l'équipe : les objets (coffres, achats, butin) y sont
+   * stockés et sont accessibles/utilisables par **tous** les membres. Les sacs
+   * individuels (`Character.bag`) ne servent plus qu'à l'équipement (armes
+   * portées) ; tout le reste migre ici (voir `migrateMemberBags`).
+   */
+  bag: Item[] = [];
   defeatedEnemies: number = 0;
   /** Niveau de progression du monde (0 → 6). Monte à chaque zone complétée. */
   worldLevel: number = 0;
@@ -49,6 +57,29 @@ export class Party {
   /** Marque une ville comme visitée (idempotent) — révèle la ville au brouillard. */
   markHubVisited(hubId: string): void {
     if (hubId) this.visitedHubs.add(hubId);
+  }
+
+  /**
+   * Migre le contenu des sacs individuels vers le **sac commun** (idempotent).
+   *
+   * Historiquement les objets (coffres, achats) étaient stockés dans le sac du
+   * 1er membre (`members[0].bag`) — les autres joueurs n'y avaient pas accès.
+   * Désormais tout le contenu des sacs migre vers `party.bag`. Les armes
+   * **portées** (main droite/gauche) ne sont pas dans le sac (modèle
+   * déplacement de `Character`), donc elles ne sont pas touchées.
+   *
+   * Appelé à la sérialisation pour que la migration soit persistée une seule
+   * fois (les sacs individuels sont vidés, donc l'appel suivant est un no-op).
+   */
+  migrateMemberBags(): void {
+    for (const m of this.members) {
+      if (m.bag.length === 0) continue;
+      for (const item of m.bag) {
+        // Évite les doublons (même id) si l'objet est déjà dans le sac commun.
+        if (!this.bag.some((b) => b.id === item.id)) this.bag.push(item);
+      }
+      m.bag = [];
+    }
   }
 
   /**
@@ -116,6 +147,10 @@ export class Party {
   toSerialized(): any {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { CharacterFactory } = require("../../services/factory/CharacterFactory");
+    // NB : la migration des sacs individuels vers le sac commun se fait au
+    // **chargement** (`PartyService.deserialize`), pas ici : muter l'état à la
+    // sérialisation casserait la stabilité du round-trip (1re sérialisation
+    // migre, 2e non). À ce stade les sacs individuels sont déjà vides.
     return {
       id: this.id,
       position: this.position,
@@ -126,6 +161,8 @@ export class Party {
       gold: this.gold,
       seenMonsters: Array.from(this.seenMonsters),
       visitedHubs: Array.from(this.visitedHubs),
+      // Sac commun de l'équipe (objets partagés).
+      bag: this.bag.map((i) => CharacterFactory.serializeItem(i)),
       members: this.members.map((m) => CharacterFactory.toSerialized(m)),
     };
   }

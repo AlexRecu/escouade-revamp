@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import type { GameState, ExplorationState } from '../types/game';
-import { classTokenUrl, tokenUrl } from '../utils/tokens';
+import type { GameState, ExplorationState, CombatState } from '../types/game';
+import { classTokenUrl, tokenUrl, defeatedTokenStyle } from '../utils/tokens';
 import { weaponEmoji, weaponStatLabel, weaponRangeLabel } from '../utils/weapons';
 
 type Props = {
@@ -8,6 +8,8 @@ type Props = {
   connected: boolean;
   /** État d'exploration courant (PV/MP/or à jour pendant le donjon). */
   exploration: ExplorationState | null;
+  /** État de combat courant (PV/MP à jour en temps réel pendant le combat). */
+  combat: CombatState | null;
   /** Id du joueur connecté (pour mettre son personnage en premier). */
   myPlayerId: string | null;
   /** Ouvre le panneau de détail d'un personnage (stats, compétences, sorts, équipement). */
@@ -23,25 +25,30 @@ type Props = {
  * pendant le donjon. Le personnage du joueur connecté est affiché en premier
  * pour qu'il puisse suivre ses PV sans scroller (surtout en mobile).
  */
-export default function PartySidebar({ state, connected, exploration, myPlayerId, onSelectMember }: Props) {
-  // Fusionne les PV/MP à jour (exploration) sur les membres de base (ville).
+export default function PartySidebar({ state, connected, exploration, combat, myPlayerId, onSelectMember }: Props) {
+  // Fusionne les PV/MP à jour sur les membres de base (ville). Priorité :
+  // combat (temps réel) > exploration (donjon) > ville. Pendant le combat,
+  // l'état d'exploration n'est pas rafraîchi (seul `combat:state` l'est), donc
+  // on prend les PV/MP du plateau de combat pour qu'ils bougent en direct.
   const members = useMemo(() => {
     if (!state) return [];
     const base = state.party.members;
     const expMembers = exploration?.party.members ?? [];
+    const combatUnits = combat?.units ?? [];
     const merged = base.map((m) => {
       const exp = expMembers.find((e) => e.id === m.id);
+      const cu = combatUnits.find((u) => u.id === m.id);
       return {
         ...m,
         level: exp?.level ?? m.level,
         xp: exp?.xp ?? m.xp,
         xpToNext: exp?.xpToNext ?? m.xpToNext,
         xpNeeded: exp?.xpNeeded ?? m.xpNeeded,
-        hp: exp ? exp.hp : m.hp,
-        maxHp: exp ? exp.maxHp : m.maxHp,
-        mp: exp ? exp.mp : m.mp,
-        maxMp: exp ? exp.maxMp : m.maxMp,
-        isDead: exp ? exp.isDead : m.isDead,
+        hp: cu ? cu.currentHp : exp ? exp.hp : m.hp,
+        maxHp: cu ? cu.maxHp : exp ? exp.maxHp : m.maxHp,
+        mp: cu ? (cu.currentMp ?? m.mp) : exp ? exp.mp : m.mp,
+        maxMp: cu ? (cu.maxMp ?? m.maxMp) : exp ? exp.maxMp : m.maxMp,
+        isDead: cu ? cu.isDead : exp ? exp.isDead : m.isDead,
       };
     });
     // Le personnage du joueur connecté en premier.
@@ -51,7 +58,7 @@ export default function PartySidebar({ state, connected, exploration, myPlayerId
       return aMine - bMine;
     });
     return merged;
-  }, [state, exploration, myPlayerId]);
+  }, [state, exploration, combat, myPlayerId]);
 
   // Or du groupe : on arrondit à 2 décimales pour éviter les artefacts de
   // virgule flottante (ex. "125.46000000000001").
@@ -88,15 +95,23 @@ export default function PartySidebar({ state, connected, exploration, myPlayerId
                 title={onSelectMember ? 'Voir le détail du personnage' : undefined}
               >
                 <div className="party-head">
-                  <img
-                    className="party-token"
-                    src={m.avatar ? tokenUrl(m.avatar) : classTokenUrl(m.job)}
-                    alt={m.job}
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src =
-                        '/assets/tokens/default.png';
-                    }}
-                  />
+                  {m.isDead && defeatedTokenStyle(m.job) ? (
+                    <div
+                      className="party-token party-token-defeated"
+                      style={defeatedTokenStyle(m.job)!}
+                      title="Personnage vaincu"
+                    />
+                  ) : (
+                    <img
+                      className={`party-token${m.isDead ? ' party-token-dead' : ''}`}
+                      src={m.avatar ? tokenUrl(m.avatar) : classTokenUrl(m.job)}
+                      alt={m.job}
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src =
+                          '/assets/tokens/default.png';
+                      }}
+                    />
+                  )}
                   <span>{m.name}</span>
                   <span className="party-job">
                     {m.job} · niv.{m.level}

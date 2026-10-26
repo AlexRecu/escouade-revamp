@@ -3,6 +3,7 @@ import { authMiddlewareSocket } from './middleware/authMiddleware';
 import { HubSessionService } from './services/Hub/HubSessionService';
 import { PartyRoomService } from './services/Hub/PartyRoomService';
 import { ExplorationSessionService, Direction } from './services/dungeon/ExplorationSessionService';
+import { WorldService } from './services/World/WorldService';
 import { CombatSessionService } from './services/Battle/CombatSessionService';
 import { PlayerModel } from './models/player.model';
 
@@ -75,24 +76,32 @@ export const initializeSocket = (io: Server) => {
     // `hub:join` : si le joueur est dans une partie (room), renvoie l'état de
     // la room (partagé). Sinon (pas de room), ne renvoie **rien** → le front
     // reste au lobby (plus de création de partie solo automatique).
-    socket.on('hub:join', () =>
-      reply(async () => {
+    socket.on('hub:join', async () => {
+      try {
         const roomId = currentRoomId();
-        if (roomId) {
-          const { room, session } = await PartyRoomService.getHubState(roomId);
-          return { state: PartyRoomService.serializeRoom(room, session) };
+        if (!roomId) return; // pas de room → pas d'état (le front reste au lobby)
+        const { room, session } = await PartyRoomService.getHubState(roomId);
+        // On émet **d'abord** l'état de ville, **puis** l'état d'exploration :
+        // le front `onState` remet `exploration` à null, donc l'état du donjon
+        // doit arriver après pour que le front bascule bien sur la vue donjon.
+        socket.emit('hub:state', { state: PartyRoomService.serializeRoom(room, session) });
+        const isDungeon = !!(await WorldService.getDungeonById(room.currentNodeId));
+        if (isDungeon) {
+          const explorationState = await ExplorationSessionService.ensureSession(roomId);
+          if (explorationState) socket.emit('exploration:state', { state: explorationState });
         }
-        return {}; // pas de room → pas d'état (le front reste au lobby)
-      })
-    );
+      } catch (err: any) {
+        socket.emit('error', { message: err?.message ?? 'Erreur inconnue' });
+      }
+    });
     socket.on('hub:buy', (data: { itemName: string }) => {
       const roomId = currentRoomId();
-      if (roomId) return reply(() => PartyRoomService.buy(roomId, data.itemName), true);
+      if (roomId) return reply(() => PartyRoomService.buy(roomId, data.itemName, playerId), true);
       return reply(() => HubSessionService.buy(playerId, data.itemName));
     });
     socket.on('hub:sell', (data: { itemId: string }) => {
       const roomId = currentRoomId();
-      if (roomId) return reply(() => PartyRoomService.sell(roomId, data.itemId), true);
+      if (roomId) return reply(() => PartyRoomService.sell(roomId, data.itemId, playerId), true);
       return reply(() => HubSessionService.sell(playerId, data.itemId));
     });
     socket.on('hub:equip', (data: { memberId: string; itemId: string; hand: 'right' | 'left' }) => {
@@ -416,7 +425,14 @@ export const initializeSocket = (io: Server) => {
     socket.on('disconnect', () => {
       // Libère les sessions en mémoire (l'état est déjà persisté).
       HubSessionService.leave(playerId);
-      ExplorationSessionService.exitDungeon(explorationKey()).catch(() => {});
+      // En mode **room**, la session d'exploration est **partagée** et
+      // persistée en base : on ne la détruit PAS à la déconnexion (sinon un
+      // rechargement de l'hôte ferait disparaître le donjon pour les autres).
+      // Elle sera restaurée par `ensureSession` au prochain `hub:join`.
+      // En mode **solo**, on libère la session (le joueur quitte vraiment).
+      if (!currentRoomId()) {
+        ExplorationSessionService.exitDungeon(explorationKey()).catch(() => {});
+      }
       console.log(`🔌 Joueur déconnecté : ${playerId}`);
     });
   });

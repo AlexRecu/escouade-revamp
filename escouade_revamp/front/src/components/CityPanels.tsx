@@ -227,28 +227,29 @@ function ShopPanel({ state, actions, onClose }: { state: GameState; actions: Gam
   // séparation Force / Dextérité — la catégorie est portée par le sous-titre).
   const weapons = state.shop.filter((i) => i.kind === 'weapon');
   const consumables = state.shop.filter((i) => i.kind === 'consumable');
-  const bagWeapons = (buyer?.bag ?? []).filter((i) => i.type === 'weapon');
+  const sharedBag = state.party.bag ?? [];
+  const bagWeapons = sharedBag.filter((i) => i.type === 'weapon');
 
-  // Nombre d'objets déjà en stock, **sur toute l'équipe** (sacs + armes
-  // équipées en main droite/gauche), par nom. Une arme équipée reste dans le
-  // sac (référence partagée) ET dans la main → on **dédoublonne par id** pour
-  // ne la compter qu'une fois (le bouclier de classe, lui, n'est que dans la
-  // main gauche).
+  // Nombre d'objets déjà en stock, **sur toute l'équipe** (sac commun + armes
+  // équipées en main droite/gauche), par nom. On **dédoublonne par id** pour
+  // ne compter qu'une fois (le bouclier de classe n'est que dans la main gauche).
   const stockByName = new Map<string, number>();
-  for (const m of state.party.members) {
+  {
     const seen = new Set<string>();
     const add = (it: { id: string; name: string }) => {
       if (seen.has(it.id)) return;
       seen.add(it.id);
       stockByName.set(it.name, (stockByName.get(it.name) ?? 0) + 1);
     };
-    for (const it of m.bag) add(it);
-    if (m.rightHand) add(m.rightHand);
-    if (m.leftHand) add(m.leftHand);
+    for (const it of sharedBag) add(it);
+    for (const m of state.party.members) {
+      if (m.rightHand) add(m.rightHand);
+      if (m.leftHand) add(m.leftHand);
+    }
   }
   const stockOf = (name: string) => stockByName.get(name) ?? 0;
 
-  // **Tri automatique du sac** : on suit l'ordre d'apparition de
+  // **Tri automatique du sac commun** : on suit l'ordre d'apparition de
   // all_items.json (représenté par `state.shop`, déjà ordonné). Les objets
   // absents de la boutique (armes rares, objets de classe…) sont rangés à la
   // fin, triés par nom. Les **doublons** sont regroupés (x2, x3…) : on vend
@@ -258,13 +259,14 @@ function ShopPanel({ state, actions, onClose }: { state: GameState; actions: Gam
     state.shop.forEach((s, i) => {
       if (!shopOrder.has(s.name)) shopOrder.set(s.name, i);
     });
-    // Une arme équipée reste dans le sac (référence partagée) : on l'exclut du
-    // sac à revendre (on ne peut pas revendre une arme qu'on porte).
+    // Une arme portée par n'importe quel membre ne peut pas être revendue.
     const equippedIds = new Set<string>();
-    if (buyer?.rightHand) equippedIds.add(buyer.rightHand.id);
-    if (buyer?.leftHand) equippedIds.add(buyer.leftHand.id);
+    for (const m of state.party.members) {
+      if (m.rightHand) equippedIds.add(m.rightHand.id);
+      if (m.leftHand) equippedIds.add(m.leftHand.id);
+    }
     const groups = new Map<string, { item: BagItem; count: number }>();
-    for (const it of buyer?.bag ?? []) {
+    for (const it of sharedBag) {
       if (equippedIds.has(it.id)) continue;
       const g = groups.get(it.name);
       if (g) g.count += 1;
@@ -278,7 +280,7 @@ function ShopPanel({ state, actions, onClose }: { state: GameState; actions: Gam
       return a.item.name.localeCompare(b.item.name, 'fr');
     });
     return arr;
-  }, [buyer?.bag, state.shop]);
+  }, [sharedBag, state.party.members, state.shop]);
 
   return (
     <div className="panel-scroll">

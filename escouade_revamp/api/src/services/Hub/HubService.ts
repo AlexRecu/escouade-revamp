@@ -68,7 +68,7 @@ export class HubService {
             return logs;
         }
         hub.party.gold -= price;
-        buyer.bag.push(item);
+        hub.party.bag.push(item);
         logs.push(`${buyer.name} achète ${itemName} pour ${price} gold.`);
         return logs;
     }
@@ -92,17 +92,17 @@ export class HubService {
             logs.push(`"${item.name}" est un objet de classe : il ne peut pas être revendu.`);
             return logs;
         }
-        // Une arme équipée reste dans le sac (référence partagée) : on ne peut
-        // pas la revendre tant qu'elle est portée (main droite ou gauche).
-        const equipped =
-            seller.rightHandWeapon?.id === item.id || seller.leftHandWeapon?.id === item.id;
+        // Une arme portée par n'importe quel membre ne peut pas être revendue.
+        const equipped = hub.party.members.some(
+            (m) => m.rightHandWeapon?.id === item.id || m.leftHandWeapon?.id === item.id
+        );
         if (equipped) {
             logs.push(`"${item.name}" est équipée : déséquipez-la avant de la revendre.`);
             return logs;
         }
-        const idx = seller.bag.findIndex((i) => i.id === item.id);
+        const idx = hub.party.bag.findIndex((i) => i.id === item.id);
         if (idx === -1) {
-            logs.push(`${seller.name} n'a pas cet objet.`);
+            logs.push(`L'équipe n'a pas cet objet.`);
             return logs;
         }
 
@@ -116,7 +116,7 @@ export class HubService {
             resale = item.resaleBase;
         }
 
-        seller.bag.splice(idx, 1);
+        hub.party.bag.splice(idx, 1);
         hub.party.gold += resale;
         logs.push(`${seller.name} revend ${item.name} pour ${resale} gold.`);
         return logs;

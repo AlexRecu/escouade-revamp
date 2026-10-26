@@ -533,6 +533,8 @@ export class ExplorationState {
     // Restaure la progression du monde (niveau + zones complétées).
     party.worldLevel = data.party.worldLevel ?? 0;
     for (const z of data.party.completedZones ?? []) party.completedZones.add(z);
+    // Restaure le sac commun de l'équipe (objets partagés).
+    party.bag = (data.party.bag ?? []).map((i: any) => CharacterFactory.deserializeItem(i));
 
     const zone = new Zone(
       data.zone.id,

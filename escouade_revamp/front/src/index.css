@@ -593,6 +593,16 @@ button:disabled {
   flex-shrink: 0;
   background: var(--bg);
 }
+/* Token vaincu (sprite sheet) : le fond du sprite remplace le fond de base. */
+.party-token-defeated {
+  background-color: transparent;
+  background-position: center;
+}
+/* Token grisé (mort, sans sprite vaincu dédié). */
+.party-token-dead {
+  filter: grayscale(1) brightness(0.6);
+  opacity: 0.85;
+}
 .party-job { color: var(--text-dim); font-size: 11px; margin-left: auto; }
 .party-gold { font-size: 12px; margin-top: 4px; color: var(--accent); }
 /* Ligne PV/MP : libellé + barre fine + valeur (ex. 19/22). */
@@ -1719,6 +1729,20 @@ button:disabled {
   border-radius: 6px;
   background: var(--bg);
 }
+/* Token vaincu (héros) : cellule du sprite sheet `defeated.png` sélectionnée
+   via `background-position` (style inline). Remplit la case. */
+.unit-token-defeated {
+  background-color: transparent;
+}
+/* Unité morte : le token (monstre, sans sprite vaincu) est grisé + estompé
+   pour qu'on lise bien qu'il est KO. */
+.combat-unit.unit-dead .unit-token {
+  filter: grayscale(1) brightness(0.6);
+  opacity: 0.85;
+}
+.combat-unit.unit-dead .unit-overlay {
+  opacity: 0.55;
+}
 /* Infos superposées en bas du token (nom + barres PV/AP). */
 .unit-overlay {
   position: absolute;
@@ -2324,6 +2348,16 @@ button:disabled {
   object-position: center;
   border: 2px solid var(--accent);
   flex-shrink: 0;
+}
+/* Token vaincu (sprite sheet) : le fond du sprite remplace le fond de base. */
+.char-detail-token-defeated {
+  background-color: transparent;
+  background-position: center;
+}
+/* Token grisé (mort, sans sprite vaincu dédié). */
+.char-detail-token-dead {
+  filter: grayscale(1) brightness(0.6);
+  opacity: 0.85;
 }
 .char-detail-id {
   flex: 1;

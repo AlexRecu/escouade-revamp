@@ -356,6 +356,28 @@ export class PartyRoomService {
     );
   }
 
+  /** Récupère le snapshot d'exploration persisté (null si hors donjon). */
+  static async getExploration(roomId: string): Promise<any | null> {
+    const room = await this.model.findOne({ roomId });
+    return room?.exploration ?? null;
+  }
+
+  /** Persiste le snapshot d'exploration (donjon en cours). */
+  static async saveExploration(roomId: string, snapshot: any): Promise<void> {
+    await this.model.findOneAndUpdate(
+      { roomId },
+      { $set: { exploration: snapshot, savedAt: new Date() } }
+    );
+  }
+
+  /** Efface le snapshot d'exploration (sortie de donjon). */
+  static async clearExploration(roomId: string): Promise<void> {
+    await this.model.findOneAndUpdate(
+      { roomId },
+      { $set: { exploration: null, savedAt: new Date() } }
+    );
+  }
+
   /** Persiste l'état de jeu d'une room (party + quêtes + hub + nœud de position). */
   private static async persistRoom(roomId: string, session: HubState): Promise<void> {
     await this.saveParty(roomId, session.party, session.questSystem, session.hub.id, session.currentNodeId);
@@ -421,17 +443,19 @@ export class PartyRoomService {
   // Toutes indexées par `roomId` : l'équipe est **partagée**, donc une action
   // de n'importe quel membre mute l'état commun (diffusé à tous par le socket).
 
-  static async buy(roomId: string, itemName: string): Promise<{ logs: string[]; state: any }> {
+  static async buy(roomId: string, itemName: string, playerId: string): Promise<{ logs: string[]; state: any }> {
     const { room, session } = await this.getHubState(roomId);
-    const buyer = session.party.members[0];
+    // L'objet acheté atterrit dans le sac du **personnage du joueur qui achète**
+    // (ownerId = playerId), pas dans celui du 1er membre de l'équipe.
+    const buyer = session.party.members.find((m) => m.ownerId === playerId) ?? session.party.members[0];
     const logs = HubService.buyConsumable(session, buyer, itemName);
     await this.persistRoom(roomId, session);
     return { logs, state: this.serializeRoom(room, session) };
   }
 
-  static async sell(roomId: string, itemId: string): Promise<{ logs: string[]; state: any }> {
+  static async sell(roomId: string, itemId: string, playerId: string): Promise<{ logs: string[]; state: any }> {
     const { room, session } = await this.getHubState(roomId);
-    const seller = session.party.members[0];
+    const seller = session.party.members.find((m) => m.ownerId === playerId) ?? session.party.members[0];
     const item = seller.bag.find((i) => i.id === itemId);
     if (!item) return { logs: ["Objet introuvable dans le sac."], state: this.serializeRoom(room, session) };
     const logs = HubService.sellItem(session, seller, item);
@@ -448,10 +472,12 @@ export class PartyRoomService {
     const { room, session } = await this.getHubState(roomId);
     const member = session.party.members.find((m) => m.id === memberId);
     if (!member) return { logs: ["Personnage introuvable."], state: this.serializeRoom(room, session) };
-    const item = member.bag.find((i) => i.id === itemId);
+    const item = session.party.bag.find((i) => i.id === itemId);
     if (!item || item.type !== "weapon") {
-      return { logs: ["Cette arme n'est pas dans le sac."], state: this.serializeRoom(room, session) };
+      return { logs: ["Cette arme n'est pas dans le sac commun."], state: this.serializeRoom(room, session) };
     }
+    // Retire l'arme du sac commun avant de l'équiper.
+    session.party.bag.splice(session.party.bag.indexOf(item), 1);
     if (hand === "left" && !HubSerializer.canDualWield(member)) {
       return {
         logs: [`${member.name} ne peut pas s'équiper d'une arme en main gauche (passif Double Armement requis).`],
@@ -462,6 +488,9 @@ export class PartyRoomService {
       const weapon = item as unknown as Weapon;
       if (hand === "right") member.equipRightHand(weapon);
       else member.equipLeftHand(weapon);
+      // Les armes déséquipées (remises dans le sac individuel par syncBagWithHands)
+      // migrent vers le sac commun.
+      session.party.migrateMemberBags();
       const logs = [`${member.name} équipe ${item.name} en main ${hand === "right" ? "droite" : "gauche"}.`];
       await this.persistRoom(roomId, session);
       return { logs, state: this.serializeRoom(room, session) };
@@ -479,10 +508,13 @@ export class PartyRoomService {
     const { room, session } = await this.getHubState(roomId);
     const member = session.party.members.find((m) => m.id === memberId);
     if (!member) return { logs: ["Personnage introuvable."], state: this.serializeRoom(room, session) };
-    const item = member.bag.find((i) => i.id === itemId);
+    const item = session.party.bag.find((i) => i.id === itemId);
     if (!item || item.type !== "consumable") {
       return { logs: ["Cet objet n'est pas utilisable."], state: this.serializeRoom(room, session) };
     }
+    // Retire l'objet du sac commun (useItem ne le retire pas du sac individuel
+    // car il n'y est pas — consumeItem est un no-op si l'objet n'est pas dans bag).
+    session.party.bag.splice(session.party.bag.indexOf(item), 1);
     const logs = member.useItem(item, member);
     await this.persistRoom(roomId, session);
     return { logs, state: this.serializeRoom(room, session) };

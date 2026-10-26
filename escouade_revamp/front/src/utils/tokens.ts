@@ -67,3 +67,43 @@ export const DEFAULT_TOKEN_URL = `${TOKEN_BASE}/default.png`;
 export function tokenUrl(file: string): string {
   return `${TOKEN_BASE}/${encodeURIComponent(file)}`;
 }
+
+/**
+ * Sprite sheet des tokens **vaincus** (`defeated.png`) : grille 3×3 de
+ * personnages au sol. Chaque classe y a une cellule ; on sélectionne la bonne
+ * via `background-position` (pas besoin de recadrer le fichier).
+ *
+ * Ordre (ligne, colonne) :
+ *   ligne 0 : mage bleu, mage rouge, voleur
+ *   ligne 1 : mage blanc, paladin, chevalier noir
+ *   ligne 2 : guerrier, moine, mage noir
+ */
+const DEFEATED_SPRITE: Record<string, { row: number; col: number }> = {
+  'mage bleu': { row: 0, col: 0 },
+  'mage rouge': { row: 0, col: 1 },
+  'voleur': { row: 0, col: 2 },
+  'mage blanc': { row: 1, col: 0 },
+  'paladin': { row: 1, col: 1 },
+  'chevalier noir': { row: 1, col: 2 },
+  'guerrier': { row: 2, col: 0 },
+  'moine': { row: 2, col: 1 },
+  'mage noir': { row: 2, col: 2 },
+};
+
+/**
+ * Style inline pour afficher le token **vaincu** d'une classe (cellule du
+ * sprite sheet `defeated.png`). `null` si la classe n'a pas de sprite vaincu
+ * (ex. un monstre) → l'appelant retombe sur le token normal grisé.
+ */
+export function defeatedTokenStyle(jobName: string): Record<string, string> | null {
+  const cell = DEFEATED_SPRITE[jobName.toLowerCase()];
+  if (!cell) return null;
+  return {
+    // `background-image` exige `url(...)` (un chemin nu est rejeté par le CSSOM
+    // quand React applique le style → le token resterait vide).
+    backgroundImage: `url(${TOKEN_BASE}/defeated.png)`,
+    backgroundSize: '300% 300%',
+    backgroundPosition: `${cell.col * 50}% ${cell.row * 50}%`,
+    backgroundRepeat: 'no-repeat',
+  };
+}

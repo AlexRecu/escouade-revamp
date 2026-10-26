@@ -158,6 +158,22 @@ export class HubSerializer {
         visitedHubs: Array.from(session.party.visitedHubs),
         gold: session.party.gold,
         seenMonsters: Array.from(session.party.seenMonsters),
+        // Sac commun de l'équipe (objets partagés, accessibles par tous).
+        bag: session.party.bag.map((i: any) => ({
+          id: i.id,
+          name: i.name,
+          type: i.type,
+          description: i.description,
+          purchasePrice: i.purchasePrice,
+          weaponType: i.weaponType,
+          mainStat: i.mainStat,
+          subStat: i.subStat ?? null,
+          weaponStat: i.weaponStat,
+          weaponSubStat: i.weaponSubStat ?? 0,
+          range: i.range ?? 1,
+          element: i.element,
+          status: i.status ? i.status.name : null,
+        })),
         members: session.party.members.map((m) => ({
           id: m.id,
           name: m.name,

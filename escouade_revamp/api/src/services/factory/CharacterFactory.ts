@@ -168,7 +168,8 @@ export class CharacterFactory {
 
   // ── Objets (sac) ───────────────────────────────────────────────────────
 
-  private static serializeItem(item: Item): any {
+  /** Sérialise un objet (arme/consommable/outil) — public pour le sac commun. */
+  static serializeItem(item: Item): any {
     const base: any = {
       id: item.id,
       name: item.name,
@@ -200,7 +201,8 @@ export class CharacterFactory {
     return base;
   }
 
-  private static deserializeItem(data: any): Item {
+  /** Désérialise un objet — public pour le sac commun. */
+  static deserializeItem(data: any): Item {
     if (data.type === "weapon") {
       return this.deserializeWeapon(data);
     }

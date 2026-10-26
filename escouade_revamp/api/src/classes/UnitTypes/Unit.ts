@@ -59,7 +59,9 @@ export abstract class Unit {
         for (const unit of units) {
             // Les unités remplacées (hors champ, ex. Démoniste invoqué) ne sont
             // pas ciblables : c'est leur invocation qui est sur le plateau.
-            if (unit.type === type && unit !== this && !unit.isReplaced) {
+            // Les unités mortes ne sont pas ciblables non plus (sinon un
+            // monstre continuerait d'attaquer un héros KO).
+            if (unit.type === type && unit !== this && !unit.isReplaced && !unit.isDead()) {
                 const distance = Math.abs(unit.position.row - this.position.row) + Math.abs(unit.position.col - this.position.col);
                 if (distance < minDistance) {
                     minDistance = distance;

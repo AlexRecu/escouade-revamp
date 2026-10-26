@@ -40,8 +40,11 @@ function App() {
   const { state, logs: gameLogs, connected, actions, rooms, error: gameError, inRoom, exploration, combat, pendingLevelUps, setExplorationExitedHandler, setAuthErrorHandler } = useGame(getToken());
 
   // Identité du joueur connecté (pour savoir s'il a déjà un personnage dans
-  // la partie, et s'il est spectateur).
-  const myPlayerId = useMemo(() => getPlayerId(), []);
+  // la partie, et s'il est spectateur). Dépend de `user` : `<App />` n'est pas
+  // remonté au changement de compte (pas de `key`), donc sans cette dépendance
+  // l'id resterait figé sur l'ancien compte (ou null) → le front ne
+  // reconnaîtrait pas le personnage existant et proposerait d'en créer un.
+  const myPlayerId = useMemo(() => getPlayerId(), [user]);
   const hasCharacter = useMemo(
     () => (state?.party.members ?? []).some((m) => m.ownerId === myPlayerId),
     [state, myPlayerId]
@@ -64,38 +67,60 @@ function App() {
   // Membre sélectionné (pour le panneau de détail) — résolu depuis l'état.
   // Pendant le donjon, l'état de ville n'est pas mis à jour : on fusionne les
   // données d'exploration (XP, PV, niveau…) sur le membre de base, comme le
-  // fait `PartySidebar`.
+  // fait `PartySidebar`. En combat, on fusionne aussi l'état du plateau
+  // (PV/MP/isDead temps réel) pour que le token « vaincu » s'affiche.
   const selectedMember = useMemo(() => {
     if (!selectedMemberId) return null;
     const base = (state?.party.members ?? []).find((m) => m.id === selectedMemberId);
     if (!base) return null;
     const exp = exploration?.party.members.find((e) => e.id === base.id);
-    if (!exp) return base;
+    const cu = combat?.units.find((u) => u.id === base.id);
+    if (!exp && !cu) return base;
     return {
       ...base,
-      level: exp.level ?? base.level,
-      xp: exp.xp ?? base.xp,
-      xpToNext: exp.xpToNext ?? base.xpToNext,
-      xpNeeded: exp.xpNeeded ?? base.xpNeeded,
-      hp: exp.hp,
-      maxHp: exp.maxHp,
-      mp: exp.mp,
-      maxMp: exp.maxMp,
-      isDead: exp.isDead,
+      level: exp?.level ?? base.level,
+      xp: exp?.xp ?? base.xp,
+      xpToNext: exp?.xpToNext ?? base.xpToNext,
+      xpNeeded: exp?.xpNeeded ?? base.xpNeeded,
+      hp: cu ? cu.currentHp : exp ? exp.hp : base.hp,
+      maxHp: cu ? cu.maxHp : exp ? exp.maxHp : base.maxHp,
+      mp: cu ? (cu.currentMp ?? base.mp) : exp ? exp.mp : base.mp,
+      maxMp: cu ? (cu.maxMp ?? base.maxMp) : exp ? exp.maxMp : base.maxMp,
+      isDead: cu ? cu.isDead : exp ? exp.isDead : base.isDead,
       // Détails de fiche à jour pendant le donjon (coffres, équipement, soins).
-      avatar: exp.avatar ?? base.avatar,
-      equippableWeapons: exp.equippableWeapons ?? base.equippableWeapons,
-      canDualWield: exp.canDualWield ?? base.canDualWield,
-      stats: exp.stats ?? base.stats,
-      skills: exp.skills ?? base.skills,
-      spells: exp.spells ?? base.spells,
-      rightHand: exp.rightHand ?? base.rightHand,
-      leftHand: exp.leftHand ?? base.leftHand,
-      bag: exp.bag ?? base.bag,
+      avatar: exp?.avatar ?? base.avatar,
+      equippableWeapons: exp?.equippableWeapons ?? base.equippableWeapons,
+      canDualWield: exp?.canDualWield ?? base.canDualWield,
+      stats: exp?.stats ?? base.stats,
+      skills: exp?.skills ?? base.skills,
+      spells: exp?.spells ?? base.spells,
+      rightHand: exp?.rightHand ?? base.rightHand,
+      leftHand: exp?.leftHand ?? base.leftHand,
+      bag: exp?.bag ?? base.bag,
     };
-  }, [selectedMemberId, state, exploration]);
+  }, [selectedMemberId, state, exploration, combat]);
   // Dans une partie, sans personnage, et non spectateur → écran de création.
   const needsCharacter = inRoom && !hasCharacter && !isSpectator;
+
+  // L'équipe est-elle dans un donjon (exploration) ou en combat ? C'est un état
+  // **partagé** (reçu par socket), pas un choix local : tous les membres de la
+  // room voient le donjon/combat dès que l'un d'eux y entre (sinon le 2e joueur
+  // resterait bloqué sur la mappemonde). La vue ville/mappemonde reste un choix
+  // local (`view`), mais le donjon/combat est dérivé de l'état serveur.
+  const inDungeon = !!(exploration || combat);
+
+  // Montées de niveau **du joueur connecté** seulement. Le serveur diffuse les
+  // montées de TOUS les personnages à toute la room ; on ne doit afficher
+  // l'écran de choix que pour les montées de SON personnage (sinon le mauvais
+  // joueur verrait/validerait les stats d'un autre, et ne répartirait pas tous
+  // les points). Croise `characterId` avec les membres dont `ownerId` = moi.
+  const myPendingLevelUps = useMemo(() => {
+    if (!myPlayerId) return [];
+    const myCharIds = new Set(
+      (state?.party.members ?? []).filter((m) => m.ownerId === myPlayerId).map((m) => m.id)
+    );
+    return pendingLevelUps.filter((lu) => myCharIds.has(lu.characterId));
+  }, [pendingLevelUps, state, myPlayerId]);
 
   // Auto-sortie : quand le donjon est terminé (porte de sortie atteinte), le
   // serveur émet `exploration:exited` → on revient à la mappemonde.
@@ -219,10 +244,10 @@ function App() {
           </span>
         )}
         <span className="spacer" />
-        {view.name === 'city' && (
+        {view.name === 'city' && !inDungeon && (
           <span className="subtitle">📍 {view.hub.name}</span>
         )}
-        {view.name === 'dungeon' && exploration && (
+        {inDungeon && exploration && (
           <span className="subtitle">
             ⚔️ {exploration.dungeonName} — Étage {exploration.floor}/{exploration.totalFloors}
           </span>
@@ -268,6 +293,7 @@ function App() {
             state={state}
             connected={connected}
             exploration={exploration}
+            combat={combat}
             myPlayerId={myPlayerId}
             onSelectMember={(id) => setSelectedMemberId(id)}
           />
@@ -293,7 +319,7 @@ function App() {
               onCreate={(data) => actions.partyCreateCharacter(data)}
             />
           )}
-          {inRoom && !needsCharacter && world && view.name === 'world' && (
+          {inRoom && !needsCharacter && world && view.name === 'world' && !inDungeon && (
             <WorldTree
               world={world}
               completedZones={completedZones}
@@ -319,7 +345,7 @@ function App() {
               }}
             />
           )}
-          {inRoom && !needsCharacter && world && view.name === 'city' && (
+          {inRoom && !needsCharacter && world && view.name === 'city' && !inDungeon && (
             <City
               hub={view.hub}
               onBack={() => setView({ name: 'world' })}
@@ -329,7 +355,7 @@ function App() {
               actions={actions}
             />
           )}
-          {inRoom && !needsCharacter && view.name === 'dungeon' && (
+          {inRoom && !needsCharacter && inDungeon && (
             combat ? (
               <CombatView
                 combat={combat}
@@ -356,10 +382,11 @@ function App() {
           )}
         </main>
       </div>
-      {/* Écran de choix de stat (montée de niveau reportée après un combat). */}
-      {inRoom && pendingLevelUps.length > 0 && (
+      {/* Écran de choix de stat (montée de niveau reportée après un combat).
+          Affiché uniquement pour les montées du personnage du joueur connecté. */}
+      {inRoom && myPendingLevelUps.length > 0 && (
         <StatChoiceModal
-          levelUps={pendingLevelUps}
+          levelUps={myPendingLevelUps}
           onSubmit={(choices) => actions.combatSubmitStats(choices)}
         />
       )}
@@ -367,6 +394,7 @@ function App() {
       {inRoom && selectedMember && (
         <CharacterDetailModal
           member={selectedMember}
+          sharedBag={exploration ? exploration.party.bag : state?.party.bag ?? []}
           onClose={() => setSelectedMemberId(null)}
           actions={actions}
           inCombat={!!combat}

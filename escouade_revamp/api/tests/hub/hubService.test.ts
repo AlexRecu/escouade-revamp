@@ -72,12 +72,12 @@ describe("ItemFactory (fabrication depuis all_items.json)", () => {
 });
 
 describe("HubService — Marchand", () => {
-  test("Achat réussi : or déduit du pot commun, objet au sac", () => {
+  test("Achat réussi : or déduit du pot commun, objet au sac commun", () => {
     const { hub, hero } = makeHubState(100);
     const logs = HubService.buyConsumable(hub, hero, "Potion");
     expect(hub.party.gold).toBe(40);
-    expect(hero.bag).toHaveLength(1);
-    expect(hero.bag[0]).toBeInstanceOf(Consumable);
+    expect(hub.party.bag).toHaveLength(1);
+    expect(hub.party.bag[0]).toBeInstanceOf(Consumable);
     expect(logs.some((l) => l.includes("achète"))).toBe(true);
   });
 
@@ -85,39 +85,39 @@ describe("HubService — Marchand", () => {
     const { hub, hero } = makeHubState(10);
     HubService.buyConsumable(hub, hero, "Potion");
     expect(hub.party.gold).toBe(10);
-    expect(hero.bag).toHaveLength(0);
+    expect(hub.party.bag).toHaveLength(0);
   });
 
   test("Achat refusé : pas de marchand", () => {
     const { hub, hero } = makeHubState(100, { shop: false });
     const logs = HubService.buyConsumable(hub, hero, "Potion");
     expect(logs.some((l) => l.includes("pas de marchand"))).toBe(true);
-    expect(hero.bag).toHaveLength(0);
+    expect(hub.party.bag).toHaveLength(0);
   });
 
   test("Revente : prix/2 par défaut", () => {
     const { hub, hero } = makeHubState(0);
-    hero.bag.push(ItemFactory.create("Potion")!);
+    hub.party.bag.push(ItemFactory.create("Potion")!);
     hero.stats.charisma = 1;
-    const item = hero.bag[0];
+    const item = hub.party.bag[0];
     HubService.sellItem(hub, hero, item);
-    expect(hero.bag).toHaveLength(0);
+    expect(hub.party.bag).toHaveLength(0);
     expect(hub.party.gold).toBe(30); // 60/2
   });
 
   test("Revente : Charisme >= 6 → prix d'achat", () => {
     const { hub, hero } = makeHubState(0);
-    hero.bag.push(ItemFactory.create("Potion")!);
+    hub.party.bag.push(ItemFactory.create("Potion")!);
     hero.stats.charisma = 6;
-    HubService.sellItem(hub, hero, hero.bag[0]);
+    HubService.sellItem(hub, hero, hub.party.bag[0]);
     expect(hub.party.gold).toBe(60);
   });
 
   test("Revente : Charisme = 10 → 1,5× le prix d'achat", () => {
     const { hub, hero } = makeHubState(0);
-    hero.bag.push(ItemFactory.create("Potion")!);
+    hub.party.bag.push(ItemFactory.create("Potion")!);
     hero.stats.charisma = 10;
-    HubService.sellItem(hub, hero, hero.bag[0]);
+    HubService.sellItem(hub, hero, hub.party.bag[0]);
     expect(hub.party.gold).toBe(90); // 60 * 1.5
   });
 });

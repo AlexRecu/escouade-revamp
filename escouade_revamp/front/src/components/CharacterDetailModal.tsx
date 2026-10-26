@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react';
-import type { PartyMember, Statistics } from '../types/game';
+import type { PartyMember, Statistics, BagItem } from '../types/game';
 import type { GameActions } from '../game/useGame';
-import { classTokenUrl, tokenUrl } from '../utils/tokens';
+import { classTokenUrl, tokenUrl, defeatedTokenStyle } from '../utils/tokens';
 import { weaponEmoji, weaponLabel, weaponStatLabel, weaponRangeLabel } from '../utils/weapons';
 
 type Props = {
   /** Membre à afficher (null = modal fermé). */
   member: PartyMember | null;
+  /** Sac commun de l'équipe (objets partagés, accessibles par tous). */
+  sharedBag: BagItem[];
   /** Ferme le panneau. */
   onClose: () => void;
   /** Actions de ville (équiper, utiliser un objet). */
@@ -36,31 +38,30 @@ const targetLabel = (t: string): string =>
  * statut) et sac (onglets Consommables / Armes, avec équipement et usage).
  * Ouvert en cliquant sur un membre de l'équipe dans la barre latérale.
  */
-export default function CharacterDetailModal({ member, onClose, actions, inCombat }: Props) {
+export default function CharacterDetailModal({ member, sharedBag, onClose, actions, inCombat }: Props) {
   // Onglet actif du sac : consommables ou armes.
   const [bagTab, setBagTab] = useState<'consumable' | 'weapon'>('consumable');
 
-  // Consommables groupés par nom (les doublons identiques sont empilés ×N).
-  // On garde un id représentatif pour l'usage (les doublons sont identiques).
+  // Consommables du **sac commun** groupés par nom (les doublons identiques
+  // sont empilés ×N). On garde un id représentatif pour l'usage.
   const consumableGroups = useMemo(() => {
-    if (!member) return [];
     const map = new Map<string, { name: string; count: number; description: string; id: string }>();
-    for (const it of member.bag) {
+    for (const it of sharedBag) {
       if (it.type !== 'consumable') continue;
       const g = map.get(it.name);
       if (g) g.count += 1;
       else map.set(it.name, { name: it.name, count: 1, description: it.description, id: it.id });
     }
     return Array.from(map.values());
-  }, [member]);
+  }, [sharedBag]);
 
-  // Armes du sac **non équipées** (les armes équipées sont dans la section
-  // Équipement — on ne les liste pas deux fois).
+  // Armes du **sac commun** non portées par le membre affiché (les armes
+  // équipées sont dans la section Équipement — on ne les liste pas deux fois).
   const bagWeapons = useMemo(() => {
     if (!member) return [];
     const equippedIds = new Set([member.rightHand?.id, member.leftHand?.id].filter(Boolean));
-    return member.bag.filter((i) => i.type === 'weapon' && !equippedIds.has(i.id));
-  }, [member]);
+    return sharedBag.filter((i) => i.type === 'weapon' && !equippedIds.has(i.id));
+  }, [sharedBag, member]);
 
   if (!member) return null;
 
@@ -70,14 +71,22 @@ export default function CharacterDetailModal({ member, onClose, actions, inComba
     <div className="char-detail-overlay" onClick={onClose}>
       <div className="char-detail-modal" onClick={(e) => e.stopPropagation()}>
         <div className="char-detail-head">
-          <img
-            className="char-detail-token"
-            src={member.avatar ? tokenUrl(member.avatar) : classTokenUrl(member.job)}
-            alt={member.job}
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src = '/assets/tokens/default.png';
-            }}
-          />
+          {member.isDead && defeatedTokenStyle(member.job) ? (
+            <div
+              className="char-detail-token char-detail-token-defeated"
+              style={defeatedTokenStyle(member.job)!}
+              title="Personnage vaincu"
+            />
+          ) : (
+            <img
+              className={`char-detail-token${member.isDead ? ' char-detail-token-dead' : ''}`}
+              src={member.avatar ? tokenUrl(member.avatar) : classTokenUrl(member.job)}
+              alt={member.job}
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = '/assets/tokens/default.png';
+              }}
+            />
+          )}
           <div className="char-detail-id">
             <h3>{member.name}</h3>
             <span className="char-detail-job">{member.job} · niveau {member.level}</span>
@@ -236,9 +245,9 @@ export default function CharacterDetailModal({ member, onClose, actions, inComba
             </div>
           </section>
 
-          {/* Sac (onglets Consommables / Armes) */}
+          {/* Sac commun de l'équipe (onglets Consommables / Armes) */}
           <section className="char-detail-section">
-            <h4>🎒 Sac</h4>
+            <h4>🎒 Sac commun</h4>
             <div className="char-detail-bag-tabs">
               <button
                 className={bagTab === 'consumable' ? 'char-detail-bag-tab active' : 'char-detail-bag-tab'}

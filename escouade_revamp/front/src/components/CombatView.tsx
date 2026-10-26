@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CombatState, CombatUnit } from '../types/game';
-import { classTokenUrl, monsterTokenUrl, DEFAULT_TOKEN_URL } from '../utils/tokens';
+import { classTokenUrl, monsterTokenUrl, DEFAULT_TOKEN_URL, defeatedTokenStyle } from '../utils/tokens';
 
 type Props = {
   combat: CombatState;
@@ -171,7 +171,10 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
   const moveTargets = useMemo(() => {
     if (!currentUnit || !actions?.canMove) return new Set<string>();
     const s = new Set<string>();
-    const occupied = new Set(units.filter((u) => !u.isDead && !u.isReplaced).map((u) => `${u.position.row},${u.position.col}`));
+    // Les morts comptent comme occupés (le backend bloque le déplacement sur
+    // une case occupée, même par un héros KO) — sinon la case d'un mort serait
+    // surlignée en vert et cliquable.
+    const occupied = new Set(units.filter((u) => !u.isReplaced).map((u) => `${u.position.row},${u.position.col}`));
     for (let dr = -1; dr <= 1; dr++) {
       for (let dc = -1; dc <= 1; dc++) {
         if (dr === 0 && dc === 0) continue;
@@ -433,15 +436,22 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
             })}
 
             {/* Couche des unités (overlay) : positionnée en % de case, la
-                transition CSS anime le déplacement (interpolation). */}
+                transition CSS anime le déplacement (interpolation). Les unités
+                mortes restent affichées (token vaincu) tant que le combat dure. */}
             <div className="combat-units-layer">
               {units
-                .filter((u) => !u.isDead && !u.isReplaced)
+                .filter((u) => !u.isReplaced)
                 .map((unit) => {
                   const isCurrent = unit.id === currentUnitId;
                   const isPlacingHero = placement && unit.id === placingHeroId;
                   const fx = effects[unit.id] ?? [];
                   const fxCls = fx.length ? ` ${fx.join(' ')}` : '';
+                  // Token vaincu : sprite sheet (héros) ou token grisé (monstres).
+                  const defeatedStyle = unit.isDead
+                    ? unit.type === 'Hero'
+                      ? defeatedTokenStyle(unit.jobName ?? '')
+                      : null
+                    : null;
                   return (
                     <div
                       key={unit.id}
@@ -451,17 +461,21 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
                       }}
                     >
                       <div
-                        className={`combat-unit ${unit.type === 'Hero' ? 'unit-hero' : 'unit-enemy'} ${isCurrent ? 'unit-active' : ''} ${isPlacingHero ? 'unit-placing' : ''}${fxCls}`}
+                        className={`combat-unit ${unit.type === 'Hero' ? 'unit-hero' : 'unit-enemy'} ${isCurrent ? 'unit-active' : ''} ${isPlacingHero ? 'unit-placing' : ''} ${unit.isDead ? 'unit-dead' : ''}${fxCls}`}
                       >
-                        {/* Token en image de fond (remplit la case). */}
-                        <img
-                          className="unit-token"
-                          src={unitTokenUrl(unit)}
-                          alt={unit.name}
-                          onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).src = DEFAULT_TOKEN_URL;
-                          }}
-                        />
+                        {/* Token en image de fond (remplit la case). Mort → sprite vaincu. */}
+                        {defeatedStyle ? (
+                          <div className="unit-token unit-token-defeated" style={defeatedStyle} />
+                        ) : (
+                          <img
+                            className="unit-token"
+                            src={unitTokenUrl(unit)}
+                            alt={unit.name}
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src = DEFAULT_TOKEN_URL;
+                            }}
+                          />
+                        )}
                         {/* Badge de la dernière action (potion / sort / compétence). */}
                         {actionFx && actionFx.actorId === unit.id && (
                           <span

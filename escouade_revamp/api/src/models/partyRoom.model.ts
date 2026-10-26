@@ -54,8 +54,14 @@ export interface PartyRoomDocument extends Document {
    * `currentNodeId === currentHubId` ; quand elle est dans une zone
    * d'exploration, `currentNodeId` est l'id du donjon.
    */
-  currentNodeId: string;
-  /** Visible dans le lobby (rejoignable). */
+  currentNodeId: string;  /**
+   * **Session d'exploration persistée** (donjon en cours). Snapshot de l'état
+   * du donjon (seed, étage, position, tuiles visitées, coffres ouverts, feux
+   * de camp utilisés) pour survivre à une reconnexion / redémarrage. `null`
+   * quand l'équipe n'est pas dans un donjon. Voir
+   * `ExplorationSessionService.serializeSnapshot` / `restoreFromSnapshot`.
+   */
+  exploration: any;  /** Visible dans le lobby (rejoignable). */
   isPublic: boolean;
   /** Nombre max de joueurs (hors spectateurs). */
   maxPlayers: number;
@@ -83,6 +89,8 @@ const PartyRoomSchema = new Schema<PartyRoomDocument>(
     questSystem: { type: Schema.Types.Mixed, required: true },
     currentHubId: { type: String, default: '' },
     currentNodeId: { type: String, default: '' },
+    // Session d'exploration persistée (donjon en cours) — null si hors donjon.
+    exploration: { type: Schema.Types.Mixed, default: null },
     isPublic: { type: Boolean, default: true },
     maxPlayers: { type: Number, default: 4 },
     savedAt: { type: Date, default: Date.now },

@@ -106,8 +106,10 @@ export class ExplorationSessionService {
     session.hubId = game.currentHubId;
     session.currentNodeId = dungeonId; // la position de l'équipe devient la zone
     this.sessions.set(roomId, session);
-    // Persiste la position (nœud = la zone) pour que le cercle blanc la suive.
+    // Persiste la position (nœud = la zone) + le snapshot du donjon (seed,
+    // étage, position) pour que la reconnexion restaure le donjon en cours.
     await PartyRoomService.setCurrentNodeId(roomId, dungeonId);
+    await this.persistAll(session);
     return this.serialize(session);
   }
 
@@ -118,7 +120,8 @@ export class ExplorationSessionService {
   private static async buildSession(
     party: Party,
     questSystem: QuestSystem,
-    dungeonId: string
+    dungeonId: string,
+    seed?: number
   ): Promise<DungeonSession> {
     const world = await WorldService.getWorld();
     const node = world.nodes.find((n) => n.id === dungeonId);
@@ -131,8 +134,10 @@ export class ExplorationSessionService {
     // on en repart par le même port. Les autres donjons ont 2 + niveau étages.
     const floors = node.biome === "Lake" ? 1 : 2 + level;
 
-    // Régénération : un nouveau seed à chaque entrée → nouvelle grille.
-    const seed = Math.floor(Math.random() * 1_000_000);
+    // Régénération : un nouveau seed à chaque entrée → nouvelle grille. En mode
+    // **restauration** (seed fourni), on réutilise le seed persisté pour
+    // reconstruire exactement la même grille.
+    const finalSeed = seed ?? Math.floor(Math.random() * 1_000_000);
     const levels: Zone[] = [];
     for (let f = 1; f <= floors; f++) {
       levels.push(
@@ -140,17 +145,21 @@ export class ExplorationSessionService {
           name: `${node.name} E.${f}`,
           type: node.biome,
           zoneLevel: level,
-          seed: seed + f, // seed distinct par étage (grilles différentes)
+          seed: finalSeed + f, // seed distinct par étage (grilles différentes)
           parentDungeonName: node.name,
           floor: f,
         })
       );
     }
-    const dungeon = new Dungeon(node.id, node.name, level, node.biome, levels, seed);
+    const dungeon = new Dungeon(node.id, node.name, level, node.biome, levels, finalSeed);
 
-    // Position de départ : la tuile de départ du 1er étage.
-    const firstZone = levels[0];
-    party.moveTo({ ...firstZone.startTile });
+    // Position de départ : la tuile de départ du 1er étage. En mode
+    // restauration, la position vient de la party (déjà à jour en base) → on
+    // ne l'écrase pas.
+    if (seed === undefined) {
+      const firstZone = levels[0];
+      party.moveTo({ ...firstZone.startTile });
+    }
 
     return {
       party,
@@ -191,6 +200,9 @@ export class ExplorationSessionService {
     }
 
     session.party.moveTo(to);
+    // Persiste l'équipe + le snapshot (position, tuiles visitées) pour que
+    // la reconnexion restaure la même position dans le donjon.
+    await this.persistAll(session);
 
     // **Rencontre aléatoire** : à chaque pas, le moteur de rencontre décide si
     // un combat se déclenche (formule du livret : aléatoire < P, P par biome).
@@ -224,6 +236,7 @@ export class ExplorationSessionService {
         session.party.moveTo({ ...nextZone.startTile });
         session.activeCampfire = undefined;
         session.activeChest = undefined;
+        await this.persistAll(session);
         return {
           logs: [`Vous descendez à l'étage ${session.currentFloor + 1}.`],
           state: this.serialize(session),
@@ -239,6 +252,7 @@ export class ExplorationSessionService {
       // ramène l'équipe au hub de départ.
       const exit = await this.resolveExitPosition(session);
       await this.persist(session, exit.nodeId);
+      await this.clearSnapshot(session);
       this.sessions.delete(sessionKey);
       const logs = ["Vous avez atteint la sortie du donjon ! Zone terminée."];
       if (exit.log) logs.push(exit.log);
@@ -295,6 +309,7 @@ export class ExplorationSessionService {
       return { logs: ["Il n'y a pas de feu de camp ici."], state: this.serialize(session) };
     }
     const logs = CampfireService.restAtCampfire(session.party, session.activeCampfire);
+    await this.persistAll(session);
     return { logs, state: this.serialize(session) };
   }
 
@@ -317,15 +332,13 @@ export class ExplorationSessionService {
     const zone = session.dungeon.levels[session.currentFloor];
     const items = ChestService.rollChestContents(chest.type, zone.zoneLevel);
 
-    // Les objets rejoignent le sac du premier membre (pot commun de l'équipe).
-    const holder = session.party.members[0];
-    if (holder) {
-      for (const item of items) holder.bag.push(item);
-    }
+    // Les objets rejoignent le **sac commun** de l'équipe (partagé par tous).
+    for (const item of items) session.party.bag.push(item);
 
     // Marque le coffre comme ouvert (session courante).
     chest.opened = true;
     session.activeChest = chest;
+    await this.persistAll(session);
 
     const label = chest.type === "rare" ? "rare" : "commun";
     const logs: string[] = [`Vous ouvrez un coffre ${label}.`];
@@ -349,10 +362,11 @@ export class ExplorationSessionService {
     const session = this.require(sessionKey);
     const member = session.party.members.find((m) => m.id === memberId);
     if (!member) return { logs: ["Personnage introuvable."], state: this.serialize(session) };
-    const item = member.bag.find((i) => i.id === itemId);
+    const item = session.party.bag.find((i) => i.id === itemId);
     if (!item || item.type !== "weapon") {
-      return { logs: ["Cette arme n'est pas dans le sac."], state: this.serialize(session) };
+      return { logs: ["Cette arme n'est pas dans le sac commun."], state: this.serialize(session) };
     }
+    session.party.bag.splice(session.party.bag.indexOf(item), 1);
     if (hand === "left" && !HubSerializer.canDualWield(member)) {
       return {
         logs: [`${member.name} ne peut pas s'équiper d'une arme en main gauche (passif Double Armement requis).`],
@@ -363,6 +377,7 @@ export class ExplorationSessionService {
       const weapon = item as unknown as Weapon;
       if (hand === "right") member.equipRightHand(weapon);
       else member.equipLeftHand(weapon);
+      session.party.migrateMemberBags();
       const logs = [`${member.name} équipe ${item.name} en main ${hand === "right" ? "droite" : "gauche"}.`];
       await this.persist(session);
       return { logs, state: this.serialize(session) };
@@ -379,10 +394,11 @@ export class ExplorationSessionService {
     const session = this.require(sessionKey);
     const member = session.party.members.find((m) => m.id === memberId);
     if (!member) return { logs: ["Personnage introuvable."], state: this.serialize(session) };
-    const item = member.bag.find((i) => i.id === itemId);
+    const item = session.party.bag.find((i) => i.id === itemId);
     if (!item || item.type !== "consumable") {
       return { logs: ["Cet objet n'est pas utilisable."], state: this.serialize(session) };
     }
+    session.party.bag.splice(session.party.bag.indexOf(item), 1);
     const logs = member.useItem(item, member);
     await this.persist(session);
     return { logs, state: this.serialize(session) };
@@ -400,6 +416,7 @@ export class ExplorationSessionService {
     // la zone n'a pas d'intérêt : chaque entrée régénère le donjon).
     session.currentNodeId = session.hubId ?? "";
     await this.persist(session, session.currentNodeId);
+    await this.clearSnapshot(session);
     this.sessions.delete(sessionKey);
     return { logs: ["Vous quittez le donjon."] };
   }
@@ -413,6 +430,110 @@ export class ExplorationSessionService {
   /** Supprime la session d'exploration (ex. défaite → retour au hub). */
   static deleteSession(sessionKey: string): void {
     this.sessions.delete(sessionKey);
+  }
+
+  // ── Persistance de la session (reconnexion / redémarrage backend) ────────
+  // Le donjon est régénéré depuis un **seed** : il suffit de persister le seed
+  // + l'étage + l'état des coffres/feux de camp pour reconstruire exactement
+  // la même grille à la reconnexion. La position et les tuiles visitées sont
+  // déjà dans `party` (persistée séparément via `persist`).
+
+  /** Snapshot sérialisable de la session d'exploration. */
+  static serializeSnapshot(session: DungeonSession): any {
+    const openedChests: { row: number; col: number; floor: number }[] = [];
+    const usedCampfires: { row: number; col: number; floor: number }[] = [];
+    session.dungeon.levels.forEach((zone, floor) => {
+      for (const c of zone.chests) {
+        if (c.opened) openedChests.push({ row: c.position.row, col: c.position.col, floor });
+      }
+      for (const c of zone.checkpoints) {
+        if (c.isUsed && c.position) usedCampfires.push({ row: c.position.row, col: c.position.col, floor });
+      }
+    });
+    return {
+      dungeonId: session.dungeon.id,
+      seed: session.dungeon.seed,
+      currentFloor: session.currentFloor,
+      completed: session.completed,
+      openedChests,
+      usedCampfires,
+    };
+  }
+
+  /**
+   * Restaure une session d'exploration depuis un snapshot persisté.
+   * Reconstruit le donjon (même seed → même grille), réapplique l'étage,
+   * l'état des coffres/feux de camp, et re-dérive le coffre/feu actif depuis
+   * la position courante (déjà à jour dans `party`).
+   */
+  private static async restoreFromSnapshot(roomId: string, snapshot: any): Promise<DungeonSession | null> {
+    try {
+      const game = await PartyRoomService.loadParty(roomId);
+      const session = await this.buildSession(game.party, game.questSystem, snapshot.dungeonId, snapshot.seed);
+      session.storage = { kind: "room", roomId };
+      session.hubId = game.currentHubId;
+      session.currentNodeId = snapshot.dungeonId;
+      session.currentFloor = snapshot.currentFloor ?? 0;
+      session.completed = snapshot.completed ?? false;
+      // Réapplique l'état des coffres ouverts et feux de camp utilisés.
+      for (const oc of snapshot.openedChests ?? []) {
+        const zone = session.dungeon.levels[oc.floor];
+        if (!zone) continue;
+        const chest = zone.chests.find((c) => c.position.row === oc.row && c.position.col === oc.col);
+        if (chest) chest.opened = true;
+      }
+      for (const uc of snapshot.usedCampfires ?? []) {
+        const zone = session.dungeon.levels[uc.floor];
+        if (!zone) continue;
+        const camp = zone.checkpoints.find((c) => c.position?.row === uc.row && c.position?.col === uc.col);
+        if (camp) camp.isUsed = true;
+      }
+      // Re-dérive le coffre/feu de camp actif depuis la position courante.
+      const pos = session.party.position;
+      const zone = session.dungeon.levels[session.currentFloor];
+      if (zone) {
+        session.activeChest = zone.chests.find((c) => c.position.row === pos.row && c.position.col === pos.col);
+        session.activeCampfire = zone.checkpoints.find((c) => c.position?.row === pos.row && c.position?.col === pos.col);
+      }
+      return session;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Garantit qu'une session d'exploration existe en mémoire pour la room.
+   * Si elle est déjà en mémoire, la renvoie. Sinon, tente de la restaurer
+   * depuis le snapshot persisté (reconnexion / redémarrage backend).
+   * @returns l'état sérialisé, ou null si aucune session à restaurer.
+   */
+  static async ensureSession(roomId: string): Promise<any | null> {
+    const existing = this.sessions.get(roomId);
+    if (existing) return this.serialize(existing);
+    const snapshot = await PartyRoomService.getExploration(roomId);
+    if (!snapshot) return null;
+    const session = await this.restoreFromSnapshot(roomId, snapshot);
+    if (!session) return null;
+    this.sessions.set(roomId, session);
+    return this.serialize(session);
+  }
+
+  /** Persiste le snapshot de la session en base (mode room uniquement). */
+  private static async persistSnapshot(session: DungeonSession): Promise<void> {
+    if (session.storage.kind !== "room") return;
+    await PartyRoomService.saveExploration(session.storage.roomId, this.serializeSnapshot(session));
+  }
+
+  /** Efface le snapshot persisté (sortie de donjon). */
+  private static async clearSnapshot(session: DungeonSession): Promise<void> {
+    if (session.storage.kind !== "room") return;
+    await PartyRoomService.clearExploration(session.storage.roomId);
+  }
+
+  /** Persiste l'équipe + le snapshot (mode room). */
+  private static async persistAll(session: DungeonSession): Promise<void> {
+    await this.persist(session);
+    await this.persistSnapshot(session);
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────
@@ -566,6 +687,22 @@ export class ExplorationSessionService {
       // perso reste à jour **pendant** le donjon (coffres, équipement, soins).
       party: {
         gold: session.party.gold,
+        // Sac commun de l'équipe (objets partagés, accessibles par tous).
+        bag: session.party.bag.map((i: any) => ({
+          id: i.id,
+          name: i.name,
+          type: i.type,
+          description: i.description,
+          purchasePrice: i.purchasePrice,
+          weaponType: i.weaponType,
+          mainStat: i.mainStat,
+          subStat: i.subStat ?? null,
+          weaponStat: i.weaponStat,
+          weaponSubStat: i.weaponSubStat ?? 0,
+          range: i.range ?? 1,
+          element: i.element,
+          status: i.status ? i.status.name : null,
+        })),
         members: session.party.members.map((m) => ({
           id: m.id,
           name: m.name,
