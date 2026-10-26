@@ -18,9 +18,13 @@ export default function GameOverScreen({ recap, onDismiss }: Props) {
   return (
     <div className="gameover-overlay">
       <div className="gameover-modal">
-        <h2 className="gameover-title">💀 Game over</h2>
+        <h2 className="gameover-title">
+          {recap.mode === 'hard' ? '💀 Game over' : '💀 Vous avez péri'}
+        </h2>
         <p className="gameover-sub">
-          L'équipe est anéantie. La partie a été supprimée.
+          {recap.mode === 'hard'
+            ? "L'équipe est anéantie. La partie a été supprimée."
+            : "L'équipe est anéantie. Retour à la ville pour se ranimer au sanctuaire."}
         </p>
 
         <div className="gameover-duel">
@@ -67,7 +71,9 @@ export default function GameOverScreen({ recap, onDismiss }: Props) {
         )}
 
         <button className="gameover-btn" onClick={onDismiss}>
-          Retour au lobby
+          {recap.mode === 'hard'
+            ? 'Retour au lobby'
+            : `Retour à ${recap.hubName ?? 'la ville'}${recap.reviveCost ? ` (${recap.reviveCost} or)` : ''}`}
         </button>
       </div>
     </div>

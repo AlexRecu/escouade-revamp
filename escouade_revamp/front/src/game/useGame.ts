@@ -193,12 +193,17 @@ export function useGame(token: string | null): UseGame {
   }, []);
 
   const dismissGameOver = useCallback(() => {
+    const mode = gameOver?.mode;
     setGameOver(null);
-    setState(null);
-    setExploration(null);
-    setCombat(null);
-    partyList();
-  }, []);
+    if (mode === 'hard') {
+      // Game over définitif : retour au lobby.
+      setState(null);
+      setExploration(null);
+      setCombat(null);
+      partyList();
+    }
+    // mode easy : on reste en ville (l'état est déjà à jour via hub:state).
+  }, [gameOver, partyList]);
 
   useEffect(() => {
     // Pas de token (pas connecté) → pas de socket. On attend le login.

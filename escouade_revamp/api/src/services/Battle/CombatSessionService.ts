@@ -13,6 +13,7 @@ import {
   DungeonSession,
 } from "../dungeon/ExplorationSessionService";
 import { PartyRoomService } from "../Hub/PartyRoomService";
+import { WorldService } from "../World/WorldService";
 
 /**
  * Vue sérialisée d'une unité pour le front (plateau de combat).
@@ -43,11 +44,17 @@ export interface CombatUnitView {
 }
 
 /**
- * Récapitulatif de **game over** (mode difficile, équipe anéantie sans or).
+ * Récapitulatif de **défaite / game over** (équipe anéantie).
  * Affiché au front : le dernier héros tombé (sprite vaincu) + l'ennemi qui
  * l'a tué (sprite) + le log du dernier tour de combat.
+ *
+ * - **hard** : game over définitif (partie supprimée, retour au lobby).
+ * - **easy** : « Vous avez péri » — l'équipe est ramenée en ville, le joueur
+ *   paie le sanctuaire pour ranimer les morts restants.
  */
 export interface GameOverRecap {
+  /** "hard" = game over définitif ; "easy" = wipe survivable (retour en ville). */
+  mode: "easy" | "hard";
   /** Nom du dernier héros tombé. */
   heroName: string;
   /** Classe du dernier héros (pour le sprite vaincu). */
@@ -56,6 +63,10 @@ export interface GameOverRecap {
   killerName: string;
   /** Log du dernier tour de combat (les dernières entrées du journal). */
   lastTurnLog: string[];
+  /** Nom de la ville de retour (mode easy). */
+  hubName?: string;
+  /** Coût max pour ranimer l'équipe au sanctuaire (200 or × morts restants). */
+  reviveCost?: number;
 }
 
 /** Cibles valides d'une action (ids d'unités). */
@@ -429,6 +440,7 @@ export class CombatSessionService {
     const logs: string[] = [];
     let exited = false;
     let pendingLevelUps: PendingLevelUpView[] | undefined;
+    let gameOver: GameOverRecap | undefined;
 
     if (result === "victory") {
       // Butin : gold + XP partagés entre les survivants. Le choix de la stat
@@ -501,35 +513,54 @@ export class CombatSessionService {
       }
 
       const stillDead = exploration.party.members.filter((m) => m.isDead());
-      if (stillDead.length > 0) {
-        if (difficulty === "hard") {
-          // Cas 3 + hard : **game over**. On renvoie le récap ; le socket
-          // supprime la room et diffuse l'écran à tous les membres.
-          const lastDeath = battle.combatState.lastHeroDeath;
-          const lastTurnLog = this.extractLastTurnLog(battle.combatState.log);
-          const gameOver: GameOverRecap = {
-            heroName: lastDeath?.heroName ?? stillDead[stillDead.length - 1].name,
-            heroJob: lastDeath?.heroJob ?? "",
-            killerName: lastDeath?.killerName ?? "",
-            lastTurnLog,
-          };
-          logs.push("💀 Game over… L'équipe est anéantie.");
-          // On ne sort pas du donjon normalement : le front bascule sur
-          // l'écran de récap (la room sera supprimée par le socket).
-          return { state: null, logs, exited: true, gameOver };
-        }
-        // Cas 3 + easy : seul le dernier à mourir revient à 1 PV.
-        const lastDeath = battle.combatState.lastHeroDeath;
+      const lastDeath = battle.combatState.lastHeroDeath;
+      const lastTurnLog = this.extractLastTurnLog(battle.combatState.log);
+      const hub = exploration.hubId ? await WorldService.getHubById(exploration.hubId) : null;
+      const hubName = hub?.name;
+
+      if (difficulty === "hard" && stillDead.length > 0) {
+        // Cas 3 + hard : **game over**. On renvoie le récap ; le socket
+        // supprime la room et diffuse l'écran à tous les membres.
+        gameOver = {
+          mode: "hard",
+          heroName: lastDeath?.heroName ?? stillDead[stillDead.length - 1].name,
+          heroJob: lastDeath?.heroJob ?? "",
+          killerName: lastDeath?.killerName ?? "",
+          lastTurnLog,
+        };
+        logs.push("💀 Game over… L'équipe est anéantie.");
+        // On ne sort pas du donjon normalement : le front bascule sur
+        // l'écran de récap (la room sera supprimée par le socket).
+        return { state: null, logs, exited: true, gameOver };
+      }
+
+      if (difficulty === "easy") {
+        // **Wipe survivable** (mode facile) : à chaque défaite, on affiche
+        // l'écran « Vous avez péri » (dernier héros tombé + tueur + dernier
+        // tour). L'équipe est ramenée en ville ; le joueur paie le sanctuaire
+        // pour les morts restants.
         const lastHero = lastDeath
           ? exploration.party.members.find((m) => m.id === lastDeath.heroId)
           : stillDead[stillDead.length - 1];
-        if (lastHero) {
+        gameOver = {
+          mode: "easy",
+          heroName: lastDeath?.heroName ?? lastHero?.name ?? "",
+          heroJob: lastDeath?.heroJob ?? "",
+          killerName: lastDeath?.killerName ?? "",
+          lastTurnLog,
+          hubName,
+          reviveCost: stillDead.length * SANCTUARY_COST,
+        };
+        if (stillDead.length > 0 && lastHero) {
+          // Seul le dernier à mourir revient à 1 PV (les autres restent à
+          // 0 PV, à ranimer au sanctuaire en ville).
           lastHero.currentHp = 1;
-          logs.push(`💀 Défaite… ${lastHero.name} revient à 1 PV. L'équipe est ramenée à la dernière ville.`);
+          logs.push(`💀 Défaite… ${lastHero.name} revient à 1 PV. L'équipe est ramenée à ${hubName ?? "la dernière ville"}.`);
         } else {
-          logs.push("💀 Défaite… L'équipe est ramenée à la dernière ville.");
+          logs.push(`💀 Défaite… L'équipe est ramenée à ${hubName ?? "la dernière ville"}.`);
         }
       } else {
+        // hard + stillDead vide : l'or a tout ranimé, pas de game over.
         logs.push("💀 Défaite… L'équipe est ramenée à la dernière ville.");
       }
 
@@ -565,7 +596,7 @@ export class CombatSessionService {
     // On supprime la session **sauf** s'il reste des stats à choisir.
     if (!pendingLevelUps) this.sessions.delete(sessionKey);
     if (exited) ExplorationSessionService.deleteSession(sessionKey);
-    return { state: finalState, logs, exited, pendingLevelUps };
+    return { state: finalState, logs, exited, pendingLevelUps, gameOver };
   }
 
   /**

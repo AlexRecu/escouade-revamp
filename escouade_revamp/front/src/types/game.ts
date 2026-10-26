@@ -169,8 +169,10 @@ export type RoomSummary = {
   members: { username: string; isSpectator: boolean }[];
 };
 
-/** Récapitulatif de **game over** (mode difficile, équipe anéantie sans or). */
+/** Récapitulatif de **défaite / game over** (équipe anéantie). */
 export type GameOverRecap = {
+  /** "hard" = game over définitif ; "easy" = wipe survivable (retour en ville). */
+  mode: 'easy' | 'hard';
   /** Nom du dernier héros tombé. */
   heroName: string;
   /** Classe du dernier héros (pour le sprite vaincu). */
@@ -179,6 +181,10 @@ export type GameOverRecap = {
   killerName: string;
   /** Log du dernier tour de combat. */
   lastTurnLog: string[];
+  /** Nom de la ville de retour (mode easy). */
+  hubName?: string;
+  /** Coût max pour ranimer l'équipe au sanctuaire (200 or × morts restants). */
+  reviveCost?: number;
 };
 
 export type GameState = {

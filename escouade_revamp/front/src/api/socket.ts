@@ -2,7 +2,7 @@
 
 import { io, Socket } from 'socket.io-client';
 import { getToken } from './auth';
-import type { GameState, ExplorationState } from '../types/game';
+import type { GameState, ExplorationState, GameOverRecap } from '../types/game';
 
 let socket: Socket | null = null;
 
@@ -208,9 +208,9 @@ export function onPartyLeft(cb: () => void): void {
   socket?.on('party:left', () => cb());
 }
 
-/** Émis en cas de **game over** (mode difficile, équipe anéantie sans or) :
- *  récapitulatif (dernier héros tombé + tueur + log du dernier tour). La
- *  partie est supprimée côté serveur. */
-export function onGameOver(cb: (recap: { heroName: string; heroJob: string; killerName: string; lastTurnLog: string[] }) => void): void {
-  socket?.on('game:over', ({ recap }: { recap: { heroName: string; heroJob: string; killerName: string; lastTurnLog: string[] } }) => cb(recap));
+/** Émis en cas de **défaite / game over** (équipe anéantie) : récapitulatif
+ *  (dernier héros tombé + tueur + log du dernier tour). En mode difficile la
+ *  partie est supprimée ; en mode facile l'équipe est ramenée en ville. */
+export function onGameOver(cb: (recap: GameOverRecap) => void): void {
+  socket?.on('game:over', ({ recap }: { recap: GameOverRecap }) => cb(recap));
 }

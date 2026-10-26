@@ -424,9 +424,9 @@ export const initializeSocket = (io: Server) => {
     socket.on('combat:end', async () => {
       try {
         const result = await CombatSessionService.applyEnd(explorationKey());
-        // **Game over** (mode difficile) : on supprime la room et on diffuse
-        // l'écran de récap à tous les membres.
-        if (result.gameOver) {
+        // **Game over définitif** (mode difficile) : on supprime la room et
+        // on diffuse l'écran de récap à tous les membres.
+        if (result.gameOver?.mode === 'hard') {
           const roomId = currentRoomId();
           if (roomId) {
             await PartyRoomService.deleteRoomById(roomId);
@@ -442,6 +442,9 @@ export const initializeSocket = (io: Server) => {
           await refreshHub(currentRoomId() !== null);
         }
         if (result.pendingLevelUps) target.emit('exploration:levelUps', { levelUps: result.pendingLevelUps });
+        // **Wipe survivable** (mode facile) : l'équipe est ramenée en ville ;
+        // on affiche l'écran « Vous avez péri » par-dessus (retour au sanctuaire).
+        if (result.gameOver) target.emit('game:over', { recap: result.gameOver });
       } catch (err: any) {
         socket.emit('error', { message: err?.message ?? 'Erreur inconnue' });
       }
