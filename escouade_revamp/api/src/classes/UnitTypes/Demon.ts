@@ -118,7 +118,11 @@ export class Demon extends Unit {
     useSpell(spell: Spell, target: Unit, roll: number, damageDivisor: number = 1): string[] {
         let resultArray: string[] = [];
         let damage = 0;
-        
+        // **Immunité magie** : la cible est insensible aux sorts.
+        if (target.status.some(s => s.name === 'Immunité magie')) {
+            resultArray.push(`${target.name} est immunisé contre la magie !`);
+            return resultArray;
+        }
         if (spell.mpCost) {
             // Offensive spells
             if (spell.power) {

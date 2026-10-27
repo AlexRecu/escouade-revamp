@@ -103,6 +103,11 @@ export class Monster extends Unit {
             resultArray.push("Sort introuvable.");
             return resultArray;
         }
+        // **Immunité magie** : la cible est insensible aux sorts.
+        if (target.status.some(s => s.name === 'Immunité magie')) {
+            resultArray.push(`${target.name} est immunisé contre la magie !`);
+            return resultArray;
+        }
         if (roll === 1) {
             resultArray.push("ECHEC CRITIQUE !");
             return resultArray;

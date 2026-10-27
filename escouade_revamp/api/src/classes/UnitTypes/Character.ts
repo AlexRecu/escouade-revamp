@@ -174,7 +174,11 @@ export class Character extends Unit {
             resultArray.push(`${target.name} perd ${actualDamage}PV`);
             if (!target.isDead()) {
                 if (weapon.status && weapon.status.chance && Math.random() * 10 <= weapon.status.chance) {
-                    applyStatus(this, weapon.status, target, roll, resultArray);
+                    // Les statuts **passifs** (ex. « Immunité magie ») s'appliquent
+                    // au **porteur** de l'arme, pas à la cible. Les statuts
+                    // offensifs (Saignée, Poison…) s'appliquent à la cible.
+                    const isPassive = weapon.status.statusType === 'boon';
+                    applyStatus(this, weapon.status, isPassive ? this : target, roll, resultArray);
                 }
             } else {
                 resultArray.push(`${target.name} est KO`);
@@ -241,6 +245,12 @@ export class Character extends Unit {
         const spell = spellData.find(spell => spell.name === spellName) as Spell;
         let resultArray: string[] = [`${this.name} lance ${spell.name} sur ${target.name}`];
         if (spell) {
+            // **Immunité magie** : la cible est insensible aux sorts (pas de
+            // dégâts, pas de statut, pas de soin). Le lanceur ne perd pas de MP.
+            if (target.status.some(s => s.name === 'Immunité magie')) {
+                resultArray.push(`${target.name} est immunisé contre la magie !`);
+                return resultArray;
+            }
             let damage = 0;
 
             if (this.currentMp < (spell.mpCost ?? 0)) {

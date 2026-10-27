@@ -415,8 +415,11 @@ function App() {
           onSubmit={(choices) => actions.combatSubmitStats(choices)}
         />
       )}
-      {/* Panneau de détail d'un personnage (stats, compétences, sorts, équipement). */}
-      {inRoom && selectedMember && (
+      {/* Panneau de détail d'un personnage (stats, compétences, sorts, équipement).
+          Masqué pendant le combat : l'overlay bloquerait le panneau d'actions
+          du CombatView (Déplacer, Attaquer, Compétences, Objets…). Les objets
+          du sac restent désactivés via `inCombat` dans le PartySidebar. */}
+      {inRoom && selectedMember && !combat && (
         <CharacterDetailModal
           member={selectedMember}
           sharedBag={exploration ? exploration.party.bag : state?.party.bag ?? []}

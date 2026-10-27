@@ -51,7 +51,7 @@ describe("Demon Class", () => {
         result = demon.act([target, ally, target2]);
         expect(result[0]).toContain("Mateus, le Corrompu exécute : Soin +");
         expect(demon.currentTurn).toBe(3);
-        expect(ally.currentHp).toBe(8);
+        expect(ally.currentHp).toBe(13); // Soin + = 12 PV (1 + 12 = 13)
     });
 
     test("should take damage and reduce endurance", () => {

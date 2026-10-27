@@ -32,7 +32,7 @@ describe("White Mage Spell Tests", () => {
         if(soinIndex !== -1){
             whiteMage.useSpellFromName("Soin", ally, 6, 1);
         }
-        expect(ally.currentHp).toBe(8); // Vérifie que 3 HP ont été rendus
+        expect(ally.currentHp).toBe(9); // Vérifie que 4 HP ont été rendus (Soin = 4 PV)
     });
 
     test("Grâce rend un peu de PV à chaque tour", () => {

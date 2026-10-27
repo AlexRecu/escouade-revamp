@@ -147,14 +147,17 @@ export class CombatState {
     checkEnd(): boolean {
         if (this.result !== "ongoing") return true;
 
-        if (this.aliveEnemies.length === 0) {
-            this.result = "victory";
-            this.pushLog("🏆 Victoire ! Tous les ennemis ont été vaincus.");
-            return true;
-        }
+        // La **défaite** est vérifiée en premier : si une attaque de zone tue
+        // simultanément tous les héros ET tous les ennemis, c'est une défaite
+        // (l'équipe est anéantie), pas une victoire.
         if (this.aliveHeroes.length === 0) {
             this.result = "defeat";
             this.pushLog("💀 Défaite... L'escouade a été anéantie.");
+            return true;
+        }
+        if (this.aliveEnemies.length === 0) {
+            this.result = "victory";
+            this.pushLog("🏆 Victoire ! Tous les ennemis ont été vaincus.");
             return true;
         }
         return false;
