@@ -549,7 +549,10 @@ export class CombatSessionService {
           killerName: lastDeath?.killerName ?? "",
           lastTurnLog,
           hubName,
-          reviveCost: stillDead.length * SANCTUARY_COST,
+          // Coût **maximum** pour ranimer toute l'équipe au sanctuaire
+          // (tous les morts × 200), pas seulement les morts restants après
+          // la ranimation par l'or (sinon 0 si l'or a tout couvert).
+          reviveCost: dead.length * SANCTUARY_COST,
         };
         if (stillDead.length > 0 && lastHero) {
           // Seul le dernier à mourir revient à 1 PV (les autres restent à

@@ -180,18 +180,7 @@ export class BattleManager {
         // **Suivi du dernier héros tombé** (pour l'écran de récap de game over
         // en mode difficile) : si un héros passe de vivant à mort, on enregistre
         // le dernier + l'ennemi qui l'a tué (l'unité qui agit).
-        for (const u of this.state.units) {
-            const b = before.get(u.id);
-            if (b !== undefined && b > 0 && u.currentHp <= 0 && u.type === "Hero") {
-                this.state.lastHeroDeath = {
-                    heroId: u.id,
-                    heroName: u.name,
-                    heroJob: u instanceof Character ? u.job.name : "",
-                    killerId: unit.id,
-                    killerName: unit.name,
-                };
-            }
-        }
+        this.trackHeroDeaths(before, unit);
         const primary = targets[0] ?? null;
         this.state.recordAction(
             unit.id,
@@ -349,7 +338,33 @@ export class BattleManager {
      * Exécute l'action d'un acteur (héros ou ennemi) via l'IA.
      * Utilisé en mode automatique (simulation / tests).
      */
+    /**
+     * **Suivi du dernier héros tombé** (pour l'écran de récap de game over /
+     * « Vous avez péri ») : si un héros passe de vivant à mort entre le
+     * snapshot `before` et maintenant, on enregistre le dernier + l'unité qui
+     * agit (`actor`) comme tueur. Appelé après **chaque** action (joueur via
+     * `performAction`, IA via `executeActorAction`).
+     */
+    private trackHeroDeaths(before: Map<string, number>, actor: Unit): void {
+        for (const u of this.state.units) {
+            const b = before.get(u.id);
+            if (b !== undefined && b > 0 && u.currentHp <= 0 && u.type === "Hero") {
+                this.state.lastHeroDeath = {
+                    heroId: u.id,
+                    heroName: u.name,
+                    heroJob: u instanceof Character ? u.job.name : "",
+                    killerId: actor.id,
+                    killerName: actor.name,
+                };
+            }
+        }
+    }
+
     private executeActorAction(unit: Unit): void {
+        // Snapshot des PV avant l'action : permet de détecter les héros qui
+        // tombent pendant l'action (ex. un monstre qui tue un héros).
+        const before = new Map<string, number>();
+        for (const u of this.state.units) before.set(u.id, u.currentHp);
         if (unit instanceof Monster) {
             this.ai.executeEnemyAction(unit);
         } else if (unit instanceof Character) {
@@ -378,6 +393,7 @@ export class BattleManager {
             // joueur qui sélectionne l'action via `performAction`.
             this.ai.executeEonAction(unit);
         }
+        this.trackHeroDeaths(before, unit);
         this.state.checkEnd();
     }
 
