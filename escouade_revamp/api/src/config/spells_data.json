@@ -461,8 +461,8 @@
         "mpCost": 1,
         "hpCost": 0,
         "power": null,
-        "hp": 3,
-        "description": "Soigne 3PV d'un allié"
+        "hp": 4,
+        "description": "Soigne 4PV d'un allié"
     },
     {
         "target": "ally",
@@ -471,7 +471,7 @@
         "mpCost": 1,
         "hpCost": 0,
         "power": null,
-        "hp": 2,
+        "hp": 4,
         "status": {
             "name": "Grâce",
             "statusType": "boon",
@@ -496,8 +496,8 @@
         "mpCost": 2,
         "hpCost": 0,
         "power": null,
-        "hp": 7,
-        "description": "Soigne 7PV d'un allié"
+        "hp": 12,
+        "description": "Soigne 12PV d'un allié"
     },
     {
         "target": "ally",
@@ -506,7 +506,7 @@
         "mpCost": 2,
         "hpCost": 0,
         "power": null,
-        "hp": 4,
+        "hp": 7,
         "status": {
             "name": "Grâce +",
             "statusType": "boon",
@@ -531,8 +531,8 @@
         "mpCost": 3,
         "hpCost": 0,
         "power": null,
-        "hp": 15,
-        "description": "Soigne 15PV d'un allié"
+        "hp": 20,
+        "description": "Soigne 20PV d'un allié"
     },
     {
         "target": "ally",
@@ -541,7 +541,7 @@
         "mpCost": 3,
         "hpCost": 0,
         "power": null,
-        "hp": 6,
+        "hp": 10,
         "status": {
             "name": "Grâce X",
             "statusType": "boon",
