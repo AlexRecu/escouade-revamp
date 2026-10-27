@@ -1,5 +1,4 @@
 // src/services/dungeon/CampfireService.ts
-import { ExplorationState } from "../../classes/Exploration/ExplorationState";
 import { Party } from "../../classes/Exploration/Party";
 import { Campfire } from "../../classes/Progression/Campfire";
 
@@ -18,26 +17,6 @@ export class CampfireService {
     logs.push(`Tous les membres ont récupéré ${campfire.restoredHealthPercentage * 100}% HP et ${campfire.restoredManaPercentage * 100}% MP.`);
 
     return logs;
-  }
-
-  /**
-   * Vérifie si le feu de camp utilisé est un point de sauvegarde valide
-   */
-  static canSaveAt(campfire: Campfire): boolean {
-    return campfire.canSave();
-  }
-
-  /**
-   * Sauvegarde de la progression (en mémoire — la persistance disque revient en Phase 4).
-   */
-  static saveExploration(state: ExplorationState): string {
-    const currentCampfire = this.getNearbyCampfire(state.party, state.zone.checkpoints);
-    if (!currentCampfire || !currentCampfire.isUsed) {
-      return "Aucune sauvegarde possible ici.";
-    }
-
-    state.savedAt = new Date();
-    return `Partie sauvegardée avec succès à ${currentCampfire.locationName}.`;
   }
 
   static getNearbyCampfire(party: Party, campfires: Campfire[]): Campfire | null {

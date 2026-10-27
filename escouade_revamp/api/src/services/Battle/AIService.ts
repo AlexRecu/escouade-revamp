@@ -219,7 +219,7 @@ export class AIService {
                 u instanceof Character &&
                 u !== target &&
                 u.job.name !== "Chevalier Noir" &&
-                u.status.some((s) => s.name === "Bouclier impénétrable")
+                u.status.some((s) => s.name === "Bouclier Impénétrable")
         ) as Character | undefined;
 
         if (!protector) return false;

@@ -50,14 +50,6 @@ export class Campfire {
     this.usedAt = new Date();
   }
 
-  /**
-   * Permet de sauvegarder la progression.
-   * (à implémenter côté service ou controller)
-   */
-  canSave(): boolean {
-    return this.isUsed;
-  }
-
   getSummary() {
     return {
       location: this.locationName,

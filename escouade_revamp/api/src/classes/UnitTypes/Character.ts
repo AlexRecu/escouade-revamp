@@ -600,7 +600,7 @@ export class Character extends Unit {
      */
     protectTarget(target: Unit, roll: number, doubleRoll: number = 0, resultArray: string[]): boolean {
         let protect: boolean = false;
-        if (this.job.name !== "Chevalier Noir" && this.status.some(statut => statut.name === "Bouclier impénétrable")) {
+        if (this.job.name !== "Chevalier Noir" && this.status.some(statut => statut.name === "Bouclier Impénétrable")) {
             // Si le roll du guerrier est d'au moins 5 ou que celui du Paladin est au moins de 6
             if ((doubleRoll === 0 && roll >= 5) || (doubleRoll > 0 && roll + doubleRoll >= 6)) {
                 resultArray.push(`Une lumière enveloppe ${this.name}`);
