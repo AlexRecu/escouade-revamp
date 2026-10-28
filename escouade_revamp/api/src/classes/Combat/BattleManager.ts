@@ -579,15 +579,20 @@ export class BattleManager {
             this.phases.endUnitTurn(actor);
             this.state.nextActor();
             this.cleanupFinishedInvocations();
-            // Après le tour ennemi, si le prochain acteur est un héros, on
-            // démarre son tour (AP régénérée, statuts d'ouverture) pour que le
-            // front passe directement au joueur. Sinon on s'arrête : le front
-            // enchaînera avec le prochain ennemi via un nouvel appel.
+            // Après le tour ennemi : si le prochain acteur est un héros vivant,
+            // on démarre son tour (AP régénérée, statuts d'ouverture) pour que
+            // le front passe directement au joueur. Si c'est un héros **mort**,
+            // on le saute (la boucle le gère au sommet via nextActor). Sinon
+            // (ennemi suivant), on s'arrête : le front enchaînera via aiStep.
             const next = this.state.currentActor;
             if (next && next.type === "Hero" && !next.isDead()) {
                 this.phases.startUnitTurn(next);
+                break;
             }
-            break; // un seul tour ennemi par appel → animation un par un.
+            if (next && next.type === "Hero" && next.isDead()) {
+                continue; // héros mort → on le saute (boucle → nextActor)
+            }
+            break; // ennemi suivant → animation un par un
         }
         return this.state.log.slice(-30);
     }

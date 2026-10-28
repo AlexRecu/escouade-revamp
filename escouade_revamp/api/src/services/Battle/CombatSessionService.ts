@@ -873,6 +873,7 @@ export class CombatSessionService {
       session.placementDone &&
       currentUnit !== null &&
       currentUnit.type === "Hero" &&
+      !currentUnit.isDead() &&
       !state.isOver;
 
     // File d'ordre des actions du tour courant (unités vivantes, par vitesse).
