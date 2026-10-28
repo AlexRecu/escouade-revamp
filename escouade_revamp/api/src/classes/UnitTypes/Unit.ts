@@ -336,18 +336,30 @@ export abstract class Unit {
      * @param allUnits Le contexte de toutes les unités
      * @returns Le log de toutes les actions effectuées
      */
-    abstract useAbilityByName(name: string, allUnits: Unit[]): string[];
+    abstract useAbilityByName(name: string, allUnits: Unit[], preferredTarget?: Unit): string[];
     /**
      * Utilise une compétence (objet Skill) — moteur d'exécution commun.
      * @param skill 
      * @param allUnits 
      * @returns Le log de toutes les actions effectuées
      */
-    useAbility(skill: Skill, allUnits: Unit[]): string[] {
+    useAbility(skill: Skill, allUnits: Unit[], preferredTarget?: Unit): string[] {
         let resultArray: string[] = [];
 
         // Déterminer les cibles valides
         let targets = getValidTargets(this, skill, allUnits);
+        // Cible choisie par le joueur : pour un skill **mono-cible**, si la cible
+        // cliquée est valide, elle prime sur le choix automatique (cible la plus
+        // proche / 1re du tableau). On vérifie dans la liste **complète** des
+        // cibles valides (`all=true`), car pour un skill mono-cible `targets` ne
+        // contient que la 1re. Pour un skill **multi-cible**, on garde toutes les
+        // cibles valides (le clic ne réduit pas la zone d'effet).
+        if (preferredTarget && skill.type === "single") {
+            const allValid = getValidTargets(this, skill, allUnits, true);
+            if (allValid.some((t) => t === preferredTarget)) {
+                targets = [preferredTarget];
+            }
+        }
         if (targets.length === 0) {
             resultArray.push(`Aucune cible valide à ${skill.range} case(s) pour ${skill.name}.`);
             return resultArray;

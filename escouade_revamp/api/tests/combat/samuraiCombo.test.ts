@@ -52,6 +52,7 @@ describe("Mécanique des combos (Bushido du Samouraï)", () => {
   test("useCombo enchaîne plusieurs Hissatsu et consomme l'AP", () => {
     const samurai = makeSamurai("s4", 30);
     const enemy = makeEnemy();
+    enemy.currentHp = 100; enemy.maxHp = 100; // survit au 1er Hissatsu → cible valide pour le 2e
     const battle = new BattleManager([samurai, enemy]);
 
     const apBefore = samurai.currentAp;
@@ -106,6 +107,7 @@ describe("Mécanique des combos (Bushido du Samouraï)", () => {
   test("performAction('combo') exécute l'enchaînement (point d'entrée joueur)", () => {
     const samurai = makeSamurai("s8", 30);
     const enemy = makeEnemy();
+    enemy.currentHp = 100; enemy.maxHp = 100; // survit au 1er Hissatsu → cible valide pour le 2e
     const battle = new BattleManager([samurai, enemy]);
 
     const apBefore = samurai.currentAp;

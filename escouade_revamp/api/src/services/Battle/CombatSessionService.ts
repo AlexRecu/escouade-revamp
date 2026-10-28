@@ -1056,7 +1056,10 @@ export class CombatSessionService {
       if (skill.target === "enemy") return u.type === "Enemy";
       return false;
     });
-    if (skill.type === "single" && valid.length > 0) return [valid[0].id];
+    // On renvoie **toutes** les cibles valides (même pour un skill mono-cible)
+    // : le front laisse le joueur choisir la cible (ex. Percée sur le Vautour
+    // en diagonale plutôt que le Loup en face). Le backend respecte ensuite la
+    // cible choisie (voir `performAction` → `useAbilityByName`).
     return valid.map((u) => u.id);
   }
 }

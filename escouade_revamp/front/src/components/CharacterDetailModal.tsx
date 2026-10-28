@@ -186,7 +186,8 @@ export default function CharacterDetailModal({ member, sharedBag, onClose, actio
             {member.spells && member.spells.length > 0 ? (
               <ul className="char-detail-list">
                 {member.spells.map((s) => {
-                  const canCast = !inCombat && isOutOfCombatHeal(s);
+                  // Un personnage KO (0 PV) ne peut plus lancer de sort de soin.
+                  const canCast = !inCombat && !member.isDead && isOutOfCombatHeal(s);
                   const isRevive = s.name.startsWith('Vie');
                   return (
                     <li key={s.name} title={s.description} className="char-detail-spell-row">
@@ -348,8 +349,8 @@ export default function CharacterDetailModal({ member, sharedBag, onClose, actio
                       <button
                         className="char-detail-bag-btn"
                         onClick={() => actions.useItem(member.id, g.id)}
-                        disabled={inCombat}
-                        title={inCombat ? 'Indisponible pendant le combat (voir Objets)' : 'Utiliser'}
+                        disabled={inCombat || member.isDead}
+                        title={inCombat ? 'Indisponible pendant le combat (voir Objets)' : member.isDead ? 'KO : indisponible' : 'Utiliser'}
                       >
                         Utiliser
                       </button>

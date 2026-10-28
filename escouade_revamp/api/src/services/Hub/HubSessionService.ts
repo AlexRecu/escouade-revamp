@@ -259,6 +259,8 @@ export class HubSessionService {
     const caster = session.party.members.find((m) => m.id === casterId);
     const target = session.party.members.find((m) => m.id === targetId);
     if (!caster || !target) return { logs: ["Personnage introuvable."], state: this.serialize(session) };
+    // Un personnage KO (0 PV) ne peut plus lancer de sort.
+    if (caster.isDead()) return { logs: [`${caster.name} est KO et ne peut pas lancer de sort.`], state: this.serialize(session) };
     const logs = caster.castHealSpell(spellName, target);
     await this.persist(playerId, session);
     return { logs, state: this.serialize(session) };

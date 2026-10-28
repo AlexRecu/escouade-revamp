@@ -478,14 +478,14 @@ export class Character extends Unit {
      * @param allUnits Le contexte de toutes les unités
      * @returns Le log de toutes les actions effectuées
      */
-    useAbilityByName(name: string, allUnits: Unit[]): string[] {
+    useAbilityByName(name: string, allUnits: Unit[], preferredTarget?: Unit): string[] {
         const recordLevelSkill = this.job.skills.find(s => s.skill.name === name);
 
         if (!recordLevelSkill) {
             return ["Compétence introuvable !"];
         }
 
-        return this.useAbility(recordLevelSkill.skill, allUnits);
+        return this.useAbility(recordLevelSkill.skill, allUnits, preferredTarget);
     }
 
     /**

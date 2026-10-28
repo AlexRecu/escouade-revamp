@@ -41,7 +41,7 @@ export class AIService {
      * s'il n'est pas le plus proche. Sinon, l'ennemi vise le héros le plus
      * proche (comportement par défaut).
      */
-    executeEnemyAction(monster: Monster): void {
+    executeEnemyAction(monster: Monster, canMove: boolean = true): void {
         const provoked = this.state.aliveHeroes.find(
             (u) => u instanceof Character && u.isTargeted
         );
@@ -51,19 +51,26 @@ export class AIService {
         const inMeleeRange = isAdjacentToGoal(monster.position, target.position);
 
         // ── 1. Déplacement ────────────────────────────────────────────────
-        // Physique : se rapproche de la cible (pour pouvoir l'atteindre à
-        // portée 1). Magique : garde la distance — s'il est collé à un héros
-        // il s'immobilise, sinon il recule tous les 2-3 tours s'il le peut.
-        if (monster.attackType === "Physique") {
-            if (!inMeleeRange) {
-                monster.moveTowards(target.position, monster.getMovementRange(), this.state.units);
-            }
-        } else {
-            const heroAdjacent = this.state.aliveHeroes.some(
-                (u) => u instanceof Character && isAdjacentToGoal(u.position, monster.position)
-            );
-            if (!heroAdjacent && monster.turnCount % 3 === 0) {
-                monster.moveAwayFrom(target.position, monster.getMovementRange(), this.state.units);
+        // Le déplacement de base ne se fait que sur la **1ère action** du tour
+        // (`canMove`). Un ennemi qui attaque deux fois (règle du livret : vitesse
+        // < 2× Dextérité totale) ne se déplace qu'une fois, puis attaque 2×.
+        // (Les capacités qui ont leur propre déplacement, ex. Rapace, gèrent
+        // leur mouvement dans leur formule, indépendamment de `canMove`.)
+        if (canMove) {
+            // Physique : se rapproche de la cible (pour pouvoir l'atteindre à
+            // portée 1). Magique : garde la distance — s'il est collé à un héros
+            // il s'immobilise, sinon il recule tous les 2-3 tours s'il le peut.
+            if (monster.attackType === "Physique") {
+                if (!inMeleeRange) {
+                    monster.moveTowards(target.position, monster.getMovementRange(), this.state.units);
+                }
+            } else {
+                const heroAdjacent = this.state.aliveHeroes.some(
+                    (u) => u instanceof Character && isAdjacentToGoal(u.position, monster.position)
+                );
+                if (!heroAdjacent && monster.turnCount % 3 === 0) {
+                    monster.moveAwayFrom(target.position, monster.getMovementRange(), this.state.units);
+                }
             }
         }
 

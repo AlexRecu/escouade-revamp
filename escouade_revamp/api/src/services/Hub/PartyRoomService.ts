@@ -531,6 +531,8 @@ export class PartyRoomService {
     const { room, session } = await this.getHubState(roomId);
     const member = session.party.members.find((m) => m.id === memberId);
     if (!member) return { logs: ["Personnage introuvable."], state: this.serializeRoom(room, session) };
+    // Un personnage KO (0 PV) ne peut plus utiliser d'objet.
+    if (member.isDead()) return { logs: [`${member.name} est KO et ne peut pas utiliser d'objet.`], state: this.serializeRoom(room, session) };
     const item = session.party.bag.find((i) => i.id === itemId);
     if (!item || item.type !== "consumable") {
       return { logs: ["Cet objet n'est pas utilisable."], state: this.serializeRoom(room, session) };
@@ -573,6 +575,8 @@ export class PartyRoomService {
     const caster = session.party.members.find((m) => m.id === casterId);
     const target = session.party.members.find((m) => m.id === targetId);
     if (!caster || !target) return { logs: ["Personnage introuvable."], state: this.serializeRoom(room, session) };
+    // Un personnage KO (0 PV) ne peut plus lancer de sort.
+    if (caster.isDead()) return { logs: [`${caster.name} est KO et ne peut pas lancer de sort.`], state: this.serializeRoom(room, session) };
     const logs = caster.castHealSpell(spellName, target);
     await this.persistRoom(roomId, session);
     return { logs, state: this.serializeRoom(room, session) };

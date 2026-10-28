@@ -89,14 +89,18 @@ export function messageDamageMultiplier(damageMultiplier: number): string {
 * @param skill La compétence
 * @param allUnits La liste de toutes les unités
 */
-export function getValidTargets(user: Unit, skill: Skill | EonSkill, allUnits: Unit[]): Unit[] {
+export function getValidTargets(user: Unit, skill: Skill | EonSkill, allUnits: Unit[], all = false): Unit[] {
         const move = ("move" in skill)? skill.move : 0;
         const targetType = ("target" in skill)? skill.target : 'enemy';
         let validTargets = allUnits.filter(unit => {
 
             // Les unités remplacées (hors champ, ex. Démoniste invoqué) ne sont
-            // pas ciblables : c'est leur invocation qui est sur le plateau.
+            // pas ciblables : leur invocation est sur le plateau.
             if (unit.isReplaced) return false;
+
+            // Les unités mortes ne sont pas ciblables (sinon une compétence
+            // mono-cible pourrait "viser" un ennemi déjà KO).
+            if (unit.isDead()) return false;
 
             //cibles à portée
             const distance = Math.max(
@@ -123,8 +127,11 @@ export function getValidTargets(user: Unit, skill: Skill | EonSkill, allUnits: U
             return false;
         });
 
-        // Si le skill est "single", on garde seulement la cible la plus proche
-        if (skill.type === "single" && validTargets.length > 0) {
+        // Si le skill est "single" et qu'on ne demande pas TOUTES les cibles
+        // (`all`), on garde seulement la 1re (cible la plus proche pour le
+        // choix automatique). Le ciblage joueur passe `all=true` pour lister
+        // toutes les cibles valides et choisir.
+        if (skill.type === "single" && validTargets.length > 0 && !all) {
             validTargets = [validTargets[0]];
         }
 

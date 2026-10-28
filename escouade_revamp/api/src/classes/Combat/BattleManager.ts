@@ -154,7 +154,11 @@ export class BattleManager {
                 break;
             case "skill":
                 if (extra.skill) {
-                    result.push(...unit.useAbilityByName(extra.skill.name, this.state.units));
+                    // On passe la cible choisie par le joueur (`targets[0]`) : sans
+                    // ça, la compétence résoudrait sa propre cible (la plus proche),
+                    // pas celle cliquée (ex. Percée qui frappe le Loup au lieu du
+                    // Vautour ciblé).
+                    result.push(...unit.useAbilityByName(extra.skill.name, this.state.units, targets[0]));
                 } else {
                     result.push("Aucune compétence spécifiée.");
                 }
@@ -360,13 +364,13 @@ export class BattleManager {
         }
     }
 
-    private executeActorAction(unit: Unit): void {
+    private executeActorAction(unit: Unit, canMove: boolean = true): void {
         // Snapshot des PV avant l'action : permet de détecter les héros qui
         // tombent pendant l'action (ex. un monstre qui tue un héros).
         const before = new Map<string, number>();
         for (const u of this.state.units) before.set(u.id, u.currentHp);
         if (unit instanceof Monster) {
-            this.ai.executeEnemyAction(unit);
+            this.ai.executeEnemyAction(unit, canMove);
         } else if (unit instanceof Character) {
             // Un Démoniste invoque un démon (mode auto) s'il en a un pactisé.
             if (this.trySummonDemon(unit)) {
@@ -421,7 +425,9 @@ export class BattleManager {
             const actionCount = this.phases.getActionCount(unit);
             for (let i = 0; i < actionCount; i++) {
                 if (unit.isDead() || this.state.isOver) break;
-                this.executeActorAction(unit);
+                // Le déplacement de base ne se fait que sur la 1ère action (i===0) :
+                // un ennemi qui attaque 2× ne se déplace qu'une fois.
+                this.executeActorAction(unit, i === 0);
                 acted = true;
             }
 
@@ -566,7 +572,9 @@ export class BattleManager {
             const actionCount = this.phases.getActionCount(actor);
             for (let i = 0; i < actionCount; i++) {
                 if (actor.isDead() || this.state.isOver) break;
-                this.executeActorAction(actor);
+                // Le déplacement de base ne se fait que sur la 1ère action (i===0) :
+                // un ennemi qui attaque 2× ne se déplace qu'une fois.
+                this.executeActorAction(actor, i === 0);
             }
             this.phases.endUnitTurn(actor);
             this.state.nextActor();

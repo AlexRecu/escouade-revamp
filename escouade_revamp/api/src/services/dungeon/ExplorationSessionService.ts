@@ -548,6 +548,8 @@ export class ExplorationSessionService {
     const session = this.require(sessionKey);
     const member = session.party.members.find((m) => m.id === memberId);
     if (!member) return { logs: ["Personnage introuvable."], state: this.serialize(session) };
+    // Un personnage KO (0 PV) ne peut plus utiliser d'objet.
+    if (member.isDead()) return { logs: [`${member.name} est KO et ne peut pas utiliser d'objet.`], state: this.serialize(session) };
     const item = session.party.bag.find((i) => i.id === itemId);
     if (!item || item.type !== "consumable") {
       return { logs: ["Cet objet n'est pas utilisable."], state: this.serialize(session) };
@@ -568,6 +570,8 @@ export class ExplorationSessionService {
     const caster = session.party.members.find((m) => m.id === casterId);
     const target = session.party.members.find((m) => m.id === targetId);
     if (!caster || !target) return { logs: ["Personnage introuvable."], state: this.serialize(session) };
+    // Un personnage KO (0 PV) ne peut plus lancer de sort.
+    if (caster.isDead()) return { logs: [`${caster.name} est KO et ne peut pas lancer de sort.`], state: this.serialize(session) };
     const logs = caster.castHealSpell(spellName, target);
     await this.persist(session);
     return { logs, state: this.serialize(session) };

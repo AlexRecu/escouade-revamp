@@ -141,12 +141,12 @@ export class Monster extends Unit {
      * @param allUnits Le contexte de toutes les unités
      * @returns Le log de toutes les actions effectuées
      */
-    useAbilityByName(name: string, allUnits: Unit[]): string[] {
+    useAbilityByName(name: string, allUnits: Unit[], preferredTarget?: Unit): string[] {
         const skill = skillData.find(s => s.name === name) as Skill;
         if (!skill) {
             return ["Compétence introuvable."];
         }
-        return this.useAbility(skill, allUnits);
+        return this.useAbility(skill, allUnits, preferredTarget);
     }
 
     /**
