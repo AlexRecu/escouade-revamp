@@ -46,16 +46,17 @@ export function applyStatus(user: Unit, status: Status, target: Unit, roll: numb
                 resultArray.push('Cela met fin au combat');
                 break;
             } case 'Dissipation': {
-                let lastStatutIndex: number;
-                if (target.type === "Enemy") {
-                    lastStatutIndex = target.status.length - 1 - target.status.slice().reverse().findIndex(statut => statut.statusType === 'boon');
-                } else {
-                    lastStatutIndex = target.status.length - 1 - target.status.slice().reverse().findIndex(statut => statut.statusType === 'curse');
-                }
-                if (lastStatutIndex !== -1) {
+                const isEnemy = target.type === "Enemy";
+                const statusType = isEnemy ? 'boon' : 'curse';
+                const reversed = target.status.slice().reverse();
+                const reversedIndex = reversed.findIndex(statut => statut.statusType === statusType);
+                if (reversedIndex !== -1) {
+                    const lastStatutIndex = target.status.length - 1 - reversedIndex;
                     const statut = target.status[lastStatutIndex];
-                    target.status.splice(lastStatutIndex, 1); // Supprime le dernier statut bonus ou malus suivant le type de cible
-                    resultArray.push(`Enlève le statut "${statut}" de ${target.name}`);
+                    target.status.splice(lastStatutIndex, 1);
+                    resultArray.push(`Enlève le statut "${statut.name}" de ${target.name}`);
+                } else {
+                    resultArray.push(`Aucun ${isEnemy ? 'bienfait' : 'malus'} à dissiper sur ${target.name}`);
                 }
                 break;
             } default: {
