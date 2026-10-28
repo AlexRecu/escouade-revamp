@@ -411,19 +411,26 @@ export class CombatSessionService {
     const { battle } = session;
     if (session.hasActed) throw new Error("Vous avez déjà agi ce tour.");
 
-    // Résout l'objet en **instance** depuis le sac de l'unité. Le front envoie
+    // Résout l'objet en **instance** depuis le **sac commun**. Le front envoie
     // `extra.item` comme objet sérialisé `{ id, name }` (pas une instance) :
     // on le retrouve par son id dans le sac pour que `useItem` (qui teste
     // `instanceof Consumable`) fonctionne. `targetId` est l'id de la **cible**,
-    // pas celui de l'objet.
+    // pas celui de l'objet. Les objets sont dans `party.bag` (les sacs
+    // individuels sont vidés par `migrateMemberBags`).
     if (action === "item") {
-      const unit = battle.combatState.units.find((u) => u.id === unitId);
       const itemId = extra.item?.id ?? targetId;
-      const item = unit?.bag.find((it) => it.id === itemId);
+      const item = session.exploration.party.bag.find((it) => it.id === itemId);
       if (item) extra.item = item;
     }
 
     battle.playerAct(unitId, action, targetId, extra);
+    // L'objet consommé est retiré du **sac commun** : `Character.consumeItem`
+    // opère sur le sac individuel (vide ici). Le front ne permet de cibler que
+    // des cibles valides → l'objet est bien consommé.
+    if (action === "item" && extra.item?.id) {
+      const idx = session.exploration.party.bag.findIndex((it) => it.id === extra.item.id);
+      if (idx !== -1) session.exploration.party.bag.splice(idx, 1);
+    }
     // Le tour a avancé (stepToPlayer) → on réinitialise les flags pour le
     // prochain héros (sinon il ne pourrait plus agir/déplacer).
     session.hasMoved = false;
@@ -635,18 +642,6 @@ export class CombatSessionService {
         const lastHero = lastDeath
           ? exploration.party.members.find((m) => m.id === lastDeath.heroId)
           : stillDead[stillDead.length - 1];
-        gameOver = {
-          mode: "easy",
-          heroName: lastDeath?.heroName ?? lastHero?.name ?? "",
-          heroJob: lastDeath?.heroJob ?? "",
-          killerName: lastDeath?.killerName ?? "",
-          lastTurnLog,
-          hubName,
-          // Coût **maximum** pour ranimer toute l'équipe au sanctuaire
-          // (tous les morts × 200), pas seulement les morts restants après
-          // la ranimation par l'or (sinon 0 si l'or a tout couvert).
-          reviveCost: dead.length * SANCTUARY_COST,
-        };
         if (stillDead.length > 0 && lastHero) {
           // Seul le dernier à mourir revient à 1 PV (les autres restent à
           // 0 PV, à ranimer au sanctuaire en ville).
@@ -655,6 +650,19 @@ export class CombatSessionService {
         } else {
           logs.push(`💀 Défaite… L'équipe est ramenée à ${hubName ?? "la dernière ville"}.`);
         }
+        // Coût **réel restant** au sanctuaire : les membres encore à 0 PV
+        // (après ranimation par l'or + dernier héros revenu à 1 PV) × 200.
+        // Les morts déjà ranimés par l'or (à moitié PV) ne coûtent plus rien.
+        const remainingDead = exploration.party.members.filter((m) => m.isDead()).length;
+        gameOver = {
+          mode: "easy",
+          heroName: lastDeath?.heroName ?? lastHero?.name ?? "",
+          heroJob: lastDeath?.heroJob ?? "",
+          killerName: lastDeath?.killerName ?? "",
+          lastTurnLog,
+          hubName,
+          reviveCost: remainingDead * SANCTUARY_COST,
+        };
       } else {
         // hard + stillDead vide : l'or a tout ranimé, pas de game over.
         logs.push("💀 Défaite… L'équipe est ramenée à la dernière ville.");
@@ -905,8 +913,10 @@ export class CombatSessionService {
         validTargets: this.skillTargets(unit, sk, allUnits),
       }));
 
-      // Objets : consommables (soin → allié/soi, outil → ennemi).
-      items = unit.bag
+      // Objets : consommables (soin → allié/soi, outil → ennemi). Les objets
+      // sont dans le **sac commun** (les sacs individuels sont vidés par
+      // `migrateMemberBags`) : on liste depuis `party.bag`, pas `unit.bag`.
+      items = session.exploration.party.bag
         .filter((it) => it.type === "consumable")
         .map((it) => ({
           id: it.id,

@@ -477,7 +477,9 @@ export class PartyRoomService {
   static async sell(roomId: string, itemId: string, playerId: string): Promise<{ logs: string[]; state: any }> {
     const { room, session } = await this.getHubState(roomId);
     const seller = session.party.members.find((m) => m.ownerId === playerId) ?? session.party.members[0];
-    const item = seller.bag.find((i) => i.id === itemId);
+    // L'objet est dans le **sac commun** (les sacs individuels sont vidés par
+    // `migrateMemberBags`) : on cherche dans `party.bag`, pas dans `seller.bag`.
+    const item = session.party.bag.find((i) => i.id === itemId);
     if (!item) return { logs: ["Objet introuvable dans le sac."], state: this.serializeRoom(room, session) };
     const logs = HubService.sellItem(session, seller, item);
     await this.persistRoom(roomId, session);
