@@ -150,21 +150,37 @@ describe("Phase D — Ancrage de la porte de sang dans le monde", () => {
     expect(se!.demonName).toBe("Zeromus, le Condamnateur");
   });
 
-  test("La porte de sang est distincte de la case de Bélias", async () => {
+  test("La porte de sang (Zeromus) est le seul démon ancré dans la Grotte", async () => {
     const world = await WorldLoader.generate(12345);
     const cave = world.nodes.find(
       (n): n is Dungeon => n instanceof Dungeon && n.biome === "Cave"
     )!;
     const zone = cave.levels[0];
 
+    // La Grotte ne contient que Zeromus (la porte de sang) — Bélias a été
+    // déplacé dans la Tour du serment, Hashmal dans la Vallée des cendres.
     const demons = zone.specialEncounters.map((se) => se.demonName);
-    expect(demons).toContain("Bélias, le Titan");
     expect(demons).toContain("Zeromus, le Condamnateur");
+    expect(demons).not.toContain("Bélias, le Titan");
+    expect(demons).not.toContain("Hashmal, le Grand Ordonnateur");
 
-    // La case de Zeromus est bloquée, celle de Bélias ne l'est pas.
+    // La case de Zeromus est bloquée (porte de sang).
     const zeromusPos = zone.specialEncounters.find((s) => s.demonName === "Zeromus, le Condamnateur")!.position;
-    const beliasPos = zone.specialEncounters.find((s) => s.demonName === "Bélias, le Titan")!.position;
     expect(zone.isBlocked(zeromusPos)).toBe(true);
-    expect(zone.isBlocked(beliasPos)).toBe(false);
+  });
+
+  test("Bélias est ancré dans la Tour du serment, Hashmal dans la Vallée des cendres", async () => {
+    const world = await WorldLoader.generate(12345);
+    const tower = world.nodes.find(
+      (n): n is Dungeon => n instanceof Dungeon && n.biome === "Tower"
+    )!;
+    const canyon = world.nodes.find(
+      (n): n is Dungeon => n instanceof Dungeon && n.biome === "Canyon"
+    )!;
+
+    const towerDemons = tower.levels[0].specialEncounters.map((se) => se.demonName);
+    const canyonDemons = canyon.levels[0].specialEncounters.map((se) => se.demonName);
+    expect(towerDemons).toContain("Bélias, le Titan");
+    expect(canyonDemons).toContain("Hashmal, le Grand Ordonnateur");
   });
 });

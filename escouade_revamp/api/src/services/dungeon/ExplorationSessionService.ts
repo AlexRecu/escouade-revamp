@@ -1,7 +1,7 @@
 import { Party } from "../../classes/Exploration/Party";
 import { QuestSystem } from "../../classes/Progression/QuestSystem";
 import { Dungeon } from "../../classes/World/Dungeon";
-import { Zone } from "../../classes/World/Zone";
+import { Zone, ZoneType } from "../../classes/World/Zone";
 import { Campfire } from "../../classes/Progression/Campfire";
 import { Position, Statistics } from "../../classes/Types";
 import { WorldService } from "../World/WorldService";
@@ -20,6 +20,25 @@ import { Weapon } from "../../classes/Items/Weapon";
 
 /** Direction de déplacement (4 directions, pas de diagonale). */
 export type Direction = "north" | "south" | "east" | "west";
+
+/**
+ * Démons de zone ancrés par biome (Phase B). Le flux live **régénère** les
+ * zones à chaque entrée (nouveau seed), il n'utilise pas les zones du
+ * `WorldMap` : l'ancrage est donc refait ici, à la construction de la session.
+ *
+ * Mapping (livret) :
+ *  - Adrammelech → Forêt des soupirs (Forest) — auto-présent si la quête
+ *    « kidnappeur » est acceptée.
+ *  - Bélias → Tour du serment (Tower).
+ *  - Hashmal → Vallée des cendres (Canyon).
+ *
+ * (Zeromus / porte de sang = Phase D, géré séparément.)
+ */
+const ZONE_DEMONS: { biome: ZoneType; demonName: string; requiresQuest?: string }[] = [
+  { biome: "Forest", demonName: "Adrammelech, le Grand Courroux", requiresQuest: "quest_kidnappeur" },
+  { biome: "Tower", demonName: "Bélias, le Titan" },
+  { biome: "Canyon", demonName: "Hashmal, le Grand Ordonnateur" },
+];
 
 /**
  * Backend de persistance d'une session de donjon.
@@ -154,6 +173,10 @@ export class ExplorationSessionService {
     }
     const dungeon = new Dungeon(node.id, node.name, level, node.biome, levels, finalSeed);
 
+    // Ancrage des démons de zone (Phase B) : le flux live régénère les zones,
+    // donc on re-cale le démon du biome sur une impasse du 1er étage.
+    this.anchorZoneDemons(levels[0]);
+
     // Position de départ : la tuile de départ du 1er étage. En mode
     // restauration, la position vient de la party (déjà à jour en base) → on
     // ne l'écrase pas.
@@ -171,7 +194,45 @@ export class ExplorationSessionService {
       completed: false,
       storage: { kind: "player", playerId: "" }, // rempli par l'appelant
       woodCampfires: [],
+      defeatedDemonsThisZone: [],
     };
+  }
+
+  /**
+   * Ancre le **démon de zone** du biome sur le 1er étage (Phase B).
+   *
+   * Le flux live régénère les zones à chaque entrée (nouveau seed), il n'utilise
+   * pas les zones du `WorldMap` : l'ancrage est donc refait ici. Le démon est
+   * placé sur une **impasse** (cul-de-sac) de préférence, sinon sur une case
+   * praticable (jamais le point de départ).
+   *
+   * @param zone le 1er étage du donjon (celui qui porte le démon).
+   */
+  private static anchorZoneDemons(zone: Zone): void {
+    const spec = ZONE_DEMONS.find((d) => d.biome === zone.biome);
+    if (!spec) return;
+
+    // Position : une impasse de préférence, sinon une case praticable qui
+    // n'est pas le point de départ.
+    const walkable: Position[] = [];
+    zone.tileMap.forEach((row, r) =>
+      row.forEach((walkableTile, c) => {
+        if (walkableTile) walkable.push({ row: r, col: c });
+      })
+    );
+    const startKey = `${zone.startTile.row},${zone.startTile.col}`;
+    const deadEnd = zone.deadEnds.find((p) => `${p.row},${p.col}` !== startKey);
+    const position =
+      deadEnd ??
+      walkable.find((p) => `${p.row},${p.col}` !== startKey);
+    if (!position) return;
+
+    zone.specialEncounters.push({
+      demonName: spec.demonName,
+      position,
+      deadEnd: !!deadEnd,
+      requiresQuest: spec.requiresQuest,
+    });
   }
 
   /**
@@ -205,6 +266,27 @@ export class ExplorationSessionService {
     // Persiste l'équipe + le snapshot (position, tuiles visitées) pour que
     // la reconnexion restaure la même position dans le donjon.
     await this.persistAll(session);
+
+    // **Rencontre spéciale (démon de zone)** : priorité sur la rencontre
+    // aléatoire. Si l'équipe marche sur la case d'un démon ancré (impasse),
+    // le combat se déclenche. Un démon conditionnel (`requiresQuest`) n'est
+    // actif que si la quête correspondante est acceptée (ex. Adrammelech si la
+    // quête « kidnappeur » l'est). Un démon déjà vaincu dans la session ne se
+    // re-détecte plus (le défi est optionnel).
+    const special = zone.getSpecialEncounterAt(to);
+    if (special && !session.defeatedDemonsThisZone.includes(special.demonName)) {
+      const questAccepted = special.requiresQuest
+        ? session.questSystem.getQuest(special.requiresQuest)?.accepted ?? false
+        : true;
+      if (questAccepted) {
+        const combatState = CombatSessionService.startDemonCombat(sessionKey, session, special.demonName);
+        return {
+          logs: [`Un démon se dresse sur votre route : ${special.demonName} !`],
+          state: this.serialize(session),
+          combat: combatState,
+        };
+      }
+    }
 
     // **Rencontre aléatoire** : à chaque pas, le moteur de rencontre décide si
     // un combat se déclenche (formule du livret : aléatoire < P, P par biome).
@@ -546,6 +628,9 @@ export class ExplorationSessionService {
       usedCampfires,
       // Feux de camp créés par l'objet « Bois » (hors grille régénérée).
       woodCampfires: session.woodCampfires ?? [],
+      // Démons de zone vaincus (Phase B) — pour ne pas re-détecter un défi
+      // déjà relevé après une reconnexion.
+      defeatedDemonsThisZone: session.defeatedDemonsThisZone ?? [],
     };
   }
 
@@ -565,6 +650,9 @@ export class ExplorationSessionService {
       session.difficulty = game.difficulty;
       session.currentFloor = snapshot.currentFloor ?? 0;
       session.completed = snapshot.completed ?? false;
+      // Démons de zone vaincus (Phase B) — restaurés pour ne pas re-détecter
+      // un défi déjà relevé.
+      session.defeatedDemonsThisZone = snapshot.defeatedDemonsThisZone ?? [];
       // Réapplique l'état des coffres ouverts et feux de camp utilisés.
       for (const oc of snapshot.openedChests ?? []) {
         const zone = session.dungeon.levels[oc.floor];
@@ -887,4 +975,11 @@ export interface DungeonSession {
    * le snapshot pour survivre à la reconnexion.
    */
   woodCampfires: { row: number; col: number; floor: number }[];
+  /**
+   * Démons de zone **déjà vaincus** dans cette session (Phase B). Un démon
+   * vaincu ne se re-détecte plus sur sa case (le défi est optionnel : on peut
+   * le rebattre en quittant et re-entrant dans la zone). Persisté dans le
+   * snapshot pour survivre à la reconnexion.
+   */
+  defeatedDemonsThisZone: string[];
 }

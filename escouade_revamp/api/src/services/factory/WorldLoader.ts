@@ -224,9 +224,11 @@ export class WorldLoader {
         }
 
         // 9. Démons ancrés en rencontres spéciales (Phase C2b).
+        //    Mapping (livret) : Adrammelech → Forêt des soupirs (Forest),
+        //    Bélias → Tour du serment (Tower), Hashmal → Vallée des cendres (Canyon).
         WorldLoader.anchorDemon(dungeons, "Forest", "Adrammelech, le Grand Courroux", "quest_kidnappeur");
-        WorldLoader.anchorDemon(dungeons, "Cave", "Bélias, le Titan");
-        WorldLoader.anchorDemon(dungeons, "Tower", "Hashmal, le Grand Ordonnateur");
+        WorldLoader.anchorDemon(dungeons, "Tower", "Bélias, le Titan");
+        WorldLoader.anchorDemon(dungeons, "Canyon", "Hashmal, le Grand Ordonnateur");
 
         // 10. Porte de sang (Phase D) : case bloquante dans la caverne + Zeromus.
         WorldLoader.anchorBloodDoor(dungeons, "Cave");

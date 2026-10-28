@@ -4,10 +4,13 @@ import { CombatState, GRID_SIZE } from "../../classes/Combat/CombatState";
 import { Unit } from "../../classes/UnitTypes/Unit";
 import { Character } from "../../classes/UnitTypes/Character";
 import { Monster } from "../../classes/UnitTypes/Monster";
+import { Demon } from "../../classes/UnitTypes/Demon";
 import { Encounter } from "../../classes/Exploration/Encounter";
 import { Party } from "../../classes/Exploration/Party";
 import { Position } from "../../classes/Types";
 import { LootEngine } from "../../classes/Progression/LootEngine";
+import { QuestService } from "../Progression/QuestService";
+import { BlackMage } from "../../classes/Jobs/BlackMage";
 import {
   ExplorationSessionService,
   DungeonSession,
@@ -269,6 +272,60 @@ export class CombatSessionService {
   }
 
   /**
+   * Démarre un **combat de démon de zone** (Phase B) : l'équipe en bas, le
+   * démon seul en haut. Même mécanique que `startCombat` (placement, tour par
+   * tour) mais l'ennemi est un `Demon` (pas de PV : il s'épuise en perdant de
+   * l'endurance, cf. `Demon.isDead`).
+   *
+   * @param demonName nom exact du démon (cf. `demons_data.json`).
+   * @returns l'état sérialisé du combat (en phase de placement).
+   */
+  static startDemonCombat(
+    sessionKey: string,
+    exploration: DungeonSession,
+    demonName: string
+  ): CombatStateView {
+    // On nettoie une éventuelle session précédente (montées reportées → stat
+    // par défaut, comme dans `startCombat`).
+    const prev = this.sessions.get(sessionKey);
+    if (prev?.pendingLevelUps?.length) {
+      prev.pendingLevelUps.forEach((p) => {
+        const c = exploration.party.members.find((m) => m.id === p.characterId);
+        if (c) LootEngine.applyPendingStat(c, "strength");
+      });
+    }
+    this.sessions.delete(sessionKey);
+
+    const units: Unit[] = [];
+
+    // Héros vivants en bas du plateau (lignes 6-7).
+    const aliveHeroes = exploration.party.getAliveMembers();
+    aliveHeroes.forEach((hero, i) => {
+      hero.position = { row: 6 + Math.floor(i / 4), col: i % 4 };
+      if (hero instanceof Character) hero.currentAp = hero.maxAp;
+      units.push(hero);
+    });
+
+    // Le démon seul, en haut du plateau (ligne 1, centré).
+    const demon = new Demon(demonName, "Enemy", { row: 1, col: 3 });
+    units.push(demon);
+
+    const battle = new BattleManager(units);
+
+    const session: CombatSession = {
+      battle,
+      sessionKey,
+      exploration,
+      hasMoved: false,
+      hasActed: false,
+      placementDone: false,
+    };
+    this.sessions.set(sessionKey, session);
+
+    return this.serialize(battle, session);
+  }
+
+  /**
    * Repositionne un héros pendant la phase de placement (lignes 6-7 uniquement,
    * case libre).
    * @returns l'état sérialisé du combat.
@@ -446,33 +503,69 @@ export class CombatSessionService {
       // Butin : gold + XP partagés entre les survivants. Le choix de la stat
       // de montée de niveau est **reporté** (deferStats) : le front affiche un
       // écran de choix après le combat, puis `submitStatChoices` applique.
+      // Un combat de **démon** n'a pas de butin or/XP (le « butin » est le
+      // pacte, géré plus bas) : on ne distribue que s'il y a des monstres.
       const survivors = battle.combatState.aliveHeroes.filter(
         (u) => u instanceof Character
       ) as Character[];
       const defeated = battle.combatState.enemies.filter(
         (u) => u instanceof Monster && u.isDead()
       ) as Monster[];
-      const loot = LootEngine.distributeLoot(survivors, defeated, () => "strength", "easy", true);
-      logs.push(...loot.logs);
       logs.push("🏆 Victoire !");
-      // L'or gagné est d'abord sur les personnages : on le migre dans le pot
-      // commun pour que l'interface (qui affiche `party.gold`) soit à jour
-      // immédiatement, sans attendre la sortie du donjon.
-      exploration.party.consolidateGold();
-      // Marque les monstres comme vus (bestiaire).
-      defeated.forEach((m) => exploration.party.markMonsterSeen(m.name));
-      // Montées reportées (stat = null) → à choisir par le joueur.
-      const pending = loot.levelUps.filter((lu) => lu.stat === null);
-      if (pending.length > 0) {
-        pendingLevelUps = pending.map((lu) => ({
-          characterId: lu.character.id,
-          name: lu.character.name,
-          level: lu.character.characterLevel,
-        }));
-        // On **conserve** la session : `submitStatChoices` appliquera les
-        // stats choisies. (Le front a un délai de sécurité : sans réponse,
-        // les stats sont appliquées par défaut.)
-        session.pendingLevelUps = pendingLevelUps;
+      if (defeated.length > 0) {
+        const loot = LootEngine.distributeLoot(survivors, defeated, () => "strength", "easy", true);
+        logs.push(...loot.logs);
+        // L'or gagné est d'abord sur les personnages : on le migre dans le pot
+        // commun pour que l'interface (qui affiche `party.gold`) soit à jour
+        // immédiatement, sans attendre la sortie du donjon.
+        exploration.party.consolidateGold();
+        // Marque les monstres comme vus (bestiaire).
+        defeated.forEach((m) => exploration.party.markMonsterSeen(m.name));
+        // Montées reportées (stat = null) → à choisir par le joueur.
+        const pending = loot.levelUps.filter((lu) => lu.stat === null);
+        if (pending.length > 0) {
+          pendingLevelUps = pending.map((lu) => ({
+            characterId: lu.character.id,
+            name: lu.character.name,
+            level: lu.character.characterLevel,
+          }));
+          // On **conserve** la session : `submitStatChoices` appliquera les
+          // stats choisies. (Le front a un délai de sécurité : sans réponse,
+          // les stats sont appliquées par défaut.)
+          session.pendingLevelUps = pendingLevelUps;
+        }
+      }
+
+      // **Démon de zone vaincu** (Phase B) : le « butin » d'un démon n'est pas
+      // de l'or/XP mais son **pacte**. On marque le démon vaincu (il ne se
+      // re-détecte plus dans la session), on signale la quête (`defeat`), et
+      // un Démoniste avec un slot libre récupère le pacte (`recruit`).
+      const defeatedDemons = battle.combatState.enemies.filter(
+        (u) => u instanceof Demon && u.isDead()
+      ) as Demon[];
+      for (const demon of defeatedDemons) {
+        if (!exploration.defeatedDemonsThisZone.includes(demon.name)) {
+          exploration.defeatedDemonsThisZone.push(demon.name);
+        }
+        logs.push(`${demon.name} est vaincu !`);
+        // Quêtes : le démon est vaincu (étapes `defeat` — ex. quête 2 : Adrammelech).
+        QuestService.onDefeat(exploration.questSystem, demon.name);
+        // Récupération du pacte : un Démoniste avec un slot libre.
+        const demonist = exploration.party.members.find(
+          (c) => c.job instanceof BlackMage && c.job.name === "Démoniste"
+        ) as Character | undefined;
+        if (demonist) {
+          const bm = demonist.job as BlackMage;
+          if (bm.canRecruit()) {
+            logs.push(...bm.recruitDemon(demon.name));
+            // Quêtes : signale le recrutement du démon (étapes `recruit`).
+            QuestService.onRecruit(exploration.questSystem, demon.name);
+          } else {
+            logs.push(`Aucun pacte libre : le pacte de ${demon.name} est perdu.`);
+          }
+        } else {
+          logs.push(`Aucun Démoniste dans l'équipe : le pacte de ${demon.name} est perdu.`);
+        }
       }
     } else if (result === "defeat") {
       // **Défaite (wipe)** : toute l'équipe est KO. Logique à 3 paliers :

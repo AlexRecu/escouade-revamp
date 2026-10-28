@@ -65,12 +65,12 @@ describe("Chaîne de quêtes — jouable de bout en bout (anti-blocage)", () => 
     expect(lake).toBeDefined();
     expect(lake!.levels[0].fishingTiles.length).toBeGreaterThan(0);
 
-    // Adrammelech : Forêt, conditionnel à la quête 2.
+    // Adrammelech : Forêt des soupirs, conditionnel à la quête 2.
     expect(anchoredDemon(world, "Forest")).toBe("Adrammelech, le Grand Courroux");
-    // Bélias : Grotte (toujours).
-    expect(anchoredDemon(world, "Cave")).toBe("Bélias, le Titan");
-    // Hashmal : Tour (toujours).
-    expect(anchoredDemon(world, "Tower")).toBe("Hashmal, le Grand Ordonnateur");
+    // Bélias : Tour du serment (toujours).
+    expect(anchoredDemon(world, "Tower")).toBe("Bélias, le Titan");
+    // Hashmal : Vallée des cendres (toujours).
+    expect(anchoredDemon(world, "Canyon")).toBe("Hashmal, le Grand Ordonnateur");
   });
 
   test("Adrammelech est conditionnel : rencontre inactive sans la quête 2", () => {
