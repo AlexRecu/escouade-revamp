@@ -367,7 +367,11 @@ export type CombatItem = {
 /** Ensemble des actions disponibles pour l'unité courante. */
 export type CombatActions = {
   canMove: boolean;
+  /** Budget de déplacement restant (cases) — le héros peut tout faire d'un
+   *  coup (Chebyshev ≤ moveRange) ou le splitter. */
   moveRange: number;
+  /** Le héros peut-il encore agir ce tour ? (false après une action.) */
+  canAct: boolean;
   attack: ActionTargetView;
   spells: CombatSpell[];
   skills: CombatSkill[];

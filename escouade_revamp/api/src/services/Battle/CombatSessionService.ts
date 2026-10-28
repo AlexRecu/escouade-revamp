@@ -107,7 +107,11 @@ export interface ItemView {
 /** Ensemble des actions disponibles pour l'unité courante. */
 export interface ActionsView {
   canMove: boolean;
+  /** Budget de déplacement **restant** ce tour (cases). Le héros peut faire
+   *  tout ce déplacement d'un coup (Chebyshev ≤ moveRange) ou le splitter. */
   moveRange: number;
+  /** Le héros peut-il encore agir ce tour ? (false après une action.) */
+  canAct: boolean;
   attack: ActionTargetView;
   spells: SpellView[];
   skills: SkillView[];
@@ -381,9 +385,10 @@ export class CombatSessionService {
   }
 
   /**
-   * Déplace le héros courant d'**une case** (Chebyshev). Le héros peut se
-   * déplacer plusieurs fois (budget = portée de déplacement : 1 par défaut,
-   * 2 pour le Voleur), **avant ET/OU après** son action.
+   * Déplace le héros courant de **jusqu'à `moveBudget` cases** (Chebyshev). Le
+   * héros peut faire tout son déplacement d'un coup (ex. le Voleur : 2 cases)
+   * ou le **splitter** en plusieurs déplacements (1 avant + 1 après l'action).
+   * Le budget est décrémenté de la distance parcourue.
    * @returns l'état sérialisé du combat.
    */
   static move(sessionKey: string, unitId: string, position: Position): CombatStateView {
@@ -396,18 +401,22 @@ export class CombatSessionService {
     if (session.moveBudget <= 0) {
       throw new Error("Vous avez déjà utilisé tout votre déplacement ce tour.");
     }
-    // Une case à la fois (Chebyshev) : le budget autorise plusieurs déplacements.
+    // Distance de Chebyshev (la diagonale compte pour 1 case) : on autorise
+    // jusqu'au budget restant d'un coup, ou moins (split).
     const dist = Math.max(
       Math.abs(position.row - unit.position.row),
       Math.abs(position.col - unit.position.col)
     );
-    if (dist !== 1) throw new Error("Vous ne pouvez vous déplacer que d'une case à la fois.");
+    if (dist < 1) throw new Error("Vous ne pouvez pas vous déplacer sur votre case.");
+    if (dist > session.moveBudget) {
+      throw new Error(`Trop loin : il vous reste ${session.moveBudget} case(s) de déplacement ce tour.`);
+    }
 
     const msg = battle.playerMove(unitId, position);
     if (msg.includes("occupée") || msg.includes("hors du plateau") || msg.includes("KO")) {
       throw new Error(msg);
     }
-    session.moveBudget--;
+    session.moveBudget -= dist;
     // Fin de tour auto si le héros a agi ET épuisé son déplacement.
     this.maybeAutoEndTurn(session);
     return this.serialize(battle, session);
@@ -998,7 +1007,11 @@ export class CombatSessionService {
       // Déplacement autorisé tant que le budget de cases n'est pas épuisé
       // (peu importe si le héros a déjà agi : on peut bouger après l'action).
       canMove: session.moveBudget > 0 && session.moveBudgetFor === unit.id,
-      moveRange: unit.getMovementRange(),
+      // Budget de déplacement **restant** : le front affiche les cases à
+      // Chebyshev ≤ moveRange (le héros peut tout faire d'un coup ou splitter).
+      moveRange: session.moveBudgetFor === unit.id ? session.moveBudget : 0,
+      // Le héros peut-il encore agir ce tour ? (1 action par tour.)
+      canAct: !session.hasActed,
       attack: { validTargets: attackTargets },
       spells,
       skills,

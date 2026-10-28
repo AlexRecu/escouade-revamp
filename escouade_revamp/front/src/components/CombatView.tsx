@@ -167,16 +167,21 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
     return '•';
   };
 
-  // Cases de déplacement valides (adjacentes à l'unité courante, libres).
+  // Cases de déplacement valides : toutes les cases à **Chebyshev ≤ moveRange**
+  // (budget de déplacement restant), libres. Le héros peut donc faire tout son
+  // déplacement d'un coup (ex. Voleur : 2 cases) ou le splitter (1 case à la
+  // fois) — le backend valide la distance et décrémente le budget.
   const moveTargets = useMemo(() => {
     if (!currentUnit || !actions?.canMove) return new Set<string>();
+    const range = actions.moveRange;
+    if (range <= 0) return new Set<string>();
     const s = new Set<string>();
     // Les morts comptent comme occupés (le backend bloque le déplacement sur
     // une case occupée, même par un héros KO) — sinon la case d'un mort serait
     // surlignée en vert et cliquable.
     const occupied = new Set(units.filter((u) => !u.isReplaced).map((u) => `${u.position.row},${u.position.col}`));
-    for (let dr = -1; dr <= 1; dr++) {
-      for (let dc = -1; dc <= 1; dc++) {
+    for (let dr = -range; dr <= range; dr++) {
+      for (let dc = -range; dc <= range; dc++) {
         if (dr === 0 && dc === 0) continue;
         const r = currentUnit.position.row + dr;
         const c = currentUnit.position.col + dc;
@@ -580,28 +585,28 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
                   </button>
                   <button
                     className={`action-cat ${pendingAction?.action === 'attack' ? 'active' : ''}`}
-                    disabled={actions.attack.validTargets.length === 0}
+                    disabled={!actions.canAct || actions.attack.validTargets.length === 0}
                     onClick={() => { setSubmenu('none'); launchAction('attack', undefined, undefined, actions.attack.validTargets); }}
                   >
                     ⚔️ Attaquer
                   </button>
                   <button
                     className={`action-cat ${submenu === 'items' ? 'active' : ''}`}
-                    disabled={actions.items.length === 0}
+                    disabled={!actions.canAct || actions.items.length === 0}
                     onClick={() => toggleSubmenu('items')}
                   >
                     🎒 Objets
                   </button>
                   <button
                     className={`action-cat ${submenu === 'skills' ? 'active' : ''}`}
-                    disabled={actions.skills.length === 0}
+                    disabled={!actions.canAct || actions.skills.length === 0}
                     onClick={() => toggleSubmenu('skills')}
                   >
                     {isSamurai ? '🌀 Combo' : '✨ Compétences'}
                   </button>
                   <button
                     className={`action-cat ${submenu === 'spells' ? 'active' : ''}`}
-                    disabled={actions.spells.length === 0}
+                    disabled={!actions.canAct || actions.spells.length === 0}
                     onClick={() => toggleSubmenu('spells')}
                   >
                     🔮 Sorts
