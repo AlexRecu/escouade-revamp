@@ -621,6 +621,27 @@ export class BattleManager {
     }
 
     /**
+     * Exécute l'action du héros **sans terminer son tour** (fin de tour
+     * manuelle). Le joueur peut encore se déplacer (budget de cases) puis
+     * cliquer « Fin de tour » (`playerEndTurn`). La fin de combat (victoire /
+     * défaite) est quand même détectée : `performAction` appelle `checkEnd`.
+     *
+     * @returns le log de l'action.
+     */
+    playerActNoEnd(
+        unitId: string,
+        action: "attack" | "spell" | "skill" | "item" | "combo",
+        targetId: string | null,
+        extra: { spell?: { name: string }; skill?: { name: string }; item?: any; combo?: string[] } = {}
+    ): string[] {
+        const unit = this.state.units.find((u) => u.id === unitId);
+        if (!unit) return ["Unité introuvable."];
+        const target = targetId ? this.state.units.find((u) => u.id === targetId) : null;
+        const targets = target ? [target] : [];
+        return this.performAction(unit, action, targets, extra);
+    }
+
+    /**
      * Termine le tour du héros **sans agir** (ex. déplacement uniquement), puis
      * avance le combat vers le prochain héros.
      */

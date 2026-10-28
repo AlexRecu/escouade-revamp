@@ -621,11 +621,15 @@ export class Character extends Unit {
 
     /**
      * Déplacement en combat. Règle de base : 1 case/tour.
+     * Voleur : 2 cases (se rapproche / se dérobe autour de l'ennemi).
      * Pied véloce (Moine évolué en Maître) : déplacement multiplié par la Dextérité.
      */
     getMovementRange(): number {
         if (this.job.specialAbility.startsWith("Pied véloce")) {
             return Math.max(1, this.stats.dexterity);
+        }
+        if (this.job instanceof Thief) {
+            return 2;
         }
         return 1;
     }

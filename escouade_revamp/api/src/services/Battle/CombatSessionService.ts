@@ -162,10 +162,22 @@ interface CombatSession {
   battle: BattleManager;
   sessionKey: string;
   exploration: DungeonSession;
-  /** Le héros courant a-t-il déjà bougé ce tour ? */
-  hasMoved: boolean;
-  /** Le héros courant a-t-il déjà agi ce tour ? */
+  /**
+   * **Budget de déplacement** restant ce tour (nombre de cases). Le héros peut
+   * se déplacer de 1 case par clic, avant ET/OU après son action, tant que le
+   * budget n'est pas épuisé. Réinitialisé à `getMovementRange()` à chaque tour
+   * de héros (1 par défaut, 2 pour le Voleur, Dextérité pour le Moine Maître).
+   */
+  moveBudget: number;
+  /** Id de l'unité à qui `moveBudget` s'applique (pour réinitialiser au changement de tour). */
+  moveBudgetFor?: string;
+  /** Le héros courant a-t-il déjà agi ce tour ? (1 action par tour.) */
   hasActed: boolean;
+  /**
+   * Clé du tour courant (`turn:actionIndex`) pour détecter un **nouveau tour**
+   * et réinitialiser le budget de déplacement / le flag d'action du héros.
+   */
+  turnKey?: string;
   /** Phase de placement initial : tant que false, le joueur peut repositionner
    *  ses héros sur les 2 lignes du bas avant le début du combat. */
   placementDone: boolean;
@@ -262,7 +274,7 @@ export class CombatSessionService {
       battle,
       sessionKey,
       exploration,
-      hasMoved: false,
+      moveBudget: 0,
       hasActed: false,
       placementDone: false,
     };
@@ -316,7 +328,7 @@ export class CombatSessionService {
       battle,
       sessionKey,
       exploration,
-      hasMoved: false,
+      moveBudget: 0,
       hasActed: false,
       placementDone: false,
     };
@@ -363,41 +375,49 @@ export class CombatSessionService {
     // On avance jusqu'au premier acteur « interactif » (héros → tour joueur,
     // ennemi → le front le pilotera via `aiStep`, un tour à la fois).
     session.battle.advanceAfterPlayerTurn();
+    // Réinitialise le budget de déplacement / le flag d'action du héros courant.
+    this.syncTurnState(session);
     return this.serialize(session.battle, session);
   }
 
   /**
-   * Déplace le héros courant d'une case (une fois par tour).
+   * Déplace le héros courant d'**une case** (Chebyshev). Le héros peut se
+   * déplacer plusieurs fois (budget = portée de déplacement : 1 par défaut,
+   * 2 pour le Voleur), **avant ET/OU après** son action.
    * @returns l'état sérialisé du combat.
    */
   static move(sessionKey: string, unitId: string, position: Position): CombatStateView {
     const session = this.requireStarted(sessionKey);
+    this.syncTurnState(session);
     const { battle } = session;
     const unit = battle.combatState.units.find((u) => u.id === unitId);
     if (!unit || unit.type !== "Hero") throw new Error("Unité invalide.");
-    if (session.hasMoved || session.hasActed) {
-      throw new Error("Vous avez déjà agi ce tour.");
+    if (session.moveBudgetFor !== unit.id) throw new Error("Ce n'est pas le tour de ce héros.");
+    if (session.moveBudget <= 0) {
+      throw new Error("Vous avez déjà utilisé tout votre déplacement ce tour.");
     }
-    // Distance max = portée de déplacement (1 case par défaut).
-    // Distance de Chebyshev (le déplacement en diagonale compte pour 1 case,
-    // comme le montre le front).
-    const range = unit.getMovementRange();
+    // Une case à la fois (Chebyshev) : le budget autorise plusieurs déplacements.
     const dist = Math.max(
       Math.abs(position.row - unit.position.row),
       Math.abs(position.col - unit.position.col)
     );
-    if (dist > range) throw new Error("Trop loin : vous ne pouvez vous déplacer que d'une case.");
+    if (dist !== 1) throw new Error("Vous ne pouvez vous déplacer que d'une case à la fois.");
 
     const msg = battle.playerMove(unitId, position);
     if (msg.includes("occupée") || msg.includes("hors du plateau") || msg.includes("KO")) {
       throw new Error(msg);
     }
-    session.hasMoved = true;
+    session.moveBudget--;
+    // Fin de tour auto si le héros a agi ET épuisé son déplacement.
+    this.maybeAutoEndTurn(session);
     return this.serialize(battle, session);
   }
 
   /**
-   * Exécute l'action du héros courant, termine son tour, puis avance le combat.
+   * Exécute l'action du héros courant **sans terminer son tour** (fin de tour
+   * manuelle). Le héros peut encore se déplacer (budget de cases) puis cliquer
+   * « Fin de tour ». Le tour se termine automatiquement seulement s'il a agi
+   * ET épuisé son déplacement.
    * @returns l'état sérialisé du combat.
    */
   static act(
@@ -408,6 +428,7 @@ export class CombatSessionService {
     extra: { spell?: { name: string }; skill?: { name: string }; item?: any; combo?: string[] } = {}
   ): CombatStateView {
     const session = this.requireStarted(sessionKey);
+    this.syncTurnState(session);
     const { battle } = session;
     if (session.hasActed) throw new Error("Vous avez déjà agi ce tour.");
 
@@ -423,7 +444,11 @@ export class CombatSessionService {
       if (item) extra.item = item;
     }
 
-    battle.playerAct(unitId, action, targetId, extra);
+    // **Fin de tour manuelle** : l'action ne termine plus le tour (le héros
+    // peut encore se déplacer). La fin de combat est quand même détectée
+    // (`performAction` appelle `checkEnd`).
+    battle.playerActNoEnd(unitId, action, targetId, extra);
+    session.hasActed = true;
     // L'objet consommé est retiré du **sac commun** : `Character.consumeItem`
     // opère sur le sac individuel (vide ici). Le front ne permet de cibler que
     // des cibles valides → l'objet est bien consommé.
@@ -431,26 +456,23 @@ export class CombatSessionService {
       const idx = session.exploration.party.bag.findIndex((it) => it.id === extra.item.id);
       if (idx !== -1) session.exploration.party.bag.splice(idx, 1);
     }
-    // Le tour a avancé (stepToPlayer) → on réinitialise les flags pour le
-    // prochain héros (sinon il ne pourrait plus agir/déplacer).
-    session.hasMoved = false;
-    session.hasActed = false;
+    // Fin de tour auto si le héros a agi ET épuisé son déplacement.
+    this.maybeAutoEndTurn(session);
     return this.serialize(battle, session);
   }
 
   /**
-   * Termine le tour du héros courant sans agir (déplacement uniquement).
+   * Termine le tour du héros courant (fin de tour manuelle), puis avance le
+   * combat vers le prochain acteur.
    * @returns l'état sérialisé du combat.
    */
   static endTurn(sessionKey: string, unitId: string): CombatStateView {
     const session = this.requireStarted(sessionKey);
+    this.syncTurnState(session);
     const { battle } = session;
-    if (session.hasActed) throw new Error("Vous avez déjà agi ce tour.");
     battle.playerEndTurn(unitId);
-    // Le tour a avancé (stepToPlayer) → on réinitialise les flags pour le
-    // prochain héros (sinon il ne pourrait plus agir/déplacer).
-    session.hasMoved = false;
-    session.hasActed = false;
+    // Le tour a avancé → réinitialise l'état du prochain héros (s'il y en a un).
+    this.syncTurnState(session);
     return this.serialize(battle, session);
   }
 
@@ -467,6 +489,9 @@ export class CombatSessionService {
     const session = this.requireStarted(sessionKey);
     const { battle } = session;
     battle.stepOneAiTurn();
+    // Un tour de héros peut avoir démarré → réinitialise son budget de
+    // déplacement / son flag d'action.
+    this.syncTurnState(session);
     return this.serialize(battle, session);
   }
 
@@ -785,6 +810,49 @@ export class CombatSessionService {
     return session;
   }
 
+  /**
+   * Synchronise l'état de tour du héros courant (fin de tour manuelle).
+   *
+   * À chaque **nouveau tour** de héros (détection via la clé `turn:actionIndex`),
+   * on réinitialise le **budget de déplacement** (portée de déplacement : 1 par
+   * défaut, 2 pour le Voleur, Dextérité pour le Moine Maître) et le flag
+   * d'action. Le joueur peut alors se déplacer (1 case par clic) avant ET/OU
+   * après son action, et termine son tour manuellement (« Fin de tour »).
+   *
+   * Appelé en début de chaque opération de combat (move / act / endTurn /
+   * aiStep / confirmPlacement) pour que l'état soit à jour.
+   */
+  private static syncTurnState(session: CombatSession): void {
+    const state = session.battle.combatState;
+    const actor = state.currentActor;
+    if (!actor || actor.type !== "Hero") return;
+    const key = `${state.turn}:${state.actionIndex}`;
+    if (session.turnKey !== key) {
+      session.turnKey = key;
+      session.moveBudgetFor = actor.id;
+      session.moveBudget = actor.getMovementRange();
+      session.hasActed = false;
+    }
+  }
+
+  /**
+   * **Fin de tour automatique** : si le héros a agi ET épuisé tout son budget
+   * de déplacement, on termine son tour (avance le combat). Sinon, le joueur
+   * doit cliquer « Fin de tour » (fin de tour manuelle).
+   */
+  private static maybeAutoEndTurn(session: CombatSession): void {
+    const state = session.battle.combatState;
+    if (state.isOver) return;
+    const actor = state.currentActor;
+    if (!actor || actor.type !== "Hero") return;
+    if (session.hasActed && session.moveBudget <= 0) {
+      session.battle.playerEndTurn(actor.id);
+      // Le tour a avancé → réinitialise l'état du prochain héros (budget de
+      // déplacement + flag d'action) pour que `canMove` soit juste.
+      this.syncTurnState(session);
+    }
+  }
+
   /** Sérialise l'état du combat pour le front. */
   private static serialize(battle: BattleManager, session: CombatSession): CombatStateView {
     const state: CombatState = battle.combatState;
@@ -927,7 +995,9 @@ export class CombatSessionService {
     }
 
     return {
-      canMove: !session.hasMoved && !session.hasActed,
+      // Déplacement autorisé tant que le budget de cases n'est pas épuisé
+      // (peu importe si le héros a déjà agi : on peut bouger après l'action).
+      canMove: session.moveBudget > 0 && session.moveBudgetFor === unit.id,
       moveRange: unit.getMovementRange(),
       attack: { validTargets: attackTargets },
       spells,
