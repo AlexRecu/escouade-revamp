@@ -385,6 +385,10 @@ export type CombatSkill = {
   move: number;
   description: string;
   validTargets: string[];
+  /** Compétence inutilisable (ex. "Apprendre" sans slot d'apprentissage). */
+  disabled?: boolean;
+  /** Raison de la grisaille, affichée en tooltip. */
+  disabledReason?: string;
 };
 
 /** Objet utilisable par l'unité courante. */

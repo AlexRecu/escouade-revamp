@@ -652,18 +652,21 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
                       {actions.skills.map((sk) => {
                         const notEnoughAp = currentUnit.currentAp! < sk.apCost;
                         const noTarget = sk.validTargets.length === 0;
-                        // Explication de la grisaille : AP insuffisante OU hors
-                        // de portée (aucune cible à portée). Affichée en tooltip.
-                        const disabledReason = notEnoughAp
-                          ? `AP insuffisante (${sk.apCost} requis, ${currentUnit.currentAp} dispo)`
-                          : noTarget
-                            ? 'Hors de portée — rapprochez-vous de la cible'
-                            : null;
+                        // Explication de la grisaille : AP insuffisante, hors
+                        // de portée, ou compétence intrinsèquement désactivée
+                        // (ex. "Apprendre" sans slot). Affichée en tooltip.
+                        const disabledReason = sk.disabled
+                          ? sk.disabledReason ?? 'Indisponible'
+                          : notEnoughAp
+                            ? `AP insuffisante (${sk.apCost} requis, ${currentUnit.currentAp} dispo)`
+                            : noTarget
+                              ? 'Hors de portée — rapprochez-vous de la cible'
+                              : null;
                         return (
                           <button
                             key={sk.name}
                             className={`submenu-item ${pendingAction?.name === sk.name ? 'active' : ''}`}
-                            disabled={notEnoughAp || noTarget}
+                            disabled={sk.disabled || notEnoughAp || noTarget}
                             title={disabledReason ? `${sk.description}\n⚠️ ${disabledReason}` : sk.description}
                             onClick={() => launchAction('skill', sk.name, { skill: { name: sk.name } }, sk.validTargets)}
                           >

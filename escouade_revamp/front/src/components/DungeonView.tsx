@@ -88,7 +88,10 @@ export default function DungeonView({ exploration, logs, onMove, onRest, onUseWo
         <div className="dungeon-grid-wrap">
           <div
             className="dungeon-grid"
-            style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
+            style={{
+              gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+              gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
+            }}
           >
             {Array.from({ length: rows }).map((_, r) =>
               Array.from({ length: cols }).map((_, c) => {

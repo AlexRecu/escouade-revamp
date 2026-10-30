@@ -12,6 +12,7 @@ import { Position } from "../../classes/Types";
 import { LootEngine } from "../../classes/Progression/LootEngine";
 import { QuestService } from "../Progression/QuestService";
 import { BlackMage } from "../../classes/Jobs/BlackMage";
+import { BlueMage } from "../../classes/Jobs/BlueMage";
 import {
   ExplorationSessionService,
   DungeonSession,
@@ -100,6 +101,10 @@ export interface SkillView {
   move: number;
   description: string;
   validTargets: string[];
+  /** Compétence inutilisable (ex. "Apprendre" sans slot d'apprentissage). */
+  disabled?: boolean;
+  /** Raison de la grisaille, affichée en tooltip. */
+  disabledReason?: string;
 }
 
 /** Objet utilisable par l'unité courante. */
@@ -1211,16 +1216,30 @@ export class CombatSessionService {
       }));
 
       // Compétences : portée selon le range du skill.
-      skills = unit.getAvailableAbilities().map((sk) => ({
-        name: sk.name,
-        apCost: sk.apCost,
-        target: sk.target,
-        type: sk.type,
-        range: sk.range,
-        move: sk.move ?? 0,
-        description: sk.description,
-        validTargets: this.skillTargets(unit, sk, allUnits),
-      }));
+      skills = unit.getAvailableAbilities().map((sk) => {
+        // "Apprendre" (Mage bleu) est grisé quand plus aucun slot n'est libre.
+        let disabled: boolean | undefined;
+        let disabledReason: string | undefined;
+        if (sk.name === "Apprendre" && unit.job instanceof BlueMage) {
+          const bm = unit.job as BlueMage;
+          if (bm.learnedCount >= bm.learnSlots) {
+            disabled = true;
+            disabledReason = `Plus de slot d'apprentissage (${bm.learnedCount}/${bm.learnSlots})`;
+          }
+        }
+        return {
+          name: sk.name,
+          apCost: sk.apCost,
+          target: sk.target,
+          type: sk.type,
+          range: sk.range,
+          move: sk.move ?? 0,
+          description: sk.description,
+          validTargets: this.skillTargets(unit, sk, allUnits),
+          disabled,
+          disabledReason,
+        };
+      });
 
       // Objets : consommables (soin → allié/soi, outil → ennemi). Les objets
       // sont dans le **sac commun** (les sacs individuels sont vidés par
