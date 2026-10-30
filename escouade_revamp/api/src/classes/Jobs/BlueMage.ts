@@ -6,6 +6,7 @@ import { Eon } from "../UnitTypes/Eon";
 import spellData from '../../config/spells_data.json'; // Charger le fichier JSON
 import skillData from '../../config/blueMage_skills_data.json'; // Charger le fichier JSON
 import eonData from '../../config/eons_data.json'; // Charger le fichier JSON
+import bestiary from '../../config/bestiary_data.json'; // Charger le fichier JSON
 import { Monstronomicon } from "../Items/Monstronomicon";
 import { IdGenerator } from "../../utils/IdGeneratorUtils";
 import { Unit } from "../UnitTypes/Unit";
@@ -106,7 +107,7 @@ export class BlueMage extends Job {
             resultArray.push("Déjà étudié !");
         } else {
             if (this.monstronomicon.isScannable(target)) {
-                this.monstronomicon.addUnit(target);
+                this.monstronomicon.addEntry(target.name);
                 if (target instanceof Monster) resultArray.push(`${target.name} a bien été ajoutée au monstronomicon`);
                 if (target instanceof Character) resultArray.push(`La classe "${target.job.name}" a bien été ajoutée au monstronomicon`);
             }
@@ -137,6 +138,7 @@ export class BlueMage extends Job {
             if (newSpell) {
                 // Si on trouve un sort correspondant, on l'ajoute tel quel
                 this.spells.push({ level: this.jobLevel, spell: newSpell.name });
+                this.monstronomicon.markLearned(target.name, learnedSkill);
                 return `${this.name} a appris le sort ${newSpell.name} !`;
             }
 
@@ -145,6 +147,7 @@ export class BlueMage extends Job {
             if (newSkill) {
                 // Si on trouve un skill correspondant, on l'ajoute tel quel
                 this.skills.push({ level: this.jobLevel, skill: newSkill });
+                this.monstronomicon.markLearned(target.name, learnedSkill);
                 return `${this.name} a appris une nouvelle compétence : ${newSkill.name} !`;
             }
             // Si on ne l'a pas trouvé avant c'est parce que c'est un skill de classe
@@ -154,6 +157,7 @@ export class BlueMage extends Job {
                 // Si on trouve un recordLevelSkill {level,skill} correspondant, on l'ajoute tel quel
                 if (recordLevelSkill) {
                     this.skills.push(recordLevelSkill);
+                    this.monstronomicon.markLearned(target.name, learnedSkill);
                     return `${this.name} a appris une compétence de classe : "${recordLevelSkill.skill.name}" !`;
                 }
             }
@@ -177,6 +181,47 @@ export class BlueMage extends Job {
             }
         }
         return `${this.name} ne peut pas oublier "Scan" ou "Apprentissage"`;
+    }
+
+    /**
+     * Données du Monstronomicon pour l'affichage (fiche consultable).
+     *
+     * Pour chaque monstre/classe **étudié**, dérive les détails du bestiaire
+     * (rang, PV par zone, attaques, type) par le nom. Les classes étudiées
+     * (pas dans le bestiaire) n'ont que le nom + l'état d'apprentissage.
+     */
+    getMonstronomiconData(): {
+        name: string;
+        isLearned: boolean;
+        learnedAttack?: string;
+        isMonster: boolean;
+        rank?: number;
+        attackType?: "Physique" | "Magique";
+        pvByZone?: number[];
+        attacks?: string[];
+    }[] {
+        return this.monstronomicon.entries.map((e) => {
+            const b = (bestiary as any[]).find((m) => m.name === e.name);
+            if (b) {
+                return {
+                    name: e.name,
+                    isLearned: e.isLearned,
+                    learnedAttack: e.learnedAttack,
+                    isMonster: true,
+                    rank: b.rank,
+                    attackType: b.type === "Magique" ? "Magique" : "Physique",
+                    pvByZone: b.pv,
+                    attacks: b.attack ?? [],
+                };
+            }
+            // Classe étudiée (pas dans le bestiaire).
+            return {
+                name: e.name,
+                isLearned: e.isLearned,
+                learnedAttack: e.learnedAttack,
+                isMonster: false,
+            };
+        });
     }
 
     get trancePoints(): number | undefined{

@@ -2696,6 +2696,125 @@ button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
+/* Tag « non vendable » des objets spéciaux (pièce marquée, objets de quête). */
+.char-detail-special-tag {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-style: italic;
+  white-space: nowrap;
+}
+/* ── Fiche du Monstronomicon ───────────────────────────────────────────── */
+.mono-view {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.15);
+}
+.mono-view-title {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--text);
+}
+.mono-view-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mono-entry {
+  display: flex;
+  gap: 10px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+}
+.mono-entry-token {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  flex-shrink: 0;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.25);
+}
+.mono-entry-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.mono-entry-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.mono-entry-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+}
+.mono-entry-meta {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.mono-entry-learned {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 600;
+}
+.mono-entry-pv-label,
+.mono-entry-attacks > .mono-entry-pv-label {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  margin-bottom: 3px;
+}
+.mono-entry-pv-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+}
+.mono-entry-pv-cell {
+  font-size: 11px;
+  text-align: center;
+  padding: 2px 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+}
+.mono-entry-pv-cell em {
+  display: block;
+  font-size: 9px;
+  font-style: normal;
+  color: var(--text-dim);
+}
+.mono-entry-attack-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.mono-entry-attack {
+  font-size: 11px;
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+}
+.mono-entry-attack-learned {
+  margin-left: 4px;
+  font-size: 9px;
+  font-style: normal;
+  color: var(--accent);
+  font-weight: 600;
+}
 /* Ligne de sort (nom + méta + bouton Lancer pour les sorts de soin). */
 .char-detail-spell-row {
   display: flex;

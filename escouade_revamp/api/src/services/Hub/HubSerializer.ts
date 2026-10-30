@@ -4,6 +4,7 @@ import { Character } from "../../classes/UnitTypes/Character";
 import { Item } from "../../classes/Items/Item";
 import { Quest } from "../../classes/Progression/QuestSystem";
 import { BlackMage } from "../../classes/Jobs/BlackMage";
+import { BlueMage } from "../../classes/Jobs/BlueMage";
 import { ItemFactory } from "../factory/ItemFactory";
 import { LootEngine } from "../../classes/Progression/LootEngine";
 
@@ -105,6 +106,15 @@ export class HubSerializer {
     return (member.job.specialAbility ?? "").startsWith("Double Armement");
   }
 
+  /**
+   * Données du Monstronomicon pour le front (fiche consultable). `null` si le
+   * membre n'est pas un Mage bleu (seul le Sage bleu peut l'ouvrir).
+   */
+  static monstronomiconData(member: Character): any[] | null {
+    if (member.job instanceof BlueMage) return member.job.getMonstronomiconData();
+    return null;
+  }
+
   /** Sérialise une quête pour le front. */
   static serializeQuest(q: Quest): any {
     return {
@@ -195,6 +205,8 @@ export class HubSerializer {
           equippableWeapons: m.job.weapons,
           // Peut-il tenir une arme en main gauche (passif Double Armement) ?
           canDualWield: this.canDualWield(m),
+          // Monstronomicon (Mage bleu) : monstres/classes étudiés (fiche).
+          monstronomicon: this.monstronomiconData(m),
           // Statistiques détaillées (pour le panneau de détail du personnage).
           stats: m.stats,
           // Compétences de classe débloquées (selon le niveau de classe).

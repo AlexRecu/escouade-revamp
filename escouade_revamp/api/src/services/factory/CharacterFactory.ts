@@ -4,6 +4,7 @@ import { Consumable } from "../../classes/Items/Consumable";
 import { Tools } from "../../classes/Items/Tools";
 import { Job } from "../../classes/Jobs/Job";
 import { BlackMage } from "../../classes/Jobs/BlackMage";
+import { BlueMage } from "../../classes/Jobs/BlueMage";
 import { Status } from "../../classes/Status";
 import { Position } from "../../classes/Types";
 import { Character } from "../../classes/UnitTypes/Character";
@@ -36,6 +37,14 @@ export class CharacterFactory {
     }
     if (Array.isArray(data.classe?.spells)) {
       job.spells = data.classe.spells.map((s: any) => ({ level: s.level, spell: s.spell }));
+    }
+    // Restaure les monstres/classes **étudiés** (Mage bleu).
+    if (job instanceof BlueMage && Array.isArray(data.classe?.monstronomiconEntries)) {
+      job.monstronomicon.entries = data.classe.monstronomiconEntries.map((e: any) => ({
+        name: e.name,
+        isLearned: !!e.isLearned,
+        learnedAttack: e.learnedAttack,
+      }));
     }
     const position: Position = data.position ?? { row: 0, col: 0 };
 
@@ -124,6 +133,10 @@ export class CharacterFactory {
           skill: { ...s.skill, status: (s.skill.status ?? []).map((st) => this.serializeStatus(st)) },
         })),
         spells: char.job.spells.map((s) => ({ level: s.level, spell: s.spell })),
+        // Monstres/classes **étudiés** (Mage bleu) : sérialisés pour survivre
+        // à la persistance (même pattern que les sorts appris).
+        monstronomiconEntries:
+          char.job instanceof BlueMage ? char.job.monstronomicon.entries : undefined,
       },
       rightHand: char.rightHandWeapon ? this.serializeWeapon(char.rightHandWeapon) : null,
       leftHand: char.leftHandWeapon ? this.serializeWeapon(char.leftHandWeapon) : null,

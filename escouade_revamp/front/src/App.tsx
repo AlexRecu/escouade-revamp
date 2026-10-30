@@ -98,6 +98,7 @@ function App() {
       rightHand: exp?.rightHand ?? base.rightHand,
       leftHand: exp?.leftHand ?? base.leftHand,
       bag: exp?.bag ?? base.bag,
+      monstronomicon: exp?.monstronomicon ?? base.monstronomicon,
     };
   }, [selectedMemberId, state, exploration, combat]);
 

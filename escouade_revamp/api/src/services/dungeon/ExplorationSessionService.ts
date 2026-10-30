@@ -921,6 +921,8 @@ export class ExplorationSessionService {
           avatar: m.avatar ?? null,
           equippableWeapons: m.job.weapons,
           canDualWield: HubSerializer.canDualWield(m),
+          // Monstronomicon (Mage bleu) : monstres/classes étudiés (fiche).
+          monstronomicon: HubSerializer.monstronomiconData(m),
           stats: m.stats,
           skills: m.getAvailableAbilities().map((s) => ({
             name: s.name,

@@ -268,6 +268,9 @@ function ShopPanel({ state, actions, onClose }: { state: GameState; actions: Gam
     const groups = new Map<string, { item: BagItem; count: number }>();
     for (const it of sharedBag) {
       if (equippedIds.has(it.id)) continue;
+      // Les objets spéciaux (Monstronomicon, pièce marquée) et de quête ne
+      // sont **pas revendables** : on ne les liste pas dans le sac à revendre.
+      if (it.type === 'special' || it.type === 'quest') continue;
       const g = groups.get(it.name);
       if (g) g.count += 1;
       else groups.set(it.name, { item: it, count: 1 });

@@ -24,6 +24,23 @@ export type BagItem = {
   status?: string | null;
 };
 
+/**
+ * Une entrée du Monstronomicon (monstre/classe étudié par le Mage bleu).
+ * Les détails (PV par zone, rang, attaques) sont dérivés du bestiaire côté
+ * serveur ; `isMonster=false` pour une classe étudiée (pas de bestiaire).
+ */
+export type MonstronomiconEntry = {
+  name: string;
+  isLearned: boolean;
+  learnedAttack?: string;
+  isMonster: boolean;
+  rank?: number;
+  attackType?: 'Physique' | 'Magique';
+  /** PV par zone (6 valeurs, zone 1 → 6). */
+  pvByZone?: number[];
+  attacks?: string[];
+};
+
 /** Arme équipée (main droite ou gauche). */
 export type EquippedWeapon = {
   id: string;
@@ -61,6 +78,8 @@ export type PartyMember = {
   equippableWeapons: string[];
   /** Peut-il tenir une arme en main gauche (passif Double Armement) ? */
   canDualWield: boolean;
+  /** Monstronomicon (Mage bleu) : monstres/classes étudiés. `null` sinon. */
+  monstronomicon?: MonstronomiconEntry[] | null;
   /** Statistiques détaillées (7 stats) — pour le panneau de détail. */
   stats?: Statistics;
   /** Compétences de classe débloquées — pour le panneau de détail. */
@@ -243,6 +262,8 @@ export type DungeonMember = {
   avatar?: string | null;
   equippableWeapons?: string[];
   canDualWield?: boolean;
+  /** Monstronomicon (Mage bleu) : monstres/classes étudiés. `null` sinon. */
+  monstronomicon?: MonstronomiconEntry[] | null;
   stats?: Statistics;
   skills?: { name: string; apCost: number; mpCost: number; target: string; type: string; range: number; description: string }[];
   spells?: { name: string; mpCost: number | null; hpCost: number | null; target: string; element: string; description: string }[];

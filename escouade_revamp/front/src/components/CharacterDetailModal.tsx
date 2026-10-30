@@ -3,6 +3,7 @@ import type { PartyMember, Statistics, BagItem } from '../types/game';
 import type { GameActions } from '../game/useGame';
 import { classTokenUrl, tokenUrl, defeatedTokenStyle } from '../utils/tokens';
 import { weaponEmoji, weaponLabel, weaponStatLabel, weaponRangeLabel } from '../utils/weapons';
+import MonstronomiconView from './MonstronomiconView';
 
 type Props = {
   /** Membre à afficher (null = modal fermé). */
@@ -53,11 +54,13 @@ const isOutOfCombatHeal = (s: { name: string; target: string }): boolean =>
  * Ouvert en cliquant sur un membre de l'équipe dans la barre latérale.
  */
 export default function CharacterDetailModal({ member, sharedBag, onClose, actions, inCombat, members }: Props) {
-  // Onglet actif du sac : consommables ou armes.
-  const [bagTab, setBagTab] = useState<'consumable' | 'weapon'>('consumable');
+  // Onglet actif du sac : consommables, armes ou spéciaux.
+  const [bagTab, setBagTab] = useState<'consumable' | 'weapon' | 'special'>('consumable');
   // Sort de soin en cours de ciblage (nom du sort, null = aucun). Quand non
   // null, on affiche la liste des alliés à cibler.
   const [healSpell, setHealSpell] = useState<string | null>(null);
+  // Monstronomicon ouvert (fiche consultable) : true = afficher la fiche.
+  const [monoOpen, setMonoOpen] = useState(false);
 
   // Consommables du **sac commun** groupés par nom (les doublons identiques
   // sont empilés ×N). On garde un id représentatif pour l'usage.
@@ -79,6 +82,13 @@ export default function CharacterDetailModal({ member, sharedBag, onClose, actio
     const equippedIds = new Set([member.rightHand?.id, member.leftHand?.id].filter(Boolean));
     return sharedBag.filter((i) => i.type === 'weapon' && !equippedIds.has(i.id));
   }, [sharedBag, member]);
+
+  // Objets **spéciaux** du sac commun (type "special" ou "quest") : objets de
+  // quête, Monstronomicon, pièce marquée… Non vendables, non consommables.
+  const specialItems = useMemo(
+    () => sharedBag.filter((i) => i.type === 'special' || i.type === 'quest'),
+    [sharedBag]
+  );
 
   if (!member) return null;
 
@@ -335,6 +345,12 @@ export default function CharacterDetailModal({ member, sharedBag, onClose, actio
               >
                 Armes
               </button>
+              <button
+                className={bagTab === 'special' ? 'char-detail-bag-tab active' : 'char-detail-bag-tab'}
+                onClick={() => setBagTab('special')}
+              >
+                Spéciaux
+              </button>
             </div>
 
             {bagTab === 'consumable' ? (
@@ -360,7 +376,8 @@ export default function CharacterDetailModal({ member, sharedBag, onClose, actio
               ) : (
                 <p className="char-detail-empty">Aucun consommable.</p>
               )
-            ) : bagWeapons.length > 0 ? (
+            ) : bagTab === 'weapon' ? (
+              bagWeapons.length > 0 ? (
               <ul className="char-detail-list">
                 {bagWeapons.map((item) => {
                   const canRight = member.equippableWeapons?.includes(item.weaponType ?? '');
@@ -413,8 +430,46 @@ export default function CharacterDetailModal({ member, sharedBag, onClose, actio
                   );
                 })}
               </ul>
+              ) : (
+                <p className="char-detail-empty">Aucune arme dans le sac.</p>
+              )
             ) : (
-              <p className="char-detail-empty">Aucune arme dans le sac.</p>
+              /* Onglet Spéciaux : objets de quête, Monstronomicon, pièce marquée. */
+              specialItems.length > 0 ? (
+                <ul className="char-detail-list">
+                  {specialItems.map((item) => {
+                    const isMono = item.name === 'Monstronomicon';
+                    const canOpen = isMono && !!member.monstronomicon;
+                    return (
+                      <li key={item.id} className="char-detail-bag-item" title={item.description}>
+                        <span className="char-detail-item-name">
+                          {isMono ? '📖 ' : '🔑 '}
+                          {item.name}
+                        </span>
+                        {isMono ? (
+                          <button
+                            className="char-detail-bag-btn"
+                            onClick={() => setMonoOpen((o) => !o)}
+                            disabled={!canOpen}
+                            title={canOpen ? (monoOpen ? 'Fermer' : 'Ouvrir le Monstronomicon') : 'Réservé au Mage bleu'}
+                          >
+                            {monoOpen ? 'Fermer' : 'Ouvrir'}
+                          </button>
+                        ) : (
+                          <span className="char-detail-special-tag">non vendable</span>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <p className="char-detail-empty">Aucun objet spécial.</p>
+              )
+            )}
+
+            {/* Fiche du Monstronomicon (Monstres étudiés). */}
+            {bagTab === 'special' && monoOpen && member.monstronomicon && (
+              <MonstronomiconView entries={member.monstronomicon} />
             )}
           </section>
         </div>

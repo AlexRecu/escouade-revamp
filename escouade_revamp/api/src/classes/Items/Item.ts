@@ -1,13 +1,13 @@
 export class  Item {
     id: string;
     name: string;
-    type: 'weapon' | 'consumable' | 'quest';
+    type: 'weapon' | 'consumable' | 'quest' | 'special';
     description: string;
     purchasePrice: number;
     resaleBase: number;
     zoneThreshold: number;
 
-    constructor(id: string, name: string, type: 'weapon' | 'consumable' | 'quest', effect: string, purchasePrice: number, zoneThreshold: number){
+    constructor(id: string, name: string, type: 'weapon' | 'consumable' | 'quest' | 'special', effect: string, purchasePrice: number, zoneThreshold: number){
         this.id=id;
         this.name=name;
         this.type=type;

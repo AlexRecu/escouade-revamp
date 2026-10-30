@@ -1033,7 +1033,7 @@
     },
     {
         "name": "Monstronomicon",
-        "type": "Consommable",
+        "type": "Special",
         "effect": "Une encyclopédie compilant l'ensemble des créatures du royaume, on y trouve leur forces et faiblesses seuls les plus grands Sages bleus peuvent l'utiliser pleinement",
         "purchasePrice": 0,
         "resaleBase": 0,
@@ -1041,7 +1041,7 @@
     },
     {
         "name": "Pièce marquée",
-        "type": "Consommable",
+        "type": "Special",
         "effect": "Pièce portée par les voleurs, elle est marquée d'un étrange symbole. Ne peut être utilisée comme monnaie, elle ne semble avoir aucune utilité.",
         "purchasePrice": 0,
         "resaleBase": 0,

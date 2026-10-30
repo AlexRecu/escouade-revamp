@@ -42,15 +42,15 @@ describe("Blue Mage Class Tests", () => {
         const monstronomiconIndex: number = blueMage.bag.findIndex(item => item.name === "Monstronomicon")
         expect(monstronomiconIndex).toBeGreaterThanOrEqual(0);
         let monstronomicon: Monstronomicon = blueMage.bag[monstronomiconIndex] as Monstronomicon;
-        expect(monstronomicon.units).toStrictEqual([]);
+        expect(monstronomicon.entries).toStrictEqual([]);
 
         let log = blueMage.useAbilityByName("Scan", [highRankEnemy]);
         expect(log).toContain(highRankEnemy.name + " est trop puissant pour être étudié");
-        expect(monstronomicon.units).toStrictEqual([]);
+        expect(monstronomicon.entries).toStrictEqual([]);
 
         log = blueMage.useAbilityByName("Scan", [enemy]);
         expect(log).toContain(`${enemy.name} a bien été ajoutée au monstronomicon`);
-        expect(monstronomicon.units).toStrictEqual([enemy]);
+        expect(monstronomicon.entries).toStrictEqual([{ name: enemy.name, isLearned: false }]);
     });
 
     test("Apprendre marche uniquement si le monstre est dans le monstronomicon", () => {
@@ -96,5 +96,44 @@ describe("Blue Mage Class Tests", () => {
         expect(abilities[1].name).toBe("Apprendre");
         const spells = blueMage.getAvailableSpells();
         expect(spells.length).toBe(1);
+    });
+
+    test("getMonstronomiconData dérive les détails du bestiaire", () => {
+        blueMage.useAbilityByName("Scan", [enemy]); // Frelon (rank 1, Physique)
+        const data = (blueMage.job as BlueMage).getMonstronomiconData();
+        expect(data).toHaveLength(1);
+        expect(data[0].name).toBe("Frelon");
+        expect(data[0].isMonster).toBe(true);
+        expect(data[0].rank).toBe(1);
+        expect(data[0].attackType).toBe("Physique");
+        expect(data[0].pvByZone).toHaveLength(6);
+        expect(data[0].attacks).toContain("Dard empoisonné");
+        expect(data[0].isLearned).toBe(false);
+    });
+
+    test("markLearned marque l'attaque apprise", () => {
+        blueMage.useAbilityByName("Scan", [enemy]);
+        const mono = (blueMage.job as BlueMage).monstronomicon;
+        mono.markLearned(enemy.name, "Dard empoisonné");
+        const data = (blueMage.job as BlueMage).getMonstronomiconData();
+        expect(data[0].isLearned).toBe(true);
+        expect(data[0].learnedAttack).toBe("Dard empoisonné");
+    });
+
+    test("Les entries du Monstronomicon survivent au round-trip de sérialisation", () => {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const { CharacterFactory } = require("../../src/services/factory/CharacterFactory");
+        blueMage.useAbilityByName("Scan", [enemy]);
+        (blueMage.job as BlueMage).monstronomicon.markLearned(enemy.name, "Dard empoisonné");
+
+        const serialized = CharacterFactory.toSerialized(blueMage);
+        expect(serialized.classe.monstronomiconEntries).toHaveLength(1);
+
+        const restored = CharacterFactory.fromSerialized(serialized);
+        const restoredMono = (restored.job as BlueMage).monstronomicon;
+        expect(restoredMono.entries).toHaveLength(1);
+        expect(restoredMono.entries[0].name).toBe("Frelon");
+        expect(restoredMono.entries[0].isLearned).toBe(true);
+        expect(restoredMono.entries[0].learnedAttack).toBe("Dard empoisonné");
     });
 });
