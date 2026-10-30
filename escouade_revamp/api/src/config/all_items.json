@@ -930,9 +930,9 @@
     {
         "name": "Bois",
         "type": "Consommable",
-        "effect": "Utilisable à n'importe quel moment en mode aventure, ce pouvoir termine le tour complet de l'équipe en restaurant les points de vie, les points d'action (AP) et la mana, sans toutefois ranimer les alliés morts.",
-        "purchasePrice": 0,
-        "resaleBase": 0,
+        "effect": "Utilisable à n'importe quel moment en mode aventure, ce pouvoir termine le tour complet de l'équipe en restaurant les points de vie, et la mana, sans toutefois ranimer les alliés morts.",
+        "purchasePrice": 10,
+        "resaleBase": 1,
         "zoneThreshold": 0
     },
     {
