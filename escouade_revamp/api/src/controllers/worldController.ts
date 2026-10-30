@@ -11,10 +11,17 @@ import statusesData from '../config/statuses_data.json';
  * pour afficher la mappemonde et les villes avant même la connexion.
  */
 
-/** GET /world — résume le monde (hubs, donjons, connexions). */
-export const getWorld = async (_req: Request, res: Response): Promise<void> => {
+/**
+ * GET /world — résume le monde (hubs, donjons, connexions).
+ *
+ * `?seed=<n>` : topologie du monde de la partie (chaque partie a sa propre
+ * seed). Sans seed → monde par défaut (seed fixe).
+ */
+export const getWorld = async (req: Request, res: Response): Promise<void> => {
   try {
-    const world = await WorldService.getWorldSummary();
+    const seedRaw = req.query.seed;
+    const seed = typeof seedRaw === "string" && seedRaw !== "" ? Number(seedRaw) : undefined;
+    const world = await WorldService.getWorldSummary(Number.isFinite(seed) ? seed : undefined);
     res.status(200).json(world);
   } catch (error) {
     res.status(500).json({ message: "Une erreur s'est produite lors du chargement du monde." });

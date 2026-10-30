@@ -172,6 +172,8 @@ export type RoomInfo = {
   maxPlayers: number;
   /** Difficulté de la partie (easy/hard). */
   difficulty?: 'easy' | 'hard';
+  /** Seed du monde de la partie (topologie de mappemonde). `null` = monde par défaut. */
+  worldSeed?: number | null;
   members: RoomMember[];
 };
 

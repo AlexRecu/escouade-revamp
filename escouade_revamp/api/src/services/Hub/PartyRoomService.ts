@@ -14,7 +14,7 @@ import { HubSerializer } from "./HubSerializer";
 import { WorldService } from "../World/WorldService";
 import { JobFactory } from "../factory/JobFactory";
 import { IdGenerator } from "../../utils/IdGeneratorUtils";
-import { getSpawnRatesForZoneType } from "../../utils/RandomUtils";
+import { getSpawnRatesForZoneType, randomSeed } from "../../utils/RandomUtils";
 
 /**
  * Service de **partie partagée** (mode multi-joueurs temps réel).
@@ -67,6 +67,10 @@ export class PartyRoomService {
     maxPlayers = 4,
     difficulty: "easy" | "hard" = "easy"
   ): Promise<PartyRoomDocument> {
+    // **Seed du monde** : chaque partie a sa propre topologie de mappemonde.
+    // Le hub de départ ("Auberge du matin") a un id déterministe (présent dans
+    // tous les mondes), donc `createEmptyGame` (monde par défaut) reste valide.
+    const worldSeed = randomSeed();
     // Équipe **vide** : chaque joueur crée son propre personnage (voir
     // `createCharacter`). L'équipe se constitue au fil des créations.
     const game = await PartyService.createEmptyGame();
@@ -85,6 +89,7 @@ export class PartyRoomService {
       currentHubId: game.currentHubId,
       currentNodeId: game.currentNodeId,
       difficulty,
+      worldSeed,
       isPublic,
       maxPlayers,
       savedAt: new Date(),
@@ -339,13 +344,15 @@ export class PartyRoomService {
   static async getHubState(roomId: string): Promise<{ room: PartyRoomDocument; session: HubState }> {
     const room = await this.model.findOne({ roomId });
     if (!room) throw new Error("Partie introuvable.");
+    // Seed du monde de la partie (null = monde par défaut, parties legacy).
+    const seed = room.worldSeed ?? undefined;
     // La position (`currentNodeId`) peut être un **hub** (en ville) OU un
     // **donjon** (l'équipe est à la sortie d'une zone, sur la mappemonde). On
     // ne la ramène au hub courant que si l'id est invalide (ex. id legacy
     // d'un ancien monde, redémarrage).
     let currentNodeId = room.currentNodeId || room.currentHubId;
-    const isHub = !!(await WorldService.getHubById(currentNodeId));
-    const isDungeon = !!(await WorldService.getDungeonById(currentNodeId));
+    const isHub = !!(await WorldService.getHubById(currentNodeId, seed));
+    const isDungeon = !!(await WorldService.getDungeonById(currentNodeId, seed));
     if (!isHub && !isDungeon) {
       currentNodeId = room.currentHubId;
       room.currentNodeId = currentNodeId;
@@ -356,10 +363,10 @@ export class PartyRoomService {
     // n'ont pas de liste de villes visitées. On considère que toutes les villes
     // sont connues (la partie a été jouée sous l'ancien code).
     if (room.party?.visitedHubs === undefined) {
-      const world = await WorldService.getWorld();
+      const world = await WorldService.getWorld(seed);
       for (const n of world.nodes) if (n instanceof Hub) party.markHubVisited(n.id);
     }
-    const hub = await WorldService.getHubById(room.currentHubId);
+    const hub = await WorldService.getHubById(room.currentHubId, seed);
     if (!hub) throw new Error(`Hub introuvable : ${room.currentHubId}`);
     return { room, session: new HubState(hub, party, questSystem, currentNodeId) };
   }
@@ -436,6 +443,8 @@ export class PartyRoomService {
     currentHubId: string;
     currentNodeId: string;
     difficulty: "easy" | "hard";
+    /** Seed du monde de la partie (null = monde par défaut, parties legacy). */
+    worldSeed?: number;
   }> {
     const room = await this.model.findOne({ roomId });
     if (!room) throw new Error("Partie introuvable.");
@@ -449,10 +458,10 @@ export class PartyRoomService {
     // n'ont pas de liste de villes visitées. On considère que toutes les villes
     // sont connues (la partie a été jouée sous l'ancien code).
     if (room.party?.visitedHubs === undefined) {
-      const world = await WorldService.getWorld();
+      const world = await WorldService.getWorld(room.worldSeed ?? undefined);
       for (const n of world.nodes) if (n instanceof Hub) party.markHubVisited(n.id);
     }
-    return { party, questSystem, currentHubId, currentNodeId, difficulty: (room.difficulty ?? "easy") as "easy" | "hard" };
+    return { party, questSystem, currentHubId, currentNodeId, difficulty: (room.difficulty ?? "easy") as "easy" | "hard", worldSeed: room.worldSeed ?? undefined };
   }
 
   /**
@@ -622,7 +631,8 @@ export class PartyRoomService {
 
   static async changeHub(roomId: string, hubId: string): Promise<any> {
     const { room, session } = await this.getHubState(roomId);
-    const hub = await WorldService.getHubById(hubId);
+    const seed = room.worldSeed ?? undefined;
+    const hub = await WorldService.getHubById(hubId, seed);
     if (!hub) throw new Error(`Hub introuvable : ${hubId}`);
     // **Blocage des déplacements** : on ne peut « entrer » que dans une ville
     // où l'équipe peut légitimement se trouver :
@@ -631,7 +641,7 @@ export class PartyRoomService {
     //    d'une zone de transition : l'équipe choisit l'une des 2 villes).
     const onDungeon = session.currentNodeId !== session.hub.id;
     const adjacentToPosition = onDungeon
-      ? await WorldService.isAdjacent(session.currentNodeId, hub.id)
+      ? await WorldService.isAdjacent(session.currentNodeId, hub.id, seed)
       : false;
     if (hub.id !== session.hub.id && !adjacentToPosition) {
       throw new Error("Vous ne pouvez pas vous téléporter : traversez une zone ou voyagez en caravane.");
@@ -653,10 +663,11 @@ export class PartyRoomService {
    */
   static async takeCaravan(roomId: string, destHubId: string): Promise<{ logs: string[]; state: any }> {
     const { room, session } = await this.getHubState(roomId);
+    const seed = room.worldSeed ?? undefined;
     // La destination doit être une ville existante, différente du hub courant.
     // (Le brouillard de guerre — ne voyager que vers des villes révélées — est
     // géré par le front, qui n'affiche que les destinations connues.)
-    const dest = await WorldService.getHubById(destHubId);
+    const dest = await WorldService.getHubById(destHubId, seed);
     if (!dest || dest.id === session.hub.id) {
       throw new Error("Cette ville n'est pas accessible en caravane depuis ici.");
     }
@@ -679,7 +690,7 @@ export class PartyRoomService {
   static async completeZone(roomId: string, zoneId: string): Promise<any> {
     const { room, session } = await this.getHubState(roomId);
     session.party.completeZone(zoneId);
-    const world = await WorldService.getWorld();
+    const world = await WorldService.getWorld(room.worldSeed ?? undefined);
     const dungeon = world.nodes.find((n) => n.id === zoneId);
     if (dungeon instanceof Dungeon) {
       for (const s of getSpawnRatesForZoneType(dungeon.biome)) {
@@ -721,6 +732,9 @@ export class PartyRoomService {
       isPublic: room.isPublic,
       maxPlayers: room.maxPlayers,
       difficulty: room.difficulty ?? "easy",
+      // Seed du monde de la partie (le front charge la mappemonde avec cette
+      // seed). null = monde par défaut (parties legacy).
+      worldSeed: room.worldSeed ?? null,
       members: room.members.map((m) => ({
         playerId: m.playerId.toString(),
         username: m.username,

@@ -117,14 +117,15 @@ export class ExplorationSessionService {
     // (re-entrée immédiate depuis la sortie) OU adjacente à la position
     // (hub en ville, ou donjon à la sortie d'une zone). Pas de téléportation
     // d'un bout à l'autre de la carte.
-    if (game.currentNodeId !== dungeonId && !(await WorldService.isAdjacent(game.currentNodeId, dungeonId))) {
+    if (game.currentNodeId !== dungeonId && !(await WorldService.isAdjacent(game.currentNodeId, dungeonId, game.worldSeed))) {
       throw new Error("Cette zone n'est pas accessible depuis votre position actuelle.");
     }
-    const session = await this.buildSession(game.party, game.questSystem, dungeonId);
+    const session = await this.buildSession(game.party, game.questSystem, dungeonId, undefined, game.worldSeed);
     session.storage = { kind: "room", roomId };
     session.hubId = game.currentHubId;
     session.currentNodeId = dungeonId; // la position de l'équipe devient la zone
     session.difficulty = game.difficulty;
+    session.worldSeed = game.worldSeed;
     this.sessions.set(roomId, session);
     // Persiste la position (nœud = la zone) + le snapshot du donjon (seed,
     // étage, position) pour que la reconnexion restaure le donjon en cours.
@@ -141,9 +142,10 @@ export class ExplorationSessionService {
     party: Party,
     questSystem: QuestSystem,
     dungeonId: string,
-    seed?: number
+    seed?: number,
+    worldSeed?: number
   ): Promise<DungeonSession> {
-    const world = await WorldService.getWorld();
+    const world = await WorldService.getWorld(worldSeed);
     const node = world.nodes.find((n) => n.id === dungeonId);
     if (!(node instanceof Dungeon)) throw new Error(`Donjon introuvable : ${dungeonId}`);
 
@@ -388,7 +390,7 @@ export class ExplorationSessionService {
     session: DungeonSession
   ): Promise<{ nodeId: string; log: string | null }> {
     const fromHubId = session.hubId ?? "";
-    const beyond = await WorldService.getHubBeyondDungeon(session.dungeon.id, fromHubId);
+    const beyond = await WorldService.getHubBeyondDungeon(session.dungeon.id, fromHubId, session.worldSeed);
     // L'équipe reste sur le donjon (le cercle blanc de la mappemonde la suit).
     session.currentNodeId = session.dungeon.id;
     if (beyond) {
@@ -654,11 +656,12 @@ export class ExplorationSessionService {
   private static async restoreFromSnapshot(roomId: string, snapshot: any): Promise<DungeonSession | null> {
     try {
       const game = await PartyRoomService.loadParty(roomId);
-      const session = await this.buildSession(game.party, game.questSystem, snapshot.dungeonId, snapshot.seed);
+      const session = await this.buildSession(game.party, game.questSystem, snapshot.dungeonId, snapshot.seed, game.worldSeed);
       session.storage = { kind: "room", roomId };
       session.hubId = game.currentHubId;
       session.currentNodeId = snapshot.dungeonId;
       session.difficulty = game.difficulty;
+      session.worldSeed = game.worldSeed;
       session.currentFloor = snapshot.currentFloor ?? 0;
       session.completed = snapshot.completed ?? false;
       // Démons de zone vaincus (Phase B) — restaurés pour ne pas re-détecter
@@ -982,6 +985,12 @@ export interface DungeonSession {
   currentNodeId?: string;
   /** Difficulté de la partie (easy/hard) — pour la gestion de la défaite. */
   difficulty?: "easy" | "hard";
+  /**
+   * Seed du **monde** de la partie (topologie de mappemonde). Propagée aux
+   * appels `WorldService` (adjacence, hub au-delà d'un donjon) pour que la
+   * sortie de zone suive le monde de la partie. `undefined` = monde par défaut.
+   */
+  worldSeed?: number;
   /**
    * Feux de camp **créés par l'objet « Bois »** (position + étage). Ils ne
    * font pas partie de la grille régénérée (seed) → persistés séparément dans

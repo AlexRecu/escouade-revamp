@@ -14,8 +14,13 @@ async function get<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-/** Récupère le monde (mappemonde : hubs, donjons, connexions). */
-export const fetchWorld = (): Promise<WorldSummary> => get<WorldSummary>('/world');
+/**
+ * Récupère le monde (mappemonde : hubs, donjons, connexions).
+ * @param seed seed du monde de la partie (topologie propre à la partie).
+ *   `null`/absent = monde par défaut (seed fixe).
+ */
+export const fetchWorld = (seed?: number | null): Promise<WorldSummary> =>
+  get<WorldSummary>(seed != null ? `/world?seed=${seed}` : '/world');
 
 /** Récupère le détail d'une ville (layout, services). */
 export const fetchHub = (hubId: string): Promise<Hub> => get<Hub>(`/world/hub/${hubId}`);

@@ -62,6 +62,13 @@ export interface PartyRoomDocument extends Document {
    */
   difficulty: "easy" | "hard";
   /**
+   * **Seed du monde** de la partie : chaque partie a sa propre topologie de
+   * mappemonde (générée depuis cette seed). `null`/absent = monde par défaut
+   * (seed fixe, parties legacy). Les ids de nœuds sont déterministes, donc
+   * `completedZones`/`visitedHubs`/`currentNodeId` restent valides.
+   */
+  worldSeed?: number;
+  /**
    * **Session d'exploration persistée** (donjon en cours). Snapshot de l'état
    * du donjon (seed, étage, position, tuiles visitées, coffres ouverts, feux
    * de camp utilisés) pour survivre à une reconnexion / redémarrage. `null`
@@ -107,6 +114,9 @@ const PartyRoomSchema = new Schema<PartyRoomDocument>(
     currentNodeId: { type: String, default: '' },
     // Difficulté de la partie (easy/hard) — choisie à la création.
     difficulty: { type: String, default: 'easy' },
+    // Seed du monde de la partie (topologie de mappemonde propre à la partie).
+    // null/absent = monde par défaut (parties legacy).
+    worldSeed: { type: Number, default: null },
     // Session d'exploration persistée (donjon en cours) — null si hors donjon.
     exploration: { type: Schema.Types.Mixed, default: null },
     // Session de combat persistée (combat en cours) — null si aucun combat.

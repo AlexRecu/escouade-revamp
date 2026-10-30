@@ -85,7 +85,7 @@ export const initializeSocket = (io: Server) => {
         // le front `onState` remet `exploration` à null, donc l'état du donjon
         // doit arriver après pour que le front bascule bien sur la vue donjon.
         socket.emit('hub:state', { state: PartyRoomService.serializeRoom(room, session) });
-        const isDungeon = !!(await WorldService.getDungeonById(room.currentNodeId));
+        const isDungeon = !!(await WorldService.getDungeonById(room.currentNodeId, room.worldSeed ?? undefined));
         if (isDungeon) {
           const explorationState = await ExplorationSessionService.ensureSession(roomId);
           if (explorationState) socket.emit('exploration:state', { state: explorationState });
@@ -217,7 +217,7 @@ export const initializeSocket = (io: Server) => {
           // l'état d'exploration puis de combat au joueur qui rejoint (sinon
           // le front, remis à la mappemonde par `hub:state`, ne reprendrait
           // pas le donjon/combat sans un rechargement).
-          const isDungeon = !!(await WorldService.getDungeonById(room.currentNodeId));
+          const isDungeon = !!(await WorldService.getDungeonById(room.currentNodeId, room.worldSeed ?? undefined));
           if (isDungeon) {
             const explorationState = await ExplorationSessionService.ensureSession(room.roomId);
             if (explorationState) socket.emit('exploration:state', { state: explorationState });

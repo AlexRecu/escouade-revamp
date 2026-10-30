@@ -28,24 +28,35 @@ const HUB_DESCRIPTIONS: Record<string, string> = {
 const HUB_DESCRIPTION_DEFAULT =
     "Une localité de passage, modeste mais accueillante, où l'escouade peut se reposer et s'équiper avant de repartir.";
 
-/** Seed fixe du monde : topologie stable et identique pour tous les joueurs. */
+/**
+ * Seed **par défaut** du monde : utilisée quand aucune seed de partie n'est
+ * fournie (mode solo, parties legacy sans `worldSeed`). La topologie est
+ * stable d'un redémarrage à l'autre.
+ */
 const WORLD_SEED = 20261020;
 
 export class WorldService {
-    private static world: WorldMap | null = null;
+    /**
+     * Cache des mondes par seed. Chaque **partie** a sa propre seed (donc sa
+     * propre topologie) ; le mode solo / les parties legacy partagent la seed
+     * par défaut. Les **ids** des nœuds sont déterministes (indépendants de la
+     * seed) → `completedZones` / `visitedHubs` / `currentNodeId` restent
+     * valides quelle que soit la seed.
+     */
+    private static worlds: Map<number, WorldMap> = new Map();
 
     /**
-     * Génère (ou retourne) le monde. Un seul monde par processus, avec une
-     * **seed fixe** : la topologie est stable d'un redémarrage à l'autre (et
-     * identique pour tous les joueurs). C'est ce qui garantit que les ids de
-     * nœuds (hubs + donjons) — et donc `completedZones` / `visitedHubs` —
-     * restent valides dans le temps.
+     * Génère (ou retourne depuis le cache) le monde pour une seed. Sans seed,
+     * on retombe sur le monde par défaut (seed fixe).
      */
-    static async getWorld(): Promise<WorldMap> {
-        if (!WorldService.world) {
-            WorldService.world = await WorldLoader.generate(WORLD_SEED);
+    static async getWorld(seed?: number): Promise<WorldMap> {
+        const key = seed ?? WORLD_SEED;
+        let world = WorldService.worlds.get(key);
+        if (!world) {
+            world = await WorldLoader.generate(key);
+            WorldService.worlds.set(key, world);
         }
-        return WorldService.world;
+        return world;
     }
 
     /** Sérialise un hub pour le front (id, nom, services, layout, description). */
@@ -77,8 +88,8 @@ export class WorldService {
     }
 
     /** Sérialise le monde complet (nœuds + connexions). */
-    static async getWorldSummary() {
-        const world = await WorldService.getWorld();
+    static async getWorldSummary(seed?: number) {
+        const world = await WorldService.getWorld(seed);
         const hubs: ReturnType<typeof WorldService.serializeHub>[] = [];
         const dungeons: ReturnType<typeof WorldService.serializeDungeon>[] = [];
         for (const node of world.nodes) {
@@ -101,15 +112,15 @@ export class WorldService {
     }
 
     /** Récupère un hub par son id (ou null). */
-    static async getHubById(hubId: string): Promise<Hub | null> {
-        const world = await WorldService.getWorld();
+    static async getHubById(hubId: string, seed?: number): Promise<Hub | null> {
+        const world = await WorldService.getWorld(seed);
         const node = world.nodes.find((n) => n.id === hubId);
         return node instanceof Hub ? node : null;
     }
 
     /** Récupère un donjon par son id (ou null). */
-    static async getDungeonById(dungeonId: string): Promise<Dungeon | null> {
-        const world = await WorldService.getWorld();
+    static async getDungeonById(dungeonId: string, seed?: number): Promise<Dungeon | null> {
+        const world = await WorldService.getWorld(seed);
         const node = world.nodes.find((n) => n.id === dungeonId);
         return node instanceof Dungeon ? node : null;
     }
@@ -119,8 +130,8 @@ export class WorldService {
      * arête). Utilisé pour bloquer les déplacements : on ne peut entrer que
      * dans les nœuds adjacents à la position courante.
      */
-    static async getAdjacentNodeIds(nodeId: string): Promise<string[]> {
-        const world = await WorldService.getWorld();
+    static async getAdjacentNodeIds(nodeId: string, seed?: number): Promise<string[]> {
+        const world = await WorldService.getWorld(seed);
         const result = new Set<string>();
         // Arêtes sortantes (nodeId → X).
         for (const to of world.edges.get(nodeId) ?? []) result.add(to);
@@ -140,8 +151,8 @@ export class WorldService {
      * `fromId → targetId` OU `targetId → fromId` suffit (les transitions sont
      * orientées, mais on peut entrer dans une zone depuis les deux côtés).
      */
-    static async isAdjacent(fromId: string, targetId: string): Promise<boolean> {
-        const world = await WorldService.getWorld();
+    static async isAdjacent(fromId: string, targetId: string, seed?: number): Promise<boolean> {
+        const world = await WorldService.getWorld(seed);
         return (world.edges.get(fromId) ?? []).includes(targetId)
             || (world.edges.get(targetId) ?? []).includes(fromId);
     }
@@ -151,8 +162,8 @@ export class WorldService {
      * de transition relie 2 hubs : celui d'où l'on vient (`fromHubId`) et celui
      * au-delà. Renvoie le hub au-delà (ou null si impasse / pas de 2e hub).
      */
-    static async getHubBeyondDungeon(dungeonId: string, fromHubId: string): Promise<Hub | null> {
-        const world = await WorldService.getWorld();
+    static async getHubBeyondDungeon(dungeonId: string, fromHubId: string, seed?: number): Promise<Hub | null> {
+        const world = await WorldService.getWorld(seed);
         const targets = world.edges.get(dungeonId) ?? [];
         for (const t of targets) {
             if (t === fromHubId) continue; // on ignore le hub d'où l'on vient

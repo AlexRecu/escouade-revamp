@@ -223,12 +223,16 @@ function App() {
   // cette position. En ville c'est le hub ; dans une zone, l'id du donjon.
   const currentNodeId = state?.currentNodeId ?? state?.hub.id ?? null;
 
+  // La topologie de la mappemonde dépend de la **seed du monde de la partie**
+  // (chaque party a son propre monde). On re-charge le monde quand on entre
+  // dans une room (seed définie) ou qu'on en sort (seed null → monde par défaut).
+  const worldSeed = state?.room?.worldSeed ?? null;
   useEffect(() => {
     if (!user) return;
-    fetchWorld()
+    fetchWorld(worldSeed)
       .then(setWorld)
       .catch((e) => setError(e.message));
-  }, [user]);
+  }, [user, worldSeed]);
 
   const logout = () => {
     clearSession();

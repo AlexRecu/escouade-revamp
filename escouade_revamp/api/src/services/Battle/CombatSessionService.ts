@@ -654,7 +654,7 @@ export class CombatSessionService {
       const stillDead = exploration.party.members.filter((m) => m.isDead());
       const lastDeath = battle.combatState.lastHeroDeath;
       const lastTurnLog = this.extractLastTurnLog(battle.combatState.log);
-      const hub = exploration.hubId ? await WorldService.getHubById(exploration.hubId) : null;
+      const hub = exploration.hubId ? await WorldService.getHubById(exploration.hubId, exploration.worldSeed) : null;
       const hubName = hub?.name;
 
       if (difficulty === "hard" && stillDead.length > 0) {
