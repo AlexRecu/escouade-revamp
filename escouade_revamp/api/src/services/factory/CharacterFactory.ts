@@ -24,6 +24,19 @@ export class CharacterFactory {
    */
   static fromSerialized(data: any): Character {
     const job: Job = JobFactory.fromSerialized(data.classe);
+    // Restaure les compétences/sorts **appris** (Mage bleu) : le tableau
+    // sérialisé contient base + évolution + appris, on le remplace tel quel
+    // (les statuts imbriqués sont désérialisés). Sans ça, les sorts appris
+    // pendant le combat seraient perdus à la re-persistance.
+    if (Array.isArray(data.classe?.skills)) {
+      job.skills = data.classe.skills.map((s: any) => ({
+        level: s.level,
+        skill: { ...s.skill, status: (s.skill.status ?? []).map((st: any) => this.deserializeStatus(st)) },
+      }));
+    }
+    if (Array.isArray(data.classe?.spells)) {
+      job.spells = data.classe.spells.map((s: any) => ({ level: s.level, spell: s.spell }));
+    }
     const position: Position = data.position ?? { row: 0, col: 0 };
 
     const rightHand = data.rightHand ? this.deserializeWeapon(data.rightHand) : null;
@@ -102,6 +115,15 @@ export class CharacterFactory {
         evolvedName: char.job.evolvedName,
         recruitedDemons:
           char.job instanceof BlackMage ? char.job.recruitedDemons : undefined,
+        // Compétences/sorts **appris** (Mage bleu) : le tableau complet
+        // (base + évolution + appris) est sérialisé pour survivre à la
+        // persistance. Sans ça, `JobFactory.fromSerialized` recrée un job
+        // neuf et les sorts appris pendant le combat sont perdus.
+        skills: char.job.skills.map((s) => ({
+          level: s.level,
+          skill: { ...s.skill, status: (s.skill.status ?? []).map((st) => this.serializeStatus(st)) },
+        })),
+        spells: char.job.spells.map((s) => ({ level: s.level, spell: s.spell })),
       },
       rightHand: char.rightHandWeapon ? this.serializeWeapon(char.rightHandWeapon) : null,
       leftHand: char.leftHandWeapon ? this.serializeWeapon(char.leftHandWeapon) : null,
