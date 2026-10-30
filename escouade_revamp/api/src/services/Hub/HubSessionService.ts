@@ -11,6 +11,7 @@ import { PartyService } from "./PartyService";
 import { WorldService } from "../World/WorldService";
 import { ItemFactory } from "../factory/ItemFactory";
 import { BlackMage } from "../../classes/Jobs/BlackMage";
+import { BlueMage } from "../../classes/Jobs/BlueMage";
 import { getSpawnRatesForZoneType } from "../../utils/RandomUtils";
 
 /**
@@ -262,6 +263,21 @@ export class HubSessionService {
     // Un personnage KO (0 PV) ne peut plus lancer de sort.
     if (caster.isDead()) return { logs: [`${caster.name} est KO et ne peut pas lancer de sort.`], state: this.serialize(session) };
     const logs = caster.castHealSpell(spellName, target);
+    await this.persist(playerId, session);
+    return { logs, state: this.serialize(session) };
+  }
+
+  /**
+   * Oublie une compétence/sort **appris** par un Mage bleu (mode solo).
+   */
+  static async forgetAbility(playerId: string, memberId: string, abilityName: string): Promise<{ logs: string[]; state: any }> {
+    const session = this.require(playerId);
+    const member = session.party.members.find((m) => m.id === memberId);
+    if (!member) return { logs: ["Personnage introuvable."], state: this.serialize(session) };
+    if (!(member.job instanceof BlueMage)) {
+      return { logs: ["Seul un Mage bleu peut oublier une capacité apprise."], state: this.serialize(session) };
+    }
+    const logs = [member.job.forget(abilityName)];
     await this.persist(playerId, session);
     return { logs, state: this.serialize(session) };
   }

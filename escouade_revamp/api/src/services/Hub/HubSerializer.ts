@@ -115,6 +115,18 @@ export class HubSerializer {
     return null;
   }
 
+  /**
+   * Compteur de slots d'apprentissage (Mage bleu) : `{ learned, slots }`.
+   * `null` si le membre n'est pas un Mage bleu. Affiché dans la fiche perso
+   * pour que le joueur sache combien de capacités il peut encore apprendre.
+   */
+  static learnSlotsData(member: Character): { learned: number; slots: number } | null {
+    if (member.job instanceof BlueMage) {
+      return { learned: member.job.learnedCount, slots: member.job.learnSlots };
+    }
+    return null;
+  }
+
   /** Sérialise une quête pour le front. */
   static serializeQuest(q: Quest): any {
     return {
@@ -207,6 +219,8 @@ export class HubSerializer {
           canDualWield: this.canDualWield(m),
           // Monstronomicon (Mage bleu) : monstres/classes étudiés (fiche).
           monstronomicon: this.monstronomiconData(m),
+          // Slots d'apprentissage (Mage bleu) : { learned, slots } ou null.
+          learnSlots: this.learnSlotsData(m),
           // Statistiques détaillées (pour le panneau de détail du personnage).
           stats: m.stats,
           // Compétences de classe débloquées (selon le niveau de classe).
@@ -217,6 +231,7 @@ export class HubSerializer {
             target: s.target,
             type: s.type,
             range: s.range,
+            move: s.move,
             description: s.description,
           })),
           // Sorts débloqués (selon le niveau de classe).

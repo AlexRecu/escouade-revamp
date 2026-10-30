@@ -92,3 +92,17 @@ export function weaponRangeLabel(w: { range?: number }): string {
   const r = w.range ?? 1;
   return r > 1 ? `📏 ${r}` : '';
 }
+
+/**
+ * Libellé de la **portée de ciblage** d'une compétence.
+ *
+ * La portée effective est `range + move` : une compétence de charge (ex.
+ * Rapace, range 1 + move 3) peut viser une cible jusqu'à 4 cases plus loin
+ * (on se rapproche de 3 puis on frappe à 1). `range === 0` (ou absent) =
+ * portée **illimitée** (ex. Scan, Apprendre).
+ */
+export function skillRangeLabel(s: { range?: number | null; move?: number }): string {
+  const range = s.range ?? 0;
+  if (range === 0) return '📏 ∞';
+  return `📏 ${range + (s.move ?? 0)}`;
+}

@@ -93,6 +93,11 @@ export interface SkillView {
   apCost: number;
   target: "ally" | "self" | "enemy";
   type: "single" | "multi";
+  /** Portée de base (0 = illimitée). La portée de ciblage effective est
+   *  `range + move` (la compétence peut se rapprocher avant d'agir). */
+  range: number;
+  /** Déplacement inclus dans la compétence (ex. charge). */
+  move: number;
   description: string;
   validTargets: string[];
 }
@@ -1211,6 +1216,8 @@ export class CombatSessionService {
         apCost: sk.apCost,
         target: sk.target,
         type: sk.type,
+        range: sk.range,
+        move: sk.move ?? 0,
         description: sk.description,
         validTargets: this.skillTargets(unit, sk, allUnits),
       }));

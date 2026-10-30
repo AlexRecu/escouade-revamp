@@ -136,6 +136,13 @@ export const initializeSocket = (io: Server) => {
       if (roomId) return reply(() => PartyRoomService.castSpell(roomId, data.casterId, data.targetId, data.spellName), true);
       return reply(() => HubSessionService.castSpell(playerId, data.casterId, data.targetId, data.spellName));
     });
+    // Oublie une compétence/sort appris (Mage bleu) : retire la capacité du job
+    // (l'entrée du Monstronomicon reste). Diffusé à la room (le job change).
+    socket.on('hub:forgetAbility', (data: { memberId: string; abilityName: string }) => {
+      const roomId = currentRoomId();
+      if (roomId) return reply(() => PartyRoomService.forgetAbility(roomId, data.memberId, data.abilityName), true);
+      return reply(() => HubSessionService.forgetAbility(playerId, data.memberId, data.abilityName));
+    });
     socket.on('hub:questBoard', () => {
       const roomId = currentRoomId();
       if (roomId) return reply(() => PartyRoomService.questBoard(roomId));
@@ -396,6 +403,13 @@ export const initializeSocket = (io: Server) => {
     socket.on('exploration:castSpell', (data: { casterId: string; targetId: string; spellName: string }) =>
       replyExploration(
         () => ExplorationSessionService.castSpell(explorationKey(), data.casterId, data.targetId, data.spellName),
+        currentRoomId() !== null
+      )
+    );
+    // Oublie une compétence/sort appris (Mage bleu) **pendant** le donjon.
+    socket.on('exploration:forgetAbility', (data: { memberId: string; abilityName: string }) =>
+      replyExploration(
+        () => ExplorationSessionService.forgetAbility(explorationKey(), data.memberId, data.abilityName),
         currentRoomId() !== null
       )
     );

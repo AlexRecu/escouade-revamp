@@ -136,4 +136,96 @@ describe("Blue Mage Class Tests", () => {
         expect(restoredMono.entries[0].isLearned).toBe(true);
         expect(restoredMono.entries[0].learnedAttack).toBe("Dard empoisonné");
     });
+
+    test("forget retire la capacité apprise et marque l'entrée oubliée", () => {
+        const job = blueMage.job as BlueMage;
+        blueMage.useAbilityByName("Scan", [enemy]);
+        blueMage.useAbilityByName("Apprendre", [enemy]); // apprend "Dard empoisonné"
+        expect(blueMage.getAvailableAbilities().map((a) => a.name)).toContain("Dard empoisonné");
+        expect(job.monstronomicon.entries[0].isLearned).toBe(true);
+
+        const log = job.forget("Dard empoisonné");
+        expect(log).toContain(`a oublié la compétence "Dard empoisonné"`);
+        // La compétence est retirée du job…
+        expect(blueMage.getAvailableAbilities().map((a) => a.name)).not.toContain("Dard empoisonné");
+        // …mais l'entrée du Monstronomicon reste (marquée non apprise).
+        expect(job.monstronomicon.entries).toHaveLength(1);
+        expect(job.monstronomicon.entries[0].name).toBe("Frelon");
+        expect(job.monstronomicon.entries[0].isLearned).toBe(false);
+        expect(job.monstronomicon.entries[0].learnedAttack).toBeUndefined();
+    });
+
+    test("forget refuse Scan/Apprendre et une capacité non apprise", () => {
+        const job = blueMage.job as BlueMage;
+        expect(job.forget("Scan")).toContain(`ne peut pas oublier "Scan" ou "Apprendre"`);
+        expect(job.forget("Apprendre")).toContain(`ne peut pas oublier "Scan" ou "Apprendre"`);
+        expect(job.forget("Dard empoisonné")).toContain(`n'a pas appris "Dard empoisonné"`);
+        // Scan/Apprendre restent bien présents.
+        expect(blueMage.getAvailableAbilities().map((a) => a.name)).toEqual(["Scan", "Apprendre"]);
+    });
+
+    test("Rapace se rapproche ET attaque la cible (fix isAdjacentToGoal)", () => {
+        // Rapace : range 1 + move 3 → peut viser une cible à Chebyshev ≤ 4,
+        // se rapproche de 3 cases puis frappe si adjacent.
+        const rapace = {
+            name: "Rapace",
+            formula: "if(target && target.position){ this.moveTowards(target.position, 3, allUnits); if(isAdjacentToGoal(this.position, target.position)){ this.attack(target,3,1, 0, resultArray);} }",
+            target: "enemy" as const,
+            type: "single" as const,
+            move: 3,
+            range: 1,
+            apCost: 1,
+            mpCost: 0,
+            hpCost: 0,
+            roll: 0,
+            status: [],
+            element: "",
+            description: "Fonce de 3 cases vers sa cible et attaque",
+        };
+        (blueMage.job as BlueMage).skills.push({ level: 1, skill: rapace });
+
+        // Mage à (0,0), ennemi à (3,3) : Chebyshev 3 (cible valide, 1+3=4).
+        const target = new Monster("Frelon", { row: 3, col: 3 }, "Enemy", 2);
+        const hpBefore = target.currentHp;
+
+        const log = blueMage.useAbilityByName("Rapace", [blueMage, target], target);
+        // Le mage s'est rapproché (plus sur (0,0)).
+        expect(blueMage.position).not.toEqual({ row: 0, col: 0 });
+        // L'attaque s'est bien déclenchée (le fix : avant, isAdjacentToGoal
+        // recevait un Unit au lieu d'une Position → NaN → jamais d'attaque).
+        expect(target.currentHp).toBeLessThan(hpBefore);
+        expect(log.join(" ")).toMatch(/frappe|perd \d+PV/);
+    });
+
+    test("learnSlots : 10 de base, 20 en Sage Bleu", () => {
+        const job = blueMage.job as BlueMage;
+        expect(job.learnSlots).toBe(10);
+        job.applyEvolutionState("Sage Bleu");
+        expect(job.learnSlots).toBe(20);
+    });
+
+    test("learnedCount ignore Scan/Apprendre", () => {
+        const job = blueMage.job as BlueMage;
+        // Scan + Apprendre (de base) ne comptent pas.
+        expect(job.learnedCount).toBe(0);
+        // 1 compétence apprise + 2 sorts appris = 3.
+        job.skills.push({ level: 1, skill: { name: "Dard empoisonné", formula: "", target: "enemy", type: "single", move: 0, range: 1, apCost: 1, mpCost: 0, hpCost: 0, roll: 0, status: [], element: "", description: "" } });
+        job.spells.push({ level: 1, spell: "Brasier" });
+        job.spells.push({ level: 1, spell: "Glacier" });
+        expect(job.learnedCount).toBe(3);
+    });
+
+    test("learnFrom refuse quand les slots sont pleins", () => {
+        const job = blueMage.job as BlueMage;
+        // Remplit les 10 slots avec des sorts (le Frelon n'a que "Dard empoisonné",
+        // une compétence → pas de doublon, le check de limite se déclenche).
+        for (let i = 0; i < 10; i++) job.spells.push({ level: 1, spell: `SortTest${i}` });
+        expect(job.learnedCount).toBe(10);
+
+        blueMage.useAbilityByName("Scan", [enemy]); // Frelon
+        const log = blueMage.useAbilityByName("Apprendre", [enemy]);
+        expect(log.join(" ")).toContain("n'a plus de slot d'apprentissage (10/10)");
+        // Rien n'a été ajouté.
+        expect(job.learnedCount).toBe(10);
+    });
 });

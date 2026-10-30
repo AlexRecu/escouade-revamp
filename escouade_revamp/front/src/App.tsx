@@ -99,6 +99,7 @@ function App() {
       leftHand: exp?.leftHand ?? base.leftHand,
       bag: exp?.bag ?? base.bag,
       monstronomicon: exp?.monstronomicon ?? base.monstronomicon,
+      learnSlots: exp?.learnSlots ?? base.learnSlots,
     };
   }, [selectedMemberId, state, exploration, combat]);
 

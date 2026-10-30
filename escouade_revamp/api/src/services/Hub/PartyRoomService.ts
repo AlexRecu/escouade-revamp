@@ -13,6 +13,7 @@ import { PartyService } from "./PartyService";
 import { HubSerializer } from "./HubSerializer";
 import { WorldService } from "../World/WorldService";
 import { JobFactory } from "../factory/JobFactory";
+import { BlueMage } from "../../classes/Jobs/BlueMage";
 import { IdGenerator } from "../../utils/IdGeneratorUtils";
 import { getSpawnRatesForZoneType, randomSeed } from "../../utils/RandomUtils";
 
@@ -609,6 +610,22 @@ export class PartyRoomService {
     // Un personnage KO (0 PV) ne peut plus lancer de sort.
     if (caster.isDead()) return { logs: [`${caster.name} est KO et ne peut pas lancer de sort.`], state: this.serializeRoom(room, session) };
     const logs = caster.castHealSpell(spellName, target);
+    await this.persistRoom(roomId, session);
+    return { logs, state: this.serializeRoom(room, session) };
+  }
+
+  /**
+   * Oublie une compétence/sort **appris** par un Mage bleu (mode room). L'entrée
+   * du Monstronomicon reste, seule la capacité apprise est retirée du job.
+   */
+  static async forgetAbility(roomId: string, memberId: string, abilityName: string): Promise<{ logs: string[]; state: any }> {
+    const { room, session } = await this.getHubState(roomId);
+    const member = session.party.members.find((m) => m.id === memberId);
+    if (!member) return { logs: ["Personnage introuvable."], state: this.serializeRoom(room, session) };
+    if (!(member.job instanceof BlueMage)) {
+      return { logs: ["Seul un Mage bleu peut oublier une capacité apprise."], state: this.serializeRoom(room, session) };
+    }
+    const logs = [member.job.forget(abilityName)];
     await this.persistRoom(roomId, session);
     return { logs, state: this.serializeRoom(room, session) };
   }

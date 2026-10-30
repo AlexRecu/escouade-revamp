@@ -44,6 +44,10 @@ export const hubSanctuary = (targetId: string): void => { socket?.emit('hub:sanc
 export const hubCastSpell = (casterId: string, targetId: string, spellName: string): void => {
   socket?.emit('hub:castSpell', { casterId, targetId, spellName });
 };
+/** Oublie une compétence/sort appris (Mage bleu) en ville. */
+export const hubForgetAbility = (memberId: string, abilityName: string): void => {
+  socket?.emit('hub:forgetAbility', { memberId, abilityName });
+};
 export const hubQuestBoard = (): void => { socket?.emit('hub:questBoard', {}); };
 export const hubAcceptQuest = (questId: string): void => { socket?.emit('hub:acceptQuest', { questId }); };
 export const hubChangeHub = (hubId: string): void => { socket?.emit('hub:changeHub', { hubId }); };
@@ -77,6 +81,10 @@ export const explorationUseItem = (memberId: string, itemId: string): void => {
 /** Lance un sort de soin (cible alliée) hors combat pendant le donjon. */
 export const explorationCastSpell = (casterId: string, targetId: string, spellName: string): void => {
   socket?.emit('exploration:castSpell', { casterId, targetId, spellName });
+};
+/** Oublie une compétence/sort appris (Mage bleu) pendant le donjon. */
+export const explorationForgetAbility = (memberId: string, abilityName: string): void => {
+  socket?.emit('exploration:forgetAbility', { memberId, abilityName });
 };
 
 // ── Combat interactif (client → serveur) ───────────────────────────────────

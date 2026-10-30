@@ -52,6 +52,21 @@ export class Monstronomicon extends Item {
         }
     }
 
+    /**
+     * Marque une attaque comme **oubliée** (remet `isLearned` à false). L'entrée
+     * du Monstronomicon reste (le monstre est toujours étudié), seule la capacité
+     * apprise est retirée. S'applique à toutes les entrées ayant appris cette
+     * attaque (une même attaque peut être apprise de plusieurs monstres).
+     */
+    markUnlearned(attack: string): void {
+        for (const entry of this.entries) {
+            if (entry.learnedAttack === attack) {
+                entry.isLearned = false;
+                entry.learnedAttack = undefined;
+            }
+        }
+    }
+
     isRegisteredByName(name: string): boolean {
         return this.entries.some((e) => e.name === name);
     }

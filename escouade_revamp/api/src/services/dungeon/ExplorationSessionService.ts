@@ -17,6 +17,7 @@ import { CombatSessionService } from "../Battle/CombatSessionService";
 import { LootEngine } from "../../classes/Progression/LootEngine";
 import { HubSerializer } from "../Hub/HubSerializer";
 import { Weapon } from "../../classes/Items/Weapon";
+import { BlueMage } from "../../classes/Jobs/BlueMage";
 
 /** Direction de déplacement (4 directions, pas de diagonale). */
 export type Direction = "north" | "south" | "east" | "west";
@@ -580,6 +581,22 @@ export class ExplorationSessionService {
   }
 
   /**
+   * Oublie une compétence/sort **appris** par un Mage bleu **pendant** le donjon :
+   * opère sur l'équipe en mémoire de la session (pas sur la partie DB, stale ici).
+   */
+  static async forgetAbility(sessionKey: string, memberId: string, abilityName: string): Promise<any> {
+    const session = this.require(sessionKey);
+    const member = session.party.members.find((m) => m.id === memberId);
+    if (!member) return { logs: ["Personnage introuvable."], state: this.serialize(session) };
+    if (!(member.job instanceof BlueMage)) {
+      return { logs: ["Seul un Mage bleu peut oublier une capacité apprise."], state: this.serialize(session) };
+    }
+    const logs = [member.job.forget(abilityName)];
+    await this.persist(session);
+    return { logs, state: this.serialize(session) };
+  }
+
+  /**
    * Quitte le donjon : persiste l'équipe (or, HP, zones complétées) et libère
    * la session. Le front revient à la mappemonde et resynchronise la ville.
    */
@@ -926,6 +943,8 @@ export class ExplorationSessionService {
           canDualWield: HubSerializer.canDualWield(m),
           // Monstronomicon (Mage bleu) : monstres/classes étudiés (fiche).
           monstronomicon: HubSerializer.monstronomiconData(m),
+          // Slots d'apprentissage (Mage bleu) : { learned, slots } ou null.
+          learnSlots: HubSerializer.learnSlotsData(m),
           stats: m.stats,
           skills: m.getAvailableAbilities().map((s) => ({
             name: s.name,
@@ -934,6 +953,7 @@ export class ExplorationSessionService {
             target: s.target,
             type: s.type,
             range: s.range,
+            move: s.move,
             description: s.description,
           })),
           spells: m.getAvailableSpells().map((s) => ({

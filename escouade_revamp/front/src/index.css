@@ -2085,6 +2085,7 @@ button:disabled {
   background: rgba(201, 162, 39, 0.15);
 }
 .action-cost { color: var(--text-dim); font-size: 11px; }
+.action-range { color: var(--text-dim); font-size: 11px; opacity: 0.85; }
 
 /* Fin de tour (en dessous du menu). */
 .action-endturn {
@@ -2420,6 +2421,25 @@ button:disabled {
   color: var(--accent);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+/* Compteur de slots d'apprentissage (Mage bleu) : appris/dispo. */
+.char-detail-slots {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1px 8px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.char-detail-slots-full {
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.4);
 }
 .char-detail-stats {
   display: grid;
@@ -2695,6 +2715,16 @@ button:disabled {
 .char-detail-bag-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+/* Bouton « Oublier » (Mage bleu) : teinte rouge pour le distinguer de « Lancer ». */
+.char-detail-forget-btn {
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.4);
+}
+.char-detail-forget-btn:hover:not(:disabled) {
+  border-color: #f87171;
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.08);
 }
 /* Tag « non vendable » des objets spéciaux (pièce marquée, objets de quête). */
 .char-detail-special-tag {

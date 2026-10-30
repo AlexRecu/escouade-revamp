@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { PartyMember, Statistics, BagItem } from '../types/game';
 import type { GameActions } from '../game/useGame';
 import { classTokenUrl, tokenUrl, defeatedTokenStyle } from '../utils/tokens';
-import { weaponEmoji, weaponLabel, weaponStatLabel, weaponRangeLabel } from '../utils/weapons';
+import { weaponEmoji, weaponLabel, weaponStatLabel, weaponRangeLabel, skillRangeLabel } from '../utils/weapons';
 import MonstronomiconView from './MonstronomiconView';
 
 type Props = {
@@ -94,6 +94,9 @@ export default function CharacterDetailModal({ member, sharedBag, onClose, actio
 
   const stats = member.stats;
 
+  // Le Mage bleu peut oublier les capacités apprises (hors "Scan"/"Apprendre").
+  const isBlueMage = member.job === 'Mage Bleu' || member.job === 'Mage bleu';
+
   return (
     <div className="char-detail-overlay" onClick={onClose}>
       <div className="char-detail-modal" onClick={(e) => e.stopPropagation()}>
@@ -173,15 +176,34 @@ export default function CharacterDetailModal({ member, sharedBag, onClose, actio
 
           {/* Compétences */}
           <section className="char-detail-section">
-            <h4>✨ Compétences</h4>
+            <h4>
+              ✨ Compétences
+              {isBlueMage && member.learnSlots && (
+                <span
+                  className={`char-detail-slots ${member.learnSlots.learned >= member.learnSlots.slots ? 'char-detail-slots-full' : ''}`}
+                  title="Capacités apprises (sorts + compétences) / slots d'apprentissage disponibles. Oubliez une capacité pour libérer un slot."
+                >
+                  {member.learnSlots.learned}/{member.learnSlots.slots} slots
+                </span>
+              )}
+            </h4>
             {member.skills && member.skills.length > 0 ? (
               <ul className="char-detail-list">
                 {member.skills.map((s) => (
                   <li key={s.name} title={s.description}>
                     <span className="char-detail-item-name">{s.name}</span>
                     <span className="char-detail-item-meta">
-                      {s.apCost} AP{s.mpCost ? ` · ${s.mpCost} PM` : ''} · {targetLabel(s.target)}
+                      {s.apCost} AP{s.mpCost ? ` · ${s.mpCost} PM` : ''} · {targetLabel(s.target)} · {skillRangeLabel(s)}
                     </span>
+                    {isBlueMage && s.name !== 'Scan' && s.name !== 'Apprendre' && (
+                      <button
+                        className="char-detail-bag-btn char-detail-forget-btn"
+                        onClick={() => actions.forgetAbility(member.id, s.name)}
+                        title="Oublier cette compétence apprise (libère un emplacement)"
+                      >
+                        Oublier
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -212,6 +234,15 @@ export default function CharacterDetailModal({ member, sharedBag, onClose, actio
                           title={isRevive ? 'Ranime un allié mort' : 'Soigne un allié (hors combat)'}
                         >
                           {healSpell === s.name ? 'Annuler' : 'Lancer'}
+                        </button>
+                      )}
+                      {isBlueMage && (
+                        <button
+                          className="char-detail-bag-btn char-detail-forget-btn"
+                          onClick={() => actions.forgetAbility(member.id, s.name)}
+                          title="Oublier ce sort appris (libère un emplacement)"
+                        >
+                          Oublier
                         </button>
                       )}
                     </li>

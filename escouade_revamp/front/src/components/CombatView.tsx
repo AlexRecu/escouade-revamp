@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CombatState, CombatUnit } from '../types/game';
 import { classTokenUrl, monsterTokenUrl, DEFAULT_TOKEN_URL, defeatedTokenStyle } from '../utils/tokens';
+import { skillRangeLabel } from '../utils/weapons';
 
 type Props = {
   combat: CombatState;
@@ -666,7 +667,8 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
                             title={disabledReason ? `${sk.description}\n⚠️ ${disabledReason}` : sk.description}
                             onClick={() => launchAction('skill', sk.name, { skill: { name: sk.name } }, sk.validTargets)}
                           >
-                            {sk.name} <span className="action-cost">({sk.apCost} AP)</span>
+                            {sk.name} <span className="action-cost">({sk.apCost} AP)</span>{' '}
+                            <span className="action-range" title="Portée de ciblage">{skillRangeLabel(sk)}</span>
                           </button>
                         );
                       })}

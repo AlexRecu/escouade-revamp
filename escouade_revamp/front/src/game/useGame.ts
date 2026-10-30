@@ -13,6 +13,7 @@ import {
   hubRest,
   hubSanctuary,
   hubCastSpell,
+  hubForgetAbility,
   hubQuestBoard,
   hubAcceptQuest,
   hubCompleteZone,
@@ -28,6 +29,7 @@ import {
   explorationEquip,
   explorationUseItem,
   explorationCastSpell,
+  explorationForgetAbility,
   combatPlace,
   combatConfirmPlacement,
   combatMove,
@@ -69,6 +71,8 @@ export type GameActions = {
   sanctuary: (targetId: string) => void;
   /** Lance un sort de soin (cible alliée) hors combat (ville ou donjon). */
   castSpell: (casterId: string, targetId: string, spellName: string) => void;
+  /** Oublie une compétence/sort appris (Mage bleu) — ville ou donjon. */
+  forgetAbility: (memberId: string, abilityName: string) => void;
   questBoard: () => void;
   acceptQuest: (questId: string) => void;
   completeZone: (zoneId: string) => void;
@@ -323,6 +327,10 @@ export function useGame(token: string | null): UseGame {
     // la session ; sinon (ville / mappemonde), sur la partie.
     castSpell: (casterId, targetId, spellName) =>
       exploration ? explorationCastSpell(casterId, targetId, spellName) : hubCastSpell(casterId, targetId, spellName),
+    // Oublier une capacité apprise : en donjon, opère sur l'équipe en mémoire
+    // de la session ; sinon (ville / mappemonde), sur la partie.
+    forgetAbility: (memberId, abilityName) =>
+      exploration ? explorationForgetAbility(memberId, abilityName) : hubForgetAbility(memberId, abilityName),
     questBoard: hubQuestBoard,
     acceptQuest: hubAcceptQuest,
     completeZone: hubCompleteZone,

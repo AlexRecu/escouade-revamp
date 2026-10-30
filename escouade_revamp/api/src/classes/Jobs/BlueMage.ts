@@ -13,8 +13,34 @@ import { Unit } from "../UnitTypes/Unit";
 
 
 export class BlueMage extends Job {
+    /** Slots d'apprentissage de base (livret : 10). */
+    static readonly BASE_LEARN_SLOTS = 10;
+    /** Slots d'apprentissage du Sage Bleu (livret : +5, porté à 20 pour un panel large). */
+    static readonly SAGE_BLUE_LEARN_SLOTS = 20;
+    /** Compétences de base (outils d'apprentissage) — ne comptent pas dans les slots. */
+    static readonly BASE_SKILL_NAMES = ["Scan", "Apprendre"];
+
     monstronomicon = new Monstronomicon("BM_Monstronomicon_" + IdGenerator.generateId());
     private _trancePoints?: number;
+
+    /**
+     * Nombre de slots d'apprentissage disponibles. Le Mage bleu a 10 slots de
+     * base ; l'évolution **Sage Bleu** les porte à 20 (livret : +5, mais on
+     * double pour laisser un panel large — 24 compétences + 73 sorts apprenables).
+     */
+    get learnSlots(): number {
+        return this.evolvedName === "Sage Bleu" ? BlueMage.SAGE_BLUE_LEARN_SLOTS : BlueMage.BASE_LEARN_SLOTS;
+    }
+
+    /**
+     * Nombre de capacités **apprises** (sorts + compétences, hors "Scan" et
+     * "Apprendre" qui sont les outils d'apprentissage, pas des slots).
+     */
+    get learnedCount(): number {
+        const base = new Set(BlueMage.BASE_SKILL_NAMES);
+        const learnedSkills = this.skills.filter((s) => !base.has(s.skill.name)).length;
+        return learnedSkills + this.spells.length;
+    }
 
     constructor() {
         super(
@@ -133,6 +159,24 @@ export class BlueMage extends Job {
 
             const learnedSkill = targetSkills[Math.floor(Math.random() * targetSkills.length)];
 
+            // **Anti-doublon** : si la capacité tirée est déjà connue (sort ou
+            // compétence), on ne la rajoute PAS (sinon on accumulerait 3, 4, 10×
+            // la même capacité et on gaspillerait des emplacements). La tentative
+            // d'apprentissage aboutit quand même (message), mais sans effet.
+            const knownSpell = this.spells.some((s) => s.spell === learnedSkill);
+            const knownSkill = this.skills.some((s) => s.skill.name === learnedSkill);
+            if (knownSpell || knownSkill) {
+                const kind = knownSpell ? "le sort" : "la compétence";
+                return `${this.name} a tenté de réapprendre ${kind} : ${learnedSkill}`;
+            }
+
+            // **Limite de slots** : le Mage bleu a un nombre limité de capacités
+            // apprises (10, 20 en Sage Bleu). Quand c'est plein, l'apprentissage
+            // échoue — il faut d'abord oublier une capacité (bouton « Oublier »).
+            if (this.learnedCount >= this.learnSlots) {
+                return `${this.name} n'a plus de slot d'apprentissage (${this.learnedCount}/${this.learnSlots}). Oubliez une capacité pour en apprendre une nouvelle.`;
+            }
+
             // Chercher si l'attaque du monstre existe déjà en tant que Spell
             const newSpell: any = spellData.find((spell: { name: string }) => spell.name === learnedSkill);
             if (newSpell) {
@@ -166,21 +210,31 @@ export class BlueMage extends Job {
         }
     }
 
-    forget(skillOrSpellName: string) {
-        if (skillOrSpellName !== "Scan" && skillOrSpellName !== "Apprendre") {
-            let forgetIndex = this.skills.findIndex(recordLevelSkill => recordLevelSkill.skill.name = skillOrSpellName);
-            if (forgetIndex == -1) {
-                forgetIndex = this.spells.findIndex(recordLevelSpell => recordLevelSpell.spell = skillOrSpellName);
-                const newSpellList = this.spells.splice(forgetIndex, 1);
-                this.spells = newSpellList;
-                return `1... 2... 3... Pouf ! ${this.name} a oublié le sort "${skillOrSpellName}" !`;
-            } else {
-                const newSkillList = this.skills.splice(forgetIndex, 1);
-                this.skills = newSkillList;
-                return `1... 2... 3... Pouf ! ${this.name} a oublié la compétence "${skillOrSpellName}" !`;
-            }
+    /**
+     * Oublie une compétence ou un sort **appris** (retire l'entrée du job).
+     * L'entrée du Monstronomicon reste (le monstre est toujours étudié), seule
+     * la capacité apprise est retirée — le Mage bleu a un nombre limité de
+     * capacités apprises et doit parfois en oublier pour en apprendre d'autres.
+     * "Scan" et "Apprendre" (compétences de base) ne peuvent pas être oubliés.
+     * @returns un message de log.
+     */
+    forget(skillOrSpellName: string): string {
+        if (skillOrSpellName === "Scan" || skillOrSpellName === "Apprendre") {
+            return `${this.name} ne peut pas oublier "Scan" ou "Apprendre".`;
         }
-        return `${this.name} ne peut pas oublier "Scan" ou "Apprentissage"`;
+        const skillIndex = this.skills.findIndex((s) => s.skill.name === skillOrSpellName);
+        if (skillIndex !== -1) {
+            this.skills.splice(skillIndex, 1);
+            this.monstronomicon.markUnlearned(skillOrSpellName);
+            return `1... 2... 3... Pouf ! ${this.name} a oublié la compétence "${skillOrSpellName}" !`;
+        }
+        const spellIndex = this.spells.findIndex((s) => s.spell === skillOrSpellName);
+        if (spellIndex !== -1) {
+            this.spells.splice(spellIndex, 1);
+            this.monstronomicon.markUnlearned(skillOrSpellName);
+            return `1... 2... 3... Pouf ! ${this.name} a oublié le sort "${skillOrSpellName}" !`;
+        }
+        return `${this.name} n'a pas appris "${skillOrSpellName}".`;
     }
 
     /**

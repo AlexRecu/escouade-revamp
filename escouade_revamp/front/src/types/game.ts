@@ -80,10 +80,12 @@ export type PartyMember = {
   canDualWield: boolean;
   /** Monstronomicon (Mage bleu) : monstres/classes étudiés. `null` sinon. */
   monstronomicon?: MonstronomiconEntry[] | null;
+  /** Slots d'apprentissage (Mage bleu) : `{ learned, slots }`. `null` sinon. */
+  learnSlots?: { learned: number; slots: number } | null;
   /** Statistiques détaillées (7 stats) — pour le panneau de détail. */
   stats?: Statistics;
   /** Compétences de classe débloquées — pour le panneau de détail. */
-  skills?: { name: string; apCost: number; mpCost: number; target: string; type: string; range: number; description: string }[];
+  skills?: { name: string; apCost: number; mpCost: number; target: string; type: string; range: number; move?: number; description: string }[];
   /** Sorts débloqués — pour le panneau de détail. */
   spells?: { name: string; mpCost: number | null; hpCost: number | null; target: string; element: string; description: string }[];
   rightHand: EquippedWeapon | null;
@@ -266,8 +268,10 @@ export type DungeonMember = {
   canDualWield?: boolean;
   /** Monstronomicon (Mage bleu) : monstres/classes étudiés. `null` sinon. */
   monstronomicon?: MonstronomiconEntry[] | null;
+  /** Slots d'apprentissage (Mage bleu) : `{ learned, slots }`. `null` sinon. */
+  learnSlots?: { learned: number; slots: number } | null;
   stats?: Statistics;
-  skills?: { name: string; apCost: number; mpCost: number; target: string; type: string; range: number; description: string }[];
+  skills?: { name: string; apCost: number; mpCost: number; target: string; type: string; range: number; move?: number; description: string }[];
   spells?: { name: string; mpCost: number | null; hpCost: number | null; target: string; element: string; description: string }[];
   rightHand?: EquippedWeapon | null;
   leftHand?: EquippedWeapon | null;
@@ -375,6 +379,10 @@ export type CombatSkill = {
   apCost: number;
   target: 'ally' | 'self' | 'enemy';
   type: 'single' | 'multi';
+  /** Portée de base (0 = illimitée). Portée de ciblage effective = range + move. */
+  range: number;
+  /** Déplacement inclus dans la compétence (ex. charge). */
+  move: number;
   description: string;
   validTargets: string[];
 };
