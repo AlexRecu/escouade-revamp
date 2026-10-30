@@ -68,7 +68,16 @@ export interface PartyRoomDocument extends Document {
    * quand l'équipe n'est pas dans un donjon. Voir
    * `ExplorationSessionService.serializeSnapshot` / `restoreFromSnapshot`.
    */
-  exploration: any;  /** Visible dans le lobby (rejoignable). */
+  exploration: any;
+  /**
+   * **Session de combat persistée** (combat en cours dans le donjon). Snapshot
+   * de l'état du combat (unités, tour, ordre d'action, log, budget de
+   * déplacement) pour survivre à une reconnexion / redémarrage. `null` quand
+   * aucun combat n'est en cours. Voir
+   * `CombatSessionService.serializeCombatSnapshot` / `restoreCombat`.
+   */
+  combat: any;
+  /** Visible dans le lobby (rejoignable). */
   isPublic: boolean;
   /** Nombre max de joueurs (hors spectateurs). */
   maxPlayers: number;
@@ -100,6 +109,8 @@ const PartyRoomSchema = new Schema<PartyRoomDocument>(
     difficulty: { type: String, default: 'easy' },
     // Session d'exploration persistée (donjon en cours) — null si hors donjon.
     exploration: { type: Schema.Types.Mixed, default: null },
+    // Session de combat persistée (combat en cours) — null si aucun combat.
+    combat: { type: Schema.Types.Mixed, default: null },
     isPublic: { type: Boolean, default: true },
     maxPlayers: { type: Number, default: 4 },
     savedAt: { type: Date, default: Date.now },

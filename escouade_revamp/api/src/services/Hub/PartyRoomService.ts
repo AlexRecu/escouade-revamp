@@ -398,6 +398,28 @@ export class PartyRoomService {
     );
   }
 
+  /** Récupère le snapshot de combat persisté (null si aucun combat en cours). */
+  static async getCombat(roomId: string): Promise<any | null> {
+    const room = await this.model.findOne({ roomId });
+    return room?.combat ?? null;
+  }
+
+  /** Persiste le snapshot de combat (combat en cours). */
+  static async saveCombat(roomId: string, snapshot: any): Promise<void> {
+    await this.model.findOneAndUpdate(
+      { roomId },
+      { $set: { combat: snapshot, savedAt: new Date() } }
+    );
+  }
+
+  /** Efface le snapshot de combat (fin de combat). */
+  static async clearCombat(roomId: string): Promise<void> {
+    await this.model.findOneAndUpdate(
+      { roomId },
+      { $set: { combat: null, savedAt: new Date() } }
+    );
+  }
+
   /** Persiste l'état de jeu d'une room (party + quêtes + hub + nœud de position). */
   private static async persistRoom(roomId: string, session: HubState): Promise<void> {
     await this.saveParty(roomId, session.party, session.questSystem, session.hub.id, session.currentNodeId);

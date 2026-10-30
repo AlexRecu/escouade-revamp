@@ -600,6 +600,13 @@ export class ExplorationSessionService {
     return session ? this.serialize(session) : null;
   }
 
+  /** Renvoie la session d'exploration brute (non sérialisée), ou null.
+   *  Utilisé par `CombatSessionService` pour restaurer un combat en cours
+   *  (il a besoin du `zoneLevel` des monstres, pas de l'état sérialisé). */
+  static getSession(sessionKey: string): DungeonSession | null {
+    return this.sessions.get(sessionKey) ?? null;
+  }
+
   /** Supprime la session d'exploration (ex. défaite → retour au hub). */
   static deleteSession(sessionKey: string): void {
     this.sessions.delete(sessionKey);

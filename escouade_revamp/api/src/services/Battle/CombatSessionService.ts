@@ -5,6 +5,7 @@ import { Unit } from "../../classes/UnitTypes/Unit";
 import { Character } from "../../classes/UnitTypes/Character";
 import { Monster } from "../../classes/UnitTypes/Monster";
 import { Demon } from "../../classes/UnitTypes/Demon";
+import { Eon } from "../../classes/UnitTypes/Eon";
 import { Encounter } from "../../classes/Exploration/Encounter";
 import { Party } from "../../classes/Exploration/Party";
 import { Position } from "../../classes/Types";
@@ -283,6 +284,8 @@ export class CombatSessionService {
       placementDone: false,
     };
     this.sessions.set(sessionKey, session);
+    // Persiste le snapshot (reconnexion) : le combat existe, même en placement.
+    this.persistCombatSnapshot(session);
 
     return this.serialize(battle, session);
   }
@@ -337,6 +340,8 @@ export class CombatSessionService {
       placementDone: false,
     };
     this.sessions.set(sessionKey, session);
+    // Persiste le snapshot (reconnexion) : le combat existe, même en placement.
+    this.persistCombatSnapshot(session);
 
     return this.serialize(battle, session);
   }
@@ -732,7 +737,10 @@ export class CombatSessionService {
     await ExplorationSessionService.persistForCombat(exploration);
 
     // On supprime la session **sauf** s'il reste des stats à choisir.
-    if (!pendingLevelUps) this.sessions.delete(sessionKey);
+    if (!pendingLevelUps) {
+      this.clearCombatSnapshot(session);
+      this.sessions.delete(sessionKey);
+    }
     if (exited) ExplorationSessionService.deleteSession(sessionKey);
     return { state: finalState, logs, exited, pendingLevelUps, gameOver };
   }
@@ -778,9 +786,225 @@ export class CombatSessionService {
     if (tileResult.exited) exited = true;
 
     await ExplorationSessionService.persistForCombat(exploration);
+    this.clearCombatSnapshot(session);
     this.sessions.delete(sessionKey);
     if (exited) ExplorationSessionService.deleteSession(sessionKey);
     return { state: finalState, logs, exited };
+  }
+
+  // ── Persistance du combat en cours (reconnexion / redémarrage) ──────────
+  // Le combat est en mémoire (Map cléée par sessionKey). Si l'hôte recharge
+  // PENDANT un combat, la session est perdue. On persiste un snapshot à
+  // chaque action et on le restaure à la reconnexion (cf. `hub:join`).
+  //
+  // Les **héros** sont déjà persistés dans `exploration.party` (via
+  // `persistForCombat`) : à la restauration, on mute leur état de combat
+  // (position / PV / statut) sur les instances de la partie. Les **ennemis**
+  // (monstres / démons / Eons) se reconstruisent via leurs constructeurs,
+  // puis on réapplique leur état (PV, position, statut, cooldowns…).
+
+  /** Snapshot sérialisable de la session de combat. */
+  private static serializeCombatSnapshot(session: CombatSession): any {
+    const state = session.battle.combatState;
+    return {
+      turn: state.turn,
+      actionIndex: state.actionIndex,
+      result: state.result,
+      log: state.log.slice(-40),
+      lastHeroDeath: state.lastHeroDeath,
+      placementDone: session.placementDone,
+      moveBudget: session.moveBudget,
+      moveBudgetFor: session.moveBudgetFor,
+      hasActed: session.hasActed,
+      turnKey: session.turnKey,
+      pendingLevelUps: session.pendingLevelUps ?? [],
+      units: state.units.map((u) => ({
+        kind: u instanceof Character ? "hero"
+          : u instanceof Monster ? "monster"
+          : u instanceof Demon ? "demon"
+          : u instanceof Eon ? "eon"
+          : "unknown",
+        id: u.id,
+        name: u.name,
+        type: u.type,
+        position: { ...u.position },
+        currentHp: u.currentHp,
+        maxHp: u.maxHp,
+        status: u.status.map((s) => ({ ...s })),
+        isReplaced: u.isReplaced,
+        isTargeted: u.isTargeted,
+        canAct: u.canAct,
+        // Héros : AP/MP (mutés pendant le combat, non persistés dans la partie).
+        currentAp: u instanceof Character ? u.currentAp : undefined,
+        maxAp: u instanceof Character ? u.maxAp : undefined,
+        currentMp: u instanceof Character ? u.currentMp : undefined,
+        maxMp: u instanceof Character ? u.maxMp : undefined,
+        // Monstre :
+        zoneLevel: u instanceof Monster ? u.zoneLevel : undefined,
+        turnCount: u instanceof Monster ? u.turnCount : undefined,
+        cooldowns: u instanceof Monster ? Array.from(u.cooldowns.entries()) : undefined,
+        // Démon :
+        currentTurn: u instanceof Demon ? u.currentTurn : undefined,
+        // Eon :
+        eonName: u instanceof Eon ? u.name.split("/")[1] : undefined,
+        currentTransePoint: u instanceof Eon ? u.currentTransePoint : undefined,
+        invocationEnded: u instanceof Eon ? u.invocationEnded : undefined,
+        hpAtTurnStart: u instanceof Eon ? u.hpAtTurnStart : undefined,
+      })),
+    };
+  }
+
+  /** Persiste le snapshot de combat en base (mode room uniquement). */
+  private static persistCombatSnapshot(session: CombatSession): void {
+    const storage = session.exploration.storage;
+    if (storage.kind !== "room") return;
+    // Fire-and-forget : les méthodes de combat sont synchres (le front attend
+    // l'état immédiatement), la persistance ne doit pas bloquer la réponse.
+    PartyRoomService.saveCombat(storage.roomId, this.serializeCombatSnapshot(session)).catch(() => {});
+  }
+
+  /** Efface le snapshot de combat (fin de combat). */
+  private static clearCombatSnapshot(session: CombatSession): void {
+    const storage = session.exploration.storage;
+    if (storage.kind !== "room") return;
+    PartyRoomService.clearCombat(storage.roomId).catch(() => {});
+  }
+
+  /**
+   * Restaure une session de combat depuis un snapshot persisté. Reconstruit
+   * le plateau (héros depuis `exploration.party`, ennemis via leurs
+   * constructeurs), réapplique l'état (PV, position, statut, tour, budget),
+   * et remet la session en mémoire.
+   *
+   * @returns la session restaurée, ou null si impossible (ex. partie perdue).
+   */
+  static async restoreCombat(sessionKey: string, snapshot: any): Promise<CombatSession | null> {
+    try {
+      const exploration = ExplorationSessionService.getSession(sessionKey);
+      if (!exploration) return null;
+
+      const units: Unit[] = [];
+      for (const su of snapshot.units ?? []) {
+        if (su.kind === "hero") {
+          // Le héros est déjà dans la partie (persistée) : on mute son état.
+          const hero = exploration.party.members.find((m) => m.id === su.id);
+          if (!hero) continue;
+          hero.position = { ...su.position };
+          hero.currentHp = su.currentHp;
+          hero.maxHp = su.maxHp;
+          hero.status = (su.status ?? []).map((s: any) => ({ ...s }));
+          hero.isReplaced = !!su.isReplaced;
+          hero.isTargeted = !!su.isTargeted;
+          hero.canAct = su.canAct ?? true;
+          // AP/MP (mutés pendant le combat, non persistés dans la partie).
+          if (su.currentAp !== undefined) hero.currentAp = su.currentAp;
+          if (su.maxAp !== undefined) hero.maxAp = su.maxAp;
+          if (su.currentMp !== undefined) hero.currentMp = su.currentMp;
+          if (su.maxMp !== undefined) hero.maxMp = su.maxMp;
+          units.push(hero);
+        } else if (su.kind === "monster") {
+          const m = new Monster(su.name, { ...su.position }, su.type, su.zoneLevel ?? 1);
+          m.id = su.id;
+          m.currentHp = su.currentHp;
+          m.maxHp = su.maxHp;
+          m.status = (su.status ?? []).map((s: any) => ({ ...s }));
+          m.isReplaced = !!su.isReplaced;
+          m.isTargeted = !!su.isTargeted;
+          m.canAct = su.canAct ?? true;
+          m.turnCount = su.turnCount ?? 0;
+          m.cooldowns = new Map(su.cooldowns ?? []);
+          units.push(m);
+        } else if (su.kind === "demon") {
+          const d = new Demon(su.name, su.type, { ...su.position });
+          d.currentTurn = su.currentTurn ?? 0;
+          d.status = (su.status ?? []).map((s: any) => ({ ...s }));
+          d.isReplaced = !!su.isReplaced;
+          d.isTargeted = !!su.isTargeted;
+          d.canAct = su.canAct ?? true;
+          units.push(d);
+        } else if (su.kind === "eon") {
+          // L'Eon est invoqué à la place de son invocateur (même id).
+          const invoker = exploration.party.members.find((m) => m.id === su.id);
+          if (!invoker) continue;
+          const eon = new Eon(invoker, su.eonName ?? "");
+          eon.position = { ...su.position };
+          eon.currentHp = su.currentHp;
+          eon.maxHp = su.maxHp;
+          eon.status = (su.status ?? []).map((s: any) => ({ ...s }));
+          eon.currentTransePoint = su.currentTransePoint ?? 10;
+          eon.invocationEnded = !!su.invocationEnded;
+          eon.hpAtTurnStart = su.hpAtTurnStart ?? 0;
+          eon.isReplaced = !!su.isReplaced;
+          eon.isTargeted = !!su.isTargeted;
+          eon.canAct = su.canAct ?? true;
+          // L'invocateur est masqué (remplacé par l'Eon sur le plateau).
+          invoker.isReplaced = true;
+          eon.summoner = invoker;
+          units.push(eon);
+        }
+      }
+      if (units.length === 0) return null;
+
+      const battle = new BattleManager(units);
+      const state = battle.combatState;
+      state.turn = snapshot.turn ?? 1;
+      state.result = snapshot.result ?? "ongoing";
+      state.log = snapshot.log ?? [];
+      state.lastHeroDeath = snapshot.lastHeroDeath ?? null;
+      // Reconstruit l'ordre d'action du tour courant (unités vivantes triées
+      // par vitesse) **sans** pousser de marqueur `--- Tour N ---` : le log
+      // restauré contient déjà le marqueur du tour courant.
+      state.actionOrder = state.aliveUnits
+        .filter((u) => !u.isReplaced)
+        .slice()
+        .sort((a, b) => state.getSpeed(b) - state.getSpeed(a));
+      state.actionIndex = snapshot.actionIndex ?? 0;
+
+      const session: CombatSession = {
+        battle,
+        sessionKey,
+        exploration,
+        moveBudget: snapshot.moveBudget ?? 0,
+        moveBudgetFor: snapshot.moveBudgetFor,
+        hasActed: snapshot.hasActed ?? false,
+        turnKey: snapshot.turnKey,
+        placementDone: snapshot.placementDone ?? true,
+        pendingLevelUps: snapshot.pendingLevelUps ?? [],
+      };
+      this.sessions.set(sessionKey, session);
+      return session;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Garantit qu'une session de combat existe en mémoire pour la room. Si elle
+   * est déjà en mémoire, la renvoie. Sinon, tente de la restaurer depuis le
+   * snapshot persisté (reconnexion / redémarrage backend).
+   *
+   * @returns l'état sérialisé du combat, ou null si aucun combat à restaurer.
+   */
+  static async ensureCombat(sessionKey: string): Promise<CombatStateView | null> {
+    const existing = this.sessions.get(sessionKey);
+    if (existing) return this.serialize(existing.battle, existing);
+    const snapshot = await PartyRoomService.getCombat(sessionKey);
+    if (!snapshot) return null;
+    const session = await this.restoreCombat(sessionKey, snapshot);
+    if (!session) return null;
+    return this.serialize(session.battle, session);
+  }
+
+  /**
+   * Persiste le snapshot du combat courant (appelé par le socket après chaque
+   * action de combat). Ne persiste pas un combat déjà terminé (le front va
+   * appeler `combat:end` → `applyEnd` qui efface le snapshot).
+   */
+  static persist(sessionKey: string): void {
+    const session = this.sessions.get(sessionKey);
+    if (session && !session.battle.isOver) {
+      this.persistCombatSnapshot(session);
+    }
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────

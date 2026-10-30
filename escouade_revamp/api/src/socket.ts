@@ -89,6 +89,11 @@ export const initializeSocket = (io: Server) => {
         if (isDungeon) {
           const explorationState = await ExplorationSessionService.ensureSession(roomId);
           if (explorationState) socket.emit('exploration:state', { state: explorationState });
+          // **Combat en cours** : si un combat était en cours avant la
+          // reconnexion, on le restaure (la session d'exploration doit être en
+          // mémoire d'abord — `ensureCombat` en a besoin pour les héros).
+          const combatState = await CombatSessionService.ensureCombat(roomId);
+          if (combatState) socket.emit('combat:state', { state: combatState });
         }
       } catch (err: any) {
         socket.emit('error', { message: err?.message ?? 'Erreur inconnue' });
@@ -208,6 +213,17 @@ export const initializeSocket = (io: Server) => {
           const { session } = await PartyRoomService.getHubState(room.roomId);
           const state = PartyRoomService.serializeRoom(room, session);
           io.to(room.roomId).emit('hub:state', { state });
+          // **Donjon / combat en cours** : comme dans `hub:join`, on renvoie
+          // l'état d'exploration puis de combat au joueur qui rejoint (sinon
+          // le front, remis à la mappemonde par `hub:state`, ne reprendrait
+          // pas le donjon/combat sans un rechargement).
+          const isDungeon = !!(await WorldService.getDungeonById(room.currentNodeId));
+          if (isDungeon) {
+            const explorationState = await ExplorationSessionService.ensureSession(room.roomId);
+            if (explorationState) socket.emit('exploration:state', { state: explorationState });
+            const combatState = await CombatSessionService.ensureCombat(room.roomId);
+            if (combatState) socket.emit('combat:state', { state: combatState });
+          }
         })
         .catch((err) => socket.emit('error', { message: err?.message ?? 'Erreur' }));
     });
@@ -306,6 +322,9 @@ export const initializeSocket = (io: Server) => {
     const replyCombat = (action: () => any, broadcast = false) => {
       try {
         const state = action();
+        // Persiste le snapshot du combat (reconnexion) : après chaque action,
+        // l'état est sauvegardé en base pour survivre à un rechargement.
+        CombatSessionService.persist(explorationKey());
         const target = broadcast ? io.to(currentRoomId()!) : socket;
         target.emit('combat:state', { state });
       } catch (err: any) {
