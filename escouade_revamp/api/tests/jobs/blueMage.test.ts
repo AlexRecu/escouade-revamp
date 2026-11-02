@@ -229,6 +229,21 @@ describe("Blue Mage Class Tests", () => {
         expect(job.monstronomiconLevel).toBe(6);
     });
 
+    test("Appel à la meute est exclue du pool d'apprentissage", () => {
+        const job = blueMage.job as BlueMage;
+        // Le Loup a "Morsure" + "Appel à la meute". Après exclusion, le pool
+        // ne contient que "Morsure" → l'apprentissage est déterministe.
+        const wolf = new Monster("Loup", { row: 1, col: 1 }, "Enemy", 2);
+        expect(wolf.monsterSkills).toContain("Appel à la meute");
+        blueMage.useAbilityByName("Scan", [wolf]);
+        const log = blueMage.useAbilityByName("Apprendre", [wolf]);
+        expect(log.join(" ")).toContain("Morsure");
+        expect(log.join(" ")).not.toContain("Appel à la meute");
+        // La compétence apprise est bien Morsure (pas Appel à la meute).
+        expect(job.skills.some((s) => s.skill.name === "Morsure")).toBe(true);
+        expect(job.skills.some((s) => s.skill.name === "Appel à la meute")).toBe(false);
+    });
+
     test("learnedCount ignore Scan/Apprendre", () => {
         const job = blueMage.job as BlueMage;
         // Scan + Apprendre (de base) ne comptent pas.

@@ -19,6 +19,12 @@ export class BlueMage extends Job {
     static readonly SAGE_BLUE_LEARN_SLOTS = 20;
     /** Compétences de base (outils d'apprentissage) — ne comptent pas dans les slots. */
     static readonly BASE_SKILL_NAMES = ["Scan", "Apprendre"];
+    /**
+     * Capacités **non apprenables** par le Mage bleu : mécaniques propres aux
+     * monstres (ex. "Appel à la meute" = invoquer un congénère, géré par l'IA
+     * des monstres, sans effet pour un personnage). Exclues du pool d'apprentissage.
+     */
+    static readonly NON_LEARNABLE_SKILLS = ["Appel à la meute"];
 
     monstronomicon = new Monstronomicon("BM_Monstronomicon_" + IdGenerator.generateId());
     private _trancePoints?: number;
@@ -154,6 +160,10 @@ export class BlueMage extends Job {
             if (target instanceof Character) {
                 targetSkills = [...target.getAvailableAbilities().map(skill => skill.name), ...target.getAvailableSpells().map(spell => spell.name)];
             }
+
+            // Exclut les capacités non apprenables (mécaniques propres aux monstres,
+            // ex. "Appel à la meute" qui n'a pas d'effet pour un personnage).
+            targetSkills = targetSkills.filter((s) => !BlueMage.NON_LEARNABLE_SKILLS.includes(s));
 
             if (targetSkills.length === 0) return `${target.name} n'a aucune attaque à apprendre.`;
 
