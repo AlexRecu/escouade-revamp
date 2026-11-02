@@ -6,6 +6,60 @@ type Props = {
   entries: MonstronomiconEntry[];
 };
 
+/** Emoji par élément (pour les faiblesses/résistances/immunités). */
+const ELEMENT_ICON: Record<string, string> = {
+  Feu: '🔥',
+  Glace: '❄️',
+  Air: '💨',
+  Foudre: '⚡',
+  Terre: '🪨',
+  Sacré: '✨',
+  'Ténèbres': '🌑',
+};
+
+/** Renvoie l'emoji d'un élément (ou un point neutre si inconnu). */
+function elementIcon(el: string): string {
+  return ELEMENT_ICON[el] ?? '•';
+}
+
+/**
+ * Affiche les traits élémentaires d'un monstre : faiblesses, résistances et
+ * immunités. Chaque ligne n'est rendue que si elle contient au moins un
+ * élément (un monstre sans faiblesse n'affiche pas la ligne « Faible à »).
+ */
+function ElementTraits({
+  weakness,
+  resistance,
+  immunity,
+}: {
+  weakness?: string[];
+  resistance?: string[];
+  immunity?: string[];
+}) {
+  const rows: { label: string; items: string[]; cls: string }[] = [];
+  if (weakness && weakness.length > 0) rows.push({ label: 'Faible à', items: weakness, cls: 'weak' });
+  if (resistance && resistance.length > 0) rows.push({ label: 'Résiste à', items: resistance, cls: 'resist' });
+  if (immunity && immunity.length > 0) rows.push({ label: 'Immunisé à', items: immunity, cls: 'immune' });
+  if (rows.length === 0) return null;
+
+  return (
+    <div className="mono-entry-elements">
+      {rows.map((r) => (
+        <div key={r.cls} className={`mono-entry-element mono-entry-element-${r.cls}`}>
+          <span className="mono-entry-pv-label">{r.label}</span>
+          <span className="mono-entry-element-list">
+            {r.items.map((el) => (
+              <span key={el} className="mono-entry-element-item" title={el}>
+                {elementIcon(el)} {el}
+              </span>
+            ))}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /**
  * Fiche consultable du **Monstronomicon** : liste les créatures étudiées par
  * le Mage bleu (via "Scan"). Pour chaque monstre : sprite, rang, type
@@ -75,6 +129,16 @@ export default function MonstronomiconView({ entries }: Props) {
                     ))}
                   </div>
                 </div>
+              )}
+
+              {/* Éléments : faiblesses / résistances / immunités (chacune
+                  affichée seulement si non vide). */}
+              {e.isMonster && (
+                <ElementTraits
+                  weakness={e.weakness}
+                  resistance={e.resistance}
+                  immunity={e.immunity}
+                />
               )}
 
               {!e.isMonster && (

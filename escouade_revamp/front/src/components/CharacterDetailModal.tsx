@@ -497,11 +497,20 @@ export default function CharacterDetailModal({ member, sharedBag, onClose, actio
                   {specialItems.map((item) => {
                     const isMono = item.name === 'Monstronomicon';
                     const canOpen = isMono && !!member.monstronomicon;
+                    const monoLevel = member.monstronomiconLevel;
                     return (
                       <li key={item.id} className="char-detail-bag-item" title={item.description}>
                         <span className="char-detail-item-name">
                           {isMono ? '📖 ' : '🔑 '}
                           {item.name}
+                          {isMono && monoLevel != null && (
+                            <span
+                              className="char-detail-mono-level"
+                              title={`Peut étudier les monstres de rang ${monoLevel} et moins (les classes sont toujours scannables).`}
+                            >
+                              · Niv. {monoLevel}
+                            </span>
+                          )}
                         </span>
                         {isMono ? (
                           <button

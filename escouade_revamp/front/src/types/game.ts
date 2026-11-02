@@ -41,6 +41,12 @@ export type MonstronomiconEntry = {
   /** PV par zone (6 valeurs, zone 1 → 6). */
   pvByZone?: number[];
   attacks?: string[];
+  /** Faiblesses élémentaires (dégâts augmentés) — vide si aucune. */
+  weakness?: string[];
+  /** Résistances élémentaires (dégâts réduits) — vide si aucune. */
+  resistance?: string[];
+  /** Immunités élémentaires (dégâts annulés) — vide si aucune. */
+  immunity?: string[];
 };
 
 /** Arme équipée (main droite ou gauche). */
@@ -82,6 +88,8 @@ export type PartyMember = {
   canDualWield: boolean;
   /** Monstronomicon (Mage bleu) : monstres/classes étudiés. `null` sinon. */
   monstronomicon?: MonstronomiconEntry[] | null;
+  /** Niveau du Monstronomicon (Mage bleu) : rang max scannable. `null` sinon. */
+  monstronomiconLevel?: number | null;
   /** Slots d'apprentissage (Mage bleu) : `{ learned, slots }`. `null` sinon. */
   learnSlots?: { learned: number; slots: number } | null;
   /** Statistiques détaillées (7 stats) — pour le panneau de détail. */
@@ -268,6 +276,8 @@ export type DungeonMember = {
   avatar?: string | null;
   equippableWeapons?: string[];
   canDualWield?: boolean;
+  /** Niveau du Monstronomicon (Mage bleu) : rang max scannable. `null` sinon. */
+  monstronomiconLevel?: number | null;
   /** Monstronomicon (Mage bleu) : monstres/classes étudiés. `null` sinon. */
   monstronomicon?: MonstronomiconEntry[] | null;
   /** Slots d'apprentissage (Mage bleu) : `{ learned, slots }`. `null` sinon. */

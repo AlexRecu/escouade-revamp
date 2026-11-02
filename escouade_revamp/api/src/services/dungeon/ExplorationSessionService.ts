@@ -1027,6 +1027,8 @@ export class ExplorationSessionService {
           canDualWield: HubSerializer.canDualWield(m),
           // Monstronomicon (Mage bleu) : monstres/classes étudiés (fiche).
           monstronomicon: HubSerializer.monstronomiconData(m),
+          // Niveau du Monstronomicon (Mage bleu) : rang max scannable, ou null.
+          monstronomiconLevel: HubSerializer.monstronomiconLevel(m),
           // Slots d'apprentissage (Mage bleu) : { learned, slots } ou null.
           learnSlots: HubSerializer.learnSlotsData(m),
           stats: m.stats,

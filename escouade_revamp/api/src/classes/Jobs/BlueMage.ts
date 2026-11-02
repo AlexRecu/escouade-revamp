@@ -253,6 +253,12 @@ export class BlueMage extends Job {
         attackType?: "Physique" | "Magique";
         pvByZone?: number[];
         attacks?: string[];
+        /** Faiblesses élémentaires (dégâts augmentés) — vide si aucune. */
+        weakness?: string[];
+        /** Résistances élémentaires (dégâts réduits) — vide si aucune. */
+        resistance?: string[];
+        /** Immunités élémentaires (dégâts annulés) — vide si aucune. */
+        immunity?: string[];
     }[] {
         return this.monstronomicon.entries.map((e) => {
             const b = (bestiary as any[]).find((m) => m.name === e.name);
@@ -266,6 +272,9 @@ export class BlueMage extends Job {
                     attackType: b.type === "Magique" ? "Magique" : "Physique",
                     pvByZone: b.pv,
                     attacks: b.attack ?? [],
+                    weakness: b.weakness ?? [],
+                    resistance: b.resistance ?? [],
+                    immunity: b.immunity ?? [],
                 };
             }
             // Classe étudiée (pas dans le bestiaire).
@@ -276,6 +285,15 @@ export class BlueMage extends Job {
                 isMonster: false,
             };
         });
+    }
+
+    /**
+     * Niveau du Monstronomicon : le **rang maximal** de monstre que le Mage
+     * bleu peut étudier via "Scan" (`isScannable` : `level >= target.rank`).
+     * Les classes (héros) sont toujours scannables, quel que soit le niveau.
+     */
+    get monstronomiconLevel(): number {
+        return this.monstronomicon.level;
     }
 
     get trancePoints(): number | undefined{

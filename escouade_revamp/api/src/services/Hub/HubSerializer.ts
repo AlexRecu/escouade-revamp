@@ -116,6 +116,16 @@ export class HubSerializer {
   }
 
   /**
+   * Niveau du Monstronomicon (Mage bleu) : rang maximal de monstre scannable.
+   * `null` si le membre n'est pas un Mage bleu. Affiché dans le sac pour que
+   * le joueur sache jusqu'à quel rang il peut étudier.
+   */
+  static monstronomiconLevel(member: Character): number | null {
+    if (member.job instanceof BlueMage) return member.job.monstronomiconLevel;
+    return null;
+  }
+
+  /**
    * Compteur de slots d'apprentissage (Mage bleu) : `{ learned, slots }`.
    * `null` si le membre n'est pas un Mage bleu. Affiché dans la fiche perso
    * pour que le joueur sache combien de capacités il peut encore apprendre.
@@ -219,6 +229,8 @@ export class HubSerializer {
           canDualWield: this.canDualWield(m),
           // Monstronomicon (Mage bleu) : monstres/classes étudiés (fiche).
           monstronomicon: this.monstronomiconData(m),
+          // Niveau du Monstronomicon (Mage bleu) : rang max scannable, ou null.
+          monstronomiconLevel: this.monstronomiconLevel(m),
           // Slots d'apprentissage (Mage bleu) : { learned, slots } ou null.
           learnSlots: this.learnSlotsData(m),
           // Statistiques détaillées (pour le panneau de détail du personnage).

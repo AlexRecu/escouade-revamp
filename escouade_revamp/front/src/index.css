@@ -2853,6 +2853,54 @@ button:disabled {
   color: var(--accent);
   font-weight: 600;
 }
+/* Traits élémentaires (faiblesses / résistances / immunités). */
+.mono-entry-elements {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+}
+.mono-entry-element {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.mono-entry-element > .mono-entry-pv-label {
+  display: inline;
+  margin-bottom: 0;
+  min-width: 62px;
+}
+.mono-entry-element-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.mono-entry-element-item {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.mono-entry-element-weak .mono-entry-element-item {
+  border-color: var(--hp);
+  color: #f0a3a3;
+}
+.mono-entry-element-resist .mono-entry-element-item {
+  border-color: var(--mp);
+  color: #a3c4f0;
+}
+.mono-entry-element-immune .mono-entry-element-item {
+  border-color: var(--accent);
+  color: #e8d59a;
+}
+/* Badge de niveau du Monstronomicon (dans le sac). */
+.char-detail-mono-level {
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+}
 /* Ligne de sort (nom + méta + bouton Lancer pour les sorts de soin). */
 .char-detail-spell-row {
   display: flex;
