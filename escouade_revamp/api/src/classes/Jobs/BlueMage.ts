@@ -132,7 +132,7 @@ export class BlueMage extends Job {
         if (this.monstronomicon.isRegistered(target)) {
             resultArray.push("Déjà étudié !");
         } else {
-            if (this.monstronomicon.isScannable(target)) {
+            if (this.monstronomicon.isScannable(target, this.monstronomiconLevel)) {
                 this.monstronomicon.addEntry(target.name);
                 if (target instanceof Monster) resultArray.push(`${target.name} a bien été ajoutée au monstronomicon`);
                 if (target instanceof Character) resultArray.push(`La classe "${target.job.name}" a bien été ajoutée au monstronomicon`);
@@ -291,9 +291,18 @@ export class BlueMage extends Job {
      * Niveau du Monstronomicon : le **rang maximal** de monstre que le Mage
      * bleu peut étudier via "Scan" (`isScannable` : `level >= target.rank`).
      * Les classes (héros) sont toujours scannables, quel que soit le niveau.
+     *
+     * Dérivé du niveau du job + de l'évolution (livret) :
+     *  - Mage bleu : niv 1-9 → 2, niv 10-14 → 3, niv 15+ → 4.
+     *  - Sage Bleu : niv 20-25 → 5, niv 26+ → 6.
      */
     get monstronomiconLevel(): number {
-        return this.monstronomicon.level;
+        if (this.evolvedName === "Sage Bleu") {
+            return this.jobLevel >= 26 ? 6 : 5;
+        }
+        if (this.jobLevel >= 15) return 4;
+        if (this.jobLevel >= 10) return 3;
+        return 2;
     }
 
     get trancePoints(): number | undefined{

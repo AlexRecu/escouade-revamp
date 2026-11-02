@@ -204,6 +204,31 @@ describe("Blue Mage Class Tests", () => {
         expect(job.learnSlots).toBe(20);
     });
 
+    test("monstronomiconLevel : paliers selon le niveau du Mage bleu / Sage Bleu", () => {
+        const job = blueMage.job as BlueMage;
+        // Mage bleu : niv 1-9 → 2, niv 10-14 → 3, niv 15+ → 4.
+        job.jobLevel = 1;
+        expect(job.monstronomiconLevel).toBe(2);
+        job.jobLevel = 9;
+        expect(job.monstronomiconLevel).toBe(2);
+        job.jobLevel = 10;
+        expect(job.monstronomiconLevel).toBe(3);
+        job.jobLevel = 14;
+        expect(job.monstronomiconLevel).toBe(3);
+        job.jobLevel = 15;
+        expect(job.monstronomiconLevel).toBe(4);
+        job.jobLevel = 19;
+        expect(job.monstronomiconLevel).toBe(4);
+        // Sage Bleu : niv 20-25 → 5, niv 26+ → 6.
+        job.applyEvolutionState("Sage Bleu");
+        job.jobLevel = 20;
+        expect(job.monstronomiconLevel).toBe(5);
+        job.jobLevel = 25;
+        expect(job.monstronomiconLevel).toBe(5);
+        job.jobLevel = 26;
+        expect(job.monstronomiconLevel).toBe(6);
+    });
+
     test("learnedCount ignore Scan/Apprendre", () => {
         const job = blueMage.job as BlueMage;
         // Scan + Apprendre (de base) ne comptent pas.

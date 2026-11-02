@@ -21,7 +21,6 @@ export interface StudiedEntry {
 export class Monstronomicon extends Item {
     /** Monstres/classes étudiés (persistance : sérialisé dans le job). */
     entries: StudiedEntry[];
-    level: number;
 
     constructor(id: string) {
         super(
@@ -33,7 +32,6 @@ export class Monstronomicon extends Item {
             0
         );
         this.entries = [];
-        this.level = 2;
     }
 
     /** Ajoute un monstre/classe comme étudié (idempotent par nom). */
@@ -75,14 +73,13 @@ export class Monstronomicon extends Item {
         return this.isRegisteredByName(target.name);
     }
 
-    isScannable(target: Unit): boolean {
-        return (target instanceof Monster && this.level >= target.rank) || target instanceof Character;
-    }
-
-    setLevel(newLevel: number): void {
-        if (newLevel > 0) {
-            this.level = newLevel;
-        }
+    /**
+     * Le monstre est-il scannable ? Un monstre l'est si son rang est ≤ au
+     * niveau du Monstronomicon (dérivé du niveau du Mage bleu, passé en
+     * paramètre). Les classes (héros) sont toujours scannables.
+     */
+    isScannable(target: Unit, level: number): boolean {
+        return (target instanceof Monster && level >= target.rank) || target instanceof Character;
     }
 
 }
