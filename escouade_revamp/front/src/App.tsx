@@ -13,6 +13,7 @@ import CharacterCreationScreen from './components/CharacterCreationScreen';
 import StatChoiceModal from './components/StatChoiceModal';
 import CharacterDetailModal from './components/CharacterDetailModal';
 import GameOverScreen from './components/GameOverScreen';
+import ToastContainer from './components/ToastContainer';
 import { useGame } from './game/useGame';
 
 type View =
@@ -38,7 +39,7 @@ function App() {
   // sur la mappemonde ET en ville (colonne latérale permanente). Le token est
   // passé en paramètre : quand il devient disponible (premier login), le
   // socket est re-connecté avec le JWT (sinon il serait refusé par le back).
-  const { state, logs: gameLogs, connected, actions, rooms, error: gameError, inRoom, exploration, combat, pendingLevelUps, gameOver, dismissGameOver, setExplorationExitedHandler, setAuthErrorHandler } = useGame(getToken());
+  const { state, logs: gameLogs, connected, actions, rooms, error: gameError, inRoom, exploration, combat, pendingLevelUps, gameOver, dismissGameOver, setExplorationExitedHandler, setAuthErrorHandler, toasts } = useGame(getToken());
 
   // Identité du joueur connecté (pour savoir s'il a déjà un personnage dans
   // la partie, et s'il est spectateur). Dépend de `user` : `<App />` n'est pas
@@ -453,6 +454,9 @@ function App() {
       {gameOver && (
         <GameOverScreen recap={gameOver} onDismiss={dismissGameOver} />
       )}
+      {/* Notifications éphémères (toasts) : sauvegarde, nouvel aventurier,
+          renommage de partie… Affichées en surimpression, en haut à droite. */}
+      <ToastContainer toasts={toasts} />
     </div>
   );
 }

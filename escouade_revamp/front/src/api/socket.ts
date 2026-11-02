@@ -139,6 +139,12 @@ export function onError(cb: (message: string) => void): void {
   socket?.on('error', ({ message }: { message: string }) => cb(message));
 }
 
+/** Émis par le serveur pour une notification éphémère (toast) : sauvegarde,
+ *  nouvel aventurier, renommage de partie… */
+export function onToast(cb: (toast: { message: string; type: 'info' | 'success' | 'error' }) => void): void {
+  socket?.on('toast', (t: { message: string; type: 'info' | 'success' | 'error' }) => cb(t));
+}
+
 // ── Abonnements exploration (serveur → client) ─────────────────────────────
 
 export function onExplorationState(cb: (state: ExplorationState) => void): void {

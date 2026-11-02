@@ -260,7 +260,10 @@ export const initializeSocket = (io: Server) => {
       const roomId = currentRoomId();
       if (!roomId) return;
       PartyRoomService.save(roomId)
-        .then((result) => socket.emit('hub:log', { logs: result.logs }))
+        .then((result) => {
+          socket.emit('hub:log', { logs: result.logs });
+          socket.emit('toast', { message: '💾 Partie sauvegardée.', type: 'success' });
+        })
         .catch((err) => socket.emit('error', { message: err?.message ?? 'Erreur' }));
     });
 
@@ -276,6 +279,7 @@ export const initializeSocket = (io: Server) => {
           io.emit('party:updated', {}); // rafraîchit le lobby de tous
           const { session } = await PartyRoomService.getHubState(room.roomId);
           io.to(room.roomId).emit('hub:state', { state: PartyRoomService.serializeRoom(room, session) });
+          io.to(room.roomId).emit('toast', { message: `✏️ La partie a été renommée « ${room.name} ».`, type: 'info' });
         })
         .catch((err) => socket.emit('error', { message: err?.message ?? 'Erreur' }));
     });
@@ -312,6 +316,8 @@ export const initializeSocket = (io: Server) => {
         .then(({ logs, state }) => {
           io.to(roomId).emit('hub:log', { logs });
           io.to(roomId).emit('hub:state', { state });
+          // Toast à toute la partie : un nouvel aventurier a rejoint l'équipe.
+          if (logs[0]) io.to(roomId).emit('toast', { message: `🎉 ${logs[0]}`, type: 'info' });
         })
         .catch((err) => socket.emit('error', { message: err?.message ?? 'Erreur' }));
     });

@@ -51,6 +51,7 @@ import {
   onState,
   onLog,
   onError,
+  onToast,
   onExplorationState,
   onExplorationLog,
   onExplorationExited,
@@ -124,11 +125,16 @@ export type GameActions = {
   }) => void;
 };
 
+/** Notification éphémère (toast) affichée en surimpression. */
+export type Toast = { id: number; message: string; type: 'info' | 'success' | 'error' };
+
 export type UseGame = {
   state: GameState | null;
   logs: string[];
   connected: boolean;
   actions: GameActions;
+  /** Notifications éphémères (toasts) à afficher en surimpression. */
+  toasts: Toast[];
   /** Liste des parties publiques (pour le lobby). */
   rooms: RoomSummary[];
   /** Dernière erreur serveur (ex. création de personnage refusée). */
@@ -177,6 +183,10 @@ export function useGame(token: string | null): UseGame {
   const [pendingLevelUps, setPendingLevelUps] = useState<{ characterId: string; name: string; level: number }[]>([]);
   const [gameOver, setGameOver] = useState<GameOverRecap | null>(null);
   const [rooms, setRooms] = useState<RoomSummary[]>([]);
+  // Notifications éphémères (toasts) : sauvegarde, nouvel aventurier, renommage.
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  // Compteur d'ids de toasts (stable, hors render).
+  const toastIdRef = useRef(0);
   // Dernière erreur serveur (ex. création de personnage refusée) — affichée
   // dans l'écran courant puis effacée au prochain état valide.
   const [error, setError] = useState<string | null>(null);
@@ -189,6 +199,16 @@ export function useGame(token: string | null): UseGame {
 
   const pushLogs = useCallback((newLogs: string[]) => {
     setLogs((prev) => [...prev, ...newLogs].slice(-60));
+  }, []);
+
+  // Ajoute un toast (auto-dismiss après 3,5 s). L'auto-dismiss est géré par
+  // setTimeout : on retire le toast par son id quand le délai est écoulé.
+  const pushToast = useCallback((message: string, type: Toast['type'] = 'info') => {
+    const id = ++toastIdRef.current;
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3500);
   }, []);
 
   const setExplorationExitedHandler = useCallback((cb: (() => void) | null) => {
@@ -249,6 +269,7 @@ export function useGame(token: string | null): UseGame {
       setError(msg);
       pushLogs([`⚠️ ${msg}`]);
     });
+    onToast((t) => pushToast(t.message, t.type));
     onExplorationState((s) => {
       setExploration(s);
       // Un nouvel état d'exploration = le combat est terminé (butin/défaite
@@ -309,7 +330,7 @@ export function useGame(token: string | null): UseGame {
       socket.off('connect', onConnect);
       disconnectSocket();
     };
-  }, [pushLogs, token]);
+  }, [pushLogs, pushToast, token]);
 
   // Le joueur est dans une partie si l'état reçu porte un bloc `room`.
   const inRoom = !!state?.room;
@@ -370,5 +391,5 @@ export function useGame(token: string | null): UseGame {
     partyCreateCharacter,
   };
 
-  return { state, logs, connected, actions, rooms, error, inRoom, exploration, combat, pendingLevelUps, gameOver, dismissGameOver, setExplorationExitedHandler, setAuthErrorHandler };
+  return { state, logs, connected, actions, rooms, error, inRoom, exploration, combat, pendingLevelUps, gameOver, dismissGameOver, setExplorationExitedHandler, setAuthErrorHandler, toasts };
 }
