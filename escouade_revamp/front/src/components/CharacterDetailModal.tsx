@@ -59,18 +59,28 @@ export default function CharacterDetailModal({ member, sharedBag, onClose, actio
   // Sort de soin en cours de ciblage (nom du sort, null = aucun). Quand non
   // null, on affiche la liste des alliés à cibler.
   const [healSpell, setHealSpell] = useState<string | null>(null);
+  // Consommable en cours de ciblage (id de l'objet, null = aucun). Quand non
+  // null, on affiche la liste des alliés à cibler (soin / réanimation / statut).
+  const [useItemTarget, setUseItemTarget] = useState<string | null>(null);
   // Monstronomicon ouvert (fiche consultable) : true = afficher la fiche.
   const [monoOpen, setMonoOpen] = useState(false);
+
+  // Objets d'**équipe** (effet global, pas ciblable sur un allié) : usage
+  // direct, sans sélection de cible.
+  const NON_TARGETABLE_ITEMS = useMemo(
+    () => new Set(['Bois', 'Repousse', 'Corde Sortie']),
+    []
+  );
 
   // Consommables du **sac commun** groupés par nom (les doublons identiques
   // sont empilés ×N). On garde un id représentatif pour l'usage.
   const consumableGroups = useMemo(() => {
-    const map = new Map<string, { name: string; count: number; description: string; id: string }>();
+    const map = new Map<string, { name: string; count: number; description: string; id: string; revive: boolean }>();
     for (const it of sharedBag) {
       if (it.type !== 'consumable') continue;
       const g = map.get(it.name);
       if (g) g.count += 1;
-      else map.set(it.name, { name: it.name, count: 1, description: it.description, id: it.id });
+      else map.set(it.name, { name: it.name, count: 1, description: it.description, id: it.id, revive: it.revive ?? false });
     }
     return Array.from(map.values());
   }, [sharedBag]);
@@ -395,11 +405,27 @@ export default function CharacterDetailModal({ member, sharedBag, onClose, actio
                       </span>
                       <button
                         className="char-detail-bag-btn"
-                        onClick={() => actions.useItem(member.id, g.id)}
+                        onClick={() => {
+                          // Objet d'équipe (Bois / Repousse / Corde Sortie) :
+                          // usage direct, pas de cible. Sinon : ciblage d'un allié.
+                          if (NON_TARGETABLE_ITEMS.has(g.name)) {
+                            actions.useItem(member.id, g.id);
+                          } else {
+                            setUseItemTarget(useItemTarget === g.id ? null : g.id);
+                          }
+                        }}
                         disabled={inCombat || member.isDead}
-                        title={inCombat ? 'Indisponible pendant le combat (voir Objets)' : member.isDead ? 'KO : indisponible' : 'Utiliser'}
+                        title={
+                          inCombat
+                            ? 'Indisponible pendant le combat (voir Objets)'
+                            : member.isDead
+                              ? 'KO : indisponible'
+                              : NON_TARGETABLE_ITEMS.has(g.name)
+                                ? 'Utiliser'
+                                : 'Choisir une cible'
+                        }
                       >
-                        Utiliser
+                        {NON_TARGETABLE_ITEMS.has(g.name) ? 'Utiliser' : 'Cibler'}
                       </button>
                     </li>
                   ))}
@@ -502,6 +528,56 @@ export default function CharacterDetailModal({ member, sharedBag, onClose, actio
             {bagTab === 'special' && monoOpen && member.monstronomicon && (
               <MonstronomiconView entries={member.monstronomicon} />
             )}
+
+            {/* Ciblage d'un consommable : liste des alliés à soigner/ranimer. */}
+            {useItemTarget && members && (() => {
+              const g = consumableGroups.find((x) => x.id === useItemTarget);
+              if (!g) return null;
+              const isRevive = g.revive;
+              return (
+                <div className="char-detail-heal-targets">
+                  <p className="char-detail-heal-title">
+                    Cible de <b>{g.name}</b> :
+                  </p>
+                  <div className="char-detail-heal-list">
+                    {members.map((m) => {
+                      // Réanimation (Queue de phénix) : allié mort. Soin/statut :
+                      // allié vivant.
+                      const valid = isRevive ? m.isDead : !m.isDead;
+                      return (
+                        <button
+                          key={m.id}
+                          className="char-detail-heal-target"
+                          disabled={!valid}
+                          title={
+                            valid
+                              ? `Utiliser ${g.name} sur ${m.name}`
+                              : isRevive
+                                ? `${m.name} n'est pas mort`
+                                : `${m.name} est KO`
+                          }
+                          onClick={() => {
+                            actions.useItem(member.id, g.id, m.id);
+                            setUseItemTarget(null);
+                          }}
+                        >
+                          <span>{m.name}</span>
+                          <span className="char-detail-heal-hp">
+                            {m.isDead ? 'KO' : `${m.hp}/${m.maxHp} PV`}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <button
+                    className="char-detail-heal-cancel"
+                    onClick={() => setUseItemTarget(null)}
+                  >
+                    Annuler
+                  </button>
+                </div>
+              );
+            })()}
           </section>
         </div>
       </div>

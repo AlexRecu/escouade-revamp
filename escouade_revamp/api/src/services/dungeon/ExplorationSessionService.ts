@@ -17,6 +17,7 @@ import { CombatSessionService } from "../Battle/CombatSessionService";
 import { LootEngine } from "../../classes/Progression/LootEngine";
 import { HubSerializer } from "../Hub/HubSerializer";
 import { Weapon } from "../../classes/Items/Weapon";
+import { Consumable } from "../../classes/Items/Consumable";
 import { BlueMage } from "../../classes/Jobs/BlueMage";
 
 /** Direction de déplacement (4 directions, pas de diagonale). */
@@ -177,8 +178,9 @@ export class ExplorationSessionService {
     const dungeon = new Dungeon(node.id, node.name, level, node.biome, levels, finalSeed);
 
     // Ancrage des démons de zone (Phase B) : le flux live régénère les zones,
-    // donc on re-cale le démon du biome sur une impasse du 1er étage.
-    this.anchorZoneDemons(levels[0]);
+    // donc on re-cale le démon du biome sur une impasse du **dernier étage**
+    // (le défi se joue en fin de donjon, pas à l'entrée).
+    this.anchorZoneDemons(levels[levels.length - 1]);
 
     // Position de départ : la tuile de départ du 1er étage. En mode
     // restauration, la position vient de la party (déjà à jour en base) → on
@@ -198,36 +200,40 @@ export class ExplorationSessionService {
       storage: { kind: "player", playerId: "" }, // rempli par l'appelant
       woodCampfires: [],
       defeatedDemonsThisZone: [],
+      repousseTurnsLeft: 0,
     };
   }
 
   /**
-   * Ancre le **démon de zone** du biome sur le 1er étage (Phase B).
+   * Ancre le **démon de zone** du biome sur l'étage donné (Phase B).
    *
    * Le flux live régénère les zones à chaque entrée (nouveau seed), il n'utilise
    * pas les zones du `WorldMap` : l'ancrage est donc refait ici. Le démon est
    * placé sur une **impasse** (cul-de-sac) de préférence, sinon sur une case
    * praticable (jamais le point de départ).
    *
-   * @param zone le 1er étage du donjon (celui qui porte le démon).
+   * @param zone l'étage du donjon qui porte le démon (le **dernier** étage).
    */
   private static anchorZoneDemons(zone: Zone): void {
     const spec = ZONE_DEMONS.find((d) => d.biome === zone.biome);
     if (!spec) return;
 
-    // Position : une impasse de préférence, sinon une case praticable qui
-    // n'est pas le point de départ.
+    // Position : une impasse de préférence, sinon une case praticable. On
+    // exclut le point de départ ET la sortie (endTile) : le combat doit rester
+    // **optionnel** (impasse) et ne jamais bloquer la sortie du donjon.
+    const key = (p: Position) => `${p.row},${p.col}`;
+    const startKey = key(zone.startTile);
+    const endKey = key(zone.endTile);
     const walkable: Position[] = [];
     zone.tileMap.forEach((row, r) =>
       row.forEach((walkableTile, c) => {
         if (walkableTile) walkable.push({ row: r, col: c });
       })
     );
-    const startKey = `${zone.startTile.row},${zone.startTile.col}`;
-    const deadEnd = zone.deadEnds.find((p) => `${p.row},${p.col}` !== startKey);
+    const deadEnd = zone.deadEnds.find((p) => key(p) !== startKey && key(p) !== endKey);
     const position =
       deadEnd ??
-      walkable.find((p) => `${p.row},${p.col}` !== startKey);
+      walkable.find((p) => key(p) !== startKey && key(p) !== endKey);
     if (!position) return;
 
     zone.specialEncounters.push({
@@ -291,11 +297,16 @@ export class ExplorationSessionService {
       }
     }
 
+    // **Repousse** : l'effet annule les rencontres aléatoires. Le compteur
+    // (en pas) est décrémenté à chaque déplacement.
+    const repousseActive = session.repousseTurnsLeft > 0;
+    if (repousseActive) session.repousseTurnsLeft--;
+
     // **Rencontre aléatoire** : à chaque pas, le moteur de rencontre décide si
     // un combat se déclenche (formule du livret : aléatoire < P, P par biome).
     // Si rencontre → on démarre un **combat interactif** (le front bascule sur
     // la vue de combat et pilote le tour par tour).
-    const encounter = EncounterEngine.roll(zone, session.party);
+    const encounter = EncounterEngine.roll(zone, session.party, repousseActive);
     if (encounter) {
       const combatState = CombatSessionService.startCombat(sessionKey, session, encounter);
       return { logs: ["⚔️ Rencontre !"], state: this.serialize(session), combat: combatState };
@@ -434,25 +445,44 @@ export class ExplorationSessionService {
    */
   static async useWood(sessionKey: string): Promise<any> {
     const session = this.require(sessionKey);
+    const wood = this.lightWoodCampfire(session);
+    if (wood.error) return { logs: [wood.error], state: this.serialize(session) };
+    await this.persistAll(session);
+    return { logs: wood.logs!, state: this.serialize(session) };
+  }
+
+  /**
+   * Allume un **feu de bois** sur la case courante (qui doit être **vide** :
+   * pas de feu, pas de coffre, pas de sortie/escalier) et s'y repose
+   * immédiatement (50% PV max, 50% PM max, comme un feu de camp normal). Le
+   * feu est consommé (il laisse une **bûche**, `isUsed = true`).
+   *
+   * Consomme un « Bois » du **sac commun**. Le feu créé est persisté dans le
+   * snapshot (`woodCampfires`) pour survivre à la reconnexion.
+   *
+   * Partagé entre le bouton dédié (`useWood`) et l'usage depuis le sac
+   * (`useItem`), pour que les deux aient exactement le même effet.
+   */
+  private static lightWoodCampfire(session: DungeonSession): { logs?: string[]; error?: string } {
     const zone = session.dungeon.levels[session.currentFloor];
     const pos = session.party.position;
 
     // La case doit être **vide** : pas de feu de camp, pas de coffre, pas de
     // sortie/escalier.
     if (zone.checkpoints.some((c) => c.position?.row === pos.row && c.position?.col === pos.col)) {
-      return { logs: ["Il y a déjà un feu de camp sur cette case."], state: this.serialize(session) };
+      return { error: "Il y a déjà un feu de camp sur cette case." };
     }
     if (zone.chests.some((c) => c.position.row === pos.row && c.position.col === pos.col)) {
-      return { logs: ["Il y a un coffre sur cette case."], state: this.serialize(session) };
+      return { error: "Il y a un coffre sur cette case." };
     }
     if (pos.row === zone.endTile.row && pos.col === zone.endTile.col) {
-      return { logs: ["On ne peut pas allumer un feu sur la sortie."], state: this.serialize(session) };
+      return { error: "On ne peut pas allumer un feu sur la sortie." };
     }
 
     // Consomme un « Bois » du sac commun.
     const woodIdx = session.party.bag.findIndex((i) => i.name === "Bois");
     if (woodIdx === -1) {
-      return { logs: ["Vous n'avez pas de bois dans le sac commun."], state: this.serialize(session) };
+      return { error: "Vous n'avez pas de bois dans le sac commun." };
     }
     session.party.bag.splice(woodIdx, 1);
 
@@ -465,9 +495,7 @@ export class ExplorationSessionService {
     session.woodCampfires.push({ row: pos.row, col: pos.col, floor: session.currentFloor });
     session.activeCampfire = camp;
 
-    const logs = ["🪵 Vous allumez un feu de bois et vous reposez (+50% PV/MP)."];
-    await this.persistAll(session);
-    return { logs, state: this.serialize(session) };
+    return { logs: ["🪵 Vous allumez un feu de bois et vous reposez (+50% PV/MP)."] };
   }
 
   /**
@@ -544,10 +572,18 @@ export class ExplorationSessionService {
   }
 
   /**
-   * Utilise un consommable du sac sur un membre **pendant** le donjon (soin,
-   * réanimation, statut). Opère sur `session.party` puis persiste.
+   * Utilise un consommable du sac **pendant** le donjon. Opère sur
+   * `session.party` puis persiste.
+   *
+   * - **Ciblage** : `targetId` (défaut = l'utilisateur) permet d'appliquer un
+   *   soin / une réanimation / un statut sur un **allié en particulier**
+   *   (ex. Queue de phénix sur un allié KO).
+   * - **Bois** : allume un feu de camp sur la case courante (même effet que le
+   *   bouton dédié `useWood`).
+   * - **Repousse** : annule les rencontres aléatoires pendant 3 pas.
+   * - **Corde Sortie** : quitte le donjon (retour au hub de départ).
    */
-  static async useItem(sessionKey: string, memberId: string, itemId: string): Promise<any> {
+  static async useItem(sessionKey: string, memberId: string, itemId: string, targetId?: string): Promise<any> {
     const session = this.require(sessionKey);
     const member = session.party.members.find((m) => m.id === memberId);
     if (!member) return { logs: ["Personnage introuvable."], state: this.serialize(session) };
@@ -557,8 +593,40 @@ export class ExplorationSessionService {
     if (!item || item.type !== "consumable") {
       return { logs: ["Cet objet n'est pas utilisable."], state: this.serialize(session) };
     }
+
+    // **Bois** : feu de camp sur la case courante (partagé avec `useWood`).
+    if (item.name === "Bois") {
+      const wood = this.lightWoodCampfire(session);
+      if (wood.error) return { logs: [wood.error], state: this.serialize(session) };
+      await this.persistAll(session);
+      return { logs: wood.logs!, state: this.serialize(session) };
+    }
+
+    // **Repousse** : annule les rencontres aléatoires pendant 3 pas.
+    if (item.name === "Repousse") {
+      session.party.bag.splice(session.party.bag.indexOf(item), 1);
+      session.repousseTurnsLeft = 3;
+      await this.persist(session);
+      return { logs: ["🛡️ Le Repousse est actif : plus de rencontre aléatoire pendant 3 tours."], state: this.serialize(session) };
+    }
+
+    // **Corde Sortie** : quitte le donjon (retour au hub de départ).
+    if (item.name === "Corde Sortie") {
+      session.party.bag.splice(session.party.bag.indexOf(item), 1);
+      const exitResult = await this.exitDungeon(sessionKey);
+      return { logs: ["🪢 Vous utilisez la Corde Sortie.", ...exitResult.logs], exited: true };
+    }
+
+    // **Consommable ciblé** (soin, réanimation, statut) : la cible est
+    // `targetId` (défaut : l'utilisateur lui-même).
+    const target = session.party.members.find((m) => m.id === (targetId ?? memberId)) ?? member;
+    // Un soin (non-réanimation) ne peut pas cibler un allié KO.
+    const isRevive = item instanceof Consumable && item.revive;
+    if (target.isDead() && !isRevive) {
+      return { logs: [`${target.name} est KO : utilisez un objet de réanimation.`], state: this.serialize(session) };
+    }
     session.party.bag.splice(session.party.bag.indexOf(item), 1);
-    const logs = member.useItem(item, member);
+    const logs = member.useItem(item, target);
     await this.persist(session);
     return { logs, state: this.serialize(session) };
   }
@@ -661,6 +729,8 @@ export class ExplorationSessionService {
       // Démons de zone vaincus (Phase B) — pour ne pas re-détecter un défi
       // déjà relevé après une reconnexion.
       defeatedDemonsThisZone: session.defeatedDemonsThisZone ?? [],
+      // Pas restants de l'effet Repousse (annule les rencontres).
+      repousseTurnsLeft: session.repousseTurnsLeft ?? 0,
     };
   }
 
@@ -684,6 +754,8 @@ export class ExplorationSessionService {
       // Démons de zone vaincus (Phase B) — restaurés pour ne pas re-détecter
       // un défi déjà relevé.
       session.defeatedDemonsThisZone = snapshot.defeatedDemonsThisZone ?? [];
+      // Pas restants de l'effet Repousse.
+      session.repousseTurnsLeft = snapshot.repousseTurnsLeft ?? 0;
       // Réapplique l'état des coffres ouverts et feux de camp utilisés.
       for (const oc of snapshot.openedChests ?? []) {
         const zone = session.dungeon.levels[oc.floor];
@@ -863,6 +935,8 @@ export class ExplorationSessionService {
       floor: session.currentFloor + 1,
       totalFloors: session.dungeon.levels.length,
       completed: session.completed,
+      // Pas restants de l'effet Repousse (0 = inactif).
+      repousseTurnsLeft: session.repousseTurnsLeft ?? 0,
       // Grille : true = praticable, false = mur.
       tileMap: zone.tileMap,
       position: session.party.position,
@@ -892,6 +966,14 @@ export class ExplorationSessionService {
             opened: session.activeChest.opened,
           }
         : null,
+      // Démon de zone ancré sur **cet étage** (pour afficher 👹 sur sa case).
+      // Null si l'étage n'en porte pas ou s'il a déjà été vaincu cette session.
+      demon: (() => {
+        const se = zone.specialEncounters.find(
+          (s) => !session.defeatedDemonsThisZone.includes(s.demonName)
+        );
+        return se ? { name: se.demonName, row: se.position.row, col: se.position.col } : null;
+      })(),
       visited: Array.from(session.party.visitedTiles).map((key) => {
         const [row, col] = key.split(",").map(Number);
         return { row, col };
@@ -924,6 +1006,8 @@ export class ExplorationSessionService {
           range: i.range ?? 1,
           element: i.element,
           status: i.status ? i.status.name : null,
+          // Réanimation (Queue de phénix) : le front peut alors cibler un allié KO.
+          revive: i instanceof Consumable ? i.revive : false,
         })),
         members: session.party.members.map((m) => ({
           id: m.id,
@@ -1024,4 +1108,10 @@ export interface DungeonSession {
    * snapshot pour survivre à la reconnexion.
    */
   defeatedDemonsThisZone: string[];
+  /**
+   * Pas restants de l'effet **Repousse** (annule les rencontres aléatoires).
+   * Activé par l'objet « Repousse » (3 pas). Décrémenté à chaque déplacement.
+   * Persisté dans le snapshot pour survivre à la reconnexion.
+   */
+  repousseTurnsLeft: number;
 }

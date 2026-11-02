@@ -22,6 +22,8 @@ export type BagItem = {
   element?: string;
   /** Statut d'arme (ex. "Saignée") — affiché dans le sac / l'équipement. */
   status?: string | null;
+  /** Objet de réanimation (Queue de phénix) : ciblable sur un allié KO. */
+  revive?: boolean;
 };
 
 /**
@@ -302,6 +304,8 @@ export type ExplorationState = {
   floor: number;
   totalFloors: number;
   completed: boolean;
+  /** Pas restants de l'effet Repousse (0 = inactif). */
+  repousseTurnsLeft: number;
   /** Grille : true = praticable, false = mur. */
   tileMap: boolean[][];
   position: { row: number; col: number };
@@ -319,6 +323,8 @@ export type ExplorationState = {
     type: 'common' | 'rare';
     opened: boolean;
   } | null;
+  /** Démon de zone ancré sur cet étage (pour afficher 👹 sur sa case). */
+  demon: { name: string; row: number; col: number } | null;
   visited: { row: number; col: number }[];
   activeCampfire: {
     location: string;

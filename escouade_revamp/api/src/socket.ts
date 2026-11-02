@@ -392,9 +392,9 @@ export const initializeSocket = (io: Server) => {
         currentRoomId() !== null
       )
     );
-    socket.on('exploration:useItem', (data: { memberId: string; itemId: string }) =>
+    socket.on('exploration:useItem', (data: { memberId: string; itemId: string; targetId?: string }) =>
       replyExploration(
-        () => ExplorationSessionService.useItem(explorationKey(), data.memberId, data.itemId),
+        () => ExplorationSessionService.useItem(explorationKey(), data.memberId, data.itemId, data.targetId),
         currentRoomId() !== null
       )
     );

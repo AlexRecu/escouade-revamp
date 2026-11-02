@@ -20,7 +20,7 @@ type Props = {
  * encore branché.
  */
 export default function DungeonView({ exploration, logs, onMove, onRest, onUseWood, onOpenChest }: Props) {
-  const { tileMap, position, startTile, endTile, exitType, campfires, chests, activeChest, visited, activeCampfire, completed } = exploration;
+  const { tileMap, position, startTile, endTile, exitType, campfires, chests, activeChest, visited, activeCampfire, completed, demon } = exploration;
 
   // Nombre d'objets « Bois » dans le sac partagé de l'équipe.
   const woodCount = useMemo(
@@ -109,10 +109,12 @@ export default function DungeonView({ exploration, logs, onMove, onRest, onUseWo
                 else cls += ' unvisited';
                 if (isPos) cls += ' party';
 
+                const isDemon = demon && demon.row === r && demon.col === c;
                 let icon = '';
                 if (isPos) icon = '👥';
                 else if (campfireSet.has(`${r},${c}`)) icon = campUsed ? '🪵' : '🔥';
                 else if (chest) icon = chest.opened ? '📭' : chest.type === 'rare' ? '💎' : '📦';
+                else if (isDemon) icon = '👹';
                 else if (isEnd) icon = exitIcon;
                 else if (isStart) icon = '📍';
 
@@ -129,6 +131,7 @@ export default function DungeonView({ exploration, logs, onMove, onRest, onUseWo
             <span>🔥 Feu de camp</span>
             <span>📦 Coffre</span>
             <span>💎 Coffre rare</span>
+            {demon && <span title={demon.name}>👹 Démon</span>}
             <span>{exitIcon} {exitLabel}</span>
             <span>📍 Départ</span>
           </div>

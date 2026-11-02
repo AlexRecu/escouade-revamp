@@ -66,7 +66,7 @@ export type GameActions = {
   buy: (itemName: string) => void;
   sell: (itemId: string) => void;
   equip: (memberId: string, itemId: string, hand: 'right' | 'left') => void;
-  useItem: (memberId: string, itemId: string) => void;
+  useItem: (memberId: string, itemId: string, targetId?: string) => void;
   rest: () => void;
   sanctuary: (targetId: string) => void;
   /** Lance un sort de soin (cible alliée) hors combat (ville ou donjon). */
@@ -319,8 +319,8 @@ export function useGame(token: string | null): UseGame {
     // session (pas sur la partie DB, stale pendant le donjon).
     equip: (memberId, itemId, hand) =>
       exploration ? explorationEquip(memberId, itemId, hand) : hubEquip(memberId, itemId, hand),
-    useItem: (memberId, itemId) =>
-      exploration ? explorationUseItem(memberId, itemId) : hubUseItem(memberId, itemId),
+    useItem: (memberId, itemId, targetId) =>
+      exploration ? explorationUseItem(memberId, itemId, targetId) : hubUseItem(memberId, itemId),
     rest: hubRest,
     sanctuary: hubSanctuary,
     // Sort de soin hors combat : en donjon, opère sur l'équipe en mémoire de

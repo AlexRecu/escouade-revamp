@@ -74,9 +74,9 @@ export const explorationExit = (): void => { socket?.emit('exploration:exit', {}
 export const explorationEquip = (memberId: string, itemId: string, hand: 'right' | 'left'): void => {
   socket?.emit('exploration:equip', { memberId, itemId, hand });
 };
-/** Utilise un consommable du sac pendant le donjon. */
-export const explorationUseItem = (memberId: string, itemId: string): void => {
-  socket?.emit('exploration:useItem', { memberId, itemId });
+/** Utilise un consommable du sac pendant le donjon (cible = `targetId`, défaut soi). */
+export const explorationUseItem = (memberId: string, itemId: string, targetId?: string): void => {
+  socket?.emit('exploration:useItem', { memberId, itemId, targetId });
 };
 /** Lance un sort de soin (cible alliée) hors combat pendant le donjon. */
 export const explorationCastSpell = (casterId: string, targetId: string, spellName: string): void => {

@@ -2911,6 +2911,20 @@ button:disabled {
   font-size: 12px;
   color: var(--text-dim);
 }
+.char-detail-heal-cancel {
+  margin-top: 8px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.char-detail-heal-cancel:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
 
 /* ── Écran de game over (mode difficile) ───────────────────────────────── */
 .gameover-overlay {
