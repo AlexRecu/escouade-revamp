@@ -967,12 +967,20 @@ export class ExplorationSessionService {
           }
         : null,
       // Démon de zone ancré sur **cet étage** (pour afficher 👹 sur sa case).
-      // Null si l'étage n'en porte pas ou s'il a déjà été vaincu cette session.
+      // Null si l'étage n'en porte pas, s'il a déjà été vaincu cette session,
+      // ou si son combat est conditionnel à une quête non encore acceptée
+      // (ex. Adrammelech tant que la quête « kidnappeur » n'est pas acceptée :
+      // le démon reste invisible pour éviter l'incohérence UI).
       demon: (() => {
         const se = zone.specialEncounters.find(
           (s) => !session.defeatedDemonsThisZone.includes(s.demonName)
         );
-        return se ? { name: se.demonName, row: se.position.row, col: se.position.col } : null;
+        if (!se) return null;
+        if (se.requiresQuest) {
+          const accepted = session.questSystem.getQuest(se.requiresQuest)?.accepted ?? false;
+          if (!accepted) return null;
+        }
+        return { name: se.demonName, row: se.position.row, col: se.position.col };
       })(),
       visited: Array.from(session.party.visitedTiles).map((key) => {
         const [row, col] = key.split(",").map(Number);

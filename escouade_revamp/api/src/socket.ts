@@ -269,16 +269,16 @@ export const initializeSocket = (io: Server) => {
 
     // `party:rename` — renomme la partie courante (bouton crayon). Seul l'hôte
     // peut le faire (vérifié dans le service). Le lobby est rafraîchi pour tous
-    // (`party:updated`) et l'état de la room (nom dans le header) est rediffusé
-    // aux membres.
+    // (`party:updated`) et le nouveau nom est diffusé aux membres via
+    // `party:renamed` (événement léger — PAS `hub:state` qui resetterait
+    // l'exploration/combat en cours).
     socket.on('party:rename', (data: { name?: string }) => {
       const roomId = currentRoomId();
       if (!roomId) return;
       PartyRoomService.renameRoom(playerId, roomId, data?.name ?? '')
-        .then(async (room) => {
+        .then((room) => {
           io.emit('party:updated', {}); // rafraîchit le lobby de tous
-          const { session } = await PartyRoomService.getHubState(room.roomId);
-          io.to(room.roomId).emit('hub:state', { state: PartyRoomService.serializeRoom(room, session) });
+          io.to(room.roomId).emit('party:renamed', { name: room.name });
           io.to(room.roomId).emit('toast', { message: `✏️ La partie a été renommée « ${room.name} ».`, type: 'info' });
         })
         .catch((err) => socket.emit('error', { message: err?.message ?? 'Erreur' }));

@@ -59,6 +59,7 @@ import {
   onCombatState,
   onPartyList,
   onPartyUpdated,
+  onPartyRenamed,
   onPartyLeft,
   onGameOver,
 } from '../api/socket';
@@ -301,6 +302,10 @@ export function useGame(token: string | null): UseGame {
     // on retourne au lobby (state nulle → inRoom false).
     onPartyList((rs) => setRooms(rs));
     onPartyUpdated(() => partyList());
+    onPartyRenamed((name) => {
+      // Met à jour le nom de la room SANS toucher à exploration/combat.
+      setState((prev) => prev?.room ? { ...prev, room: { ...prev.room, name } } : prev);
+    });
     onPartyLeft(() => {
       setState(null);
       setExploration(null);

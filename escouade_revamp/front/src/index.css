@@ -2304,6 +2304,39 @@ button:disabled {
   font-size: 11px;
   color: var(--text-dim);
 }
+/* Valeur courante de la stat (affichée sous le libellé). */
+.stat-choice-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  margin-top: 2px;
+}
+/* Aperçu de l'impact (stat +1) — en vert. */
+.stat-choice-value-preview {
+  color: var(--building-quest);
+}
+.stat-choice-value-preview em {
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 600;
+}
+/* Ligne PV / MP courants (au-dessus de la grille). */
+.stat-choice-vitals {
+  display: flex;
+  gap: 16px;
+  margin: 4px 0 8px;
+  font-size: 13px;
+  color: var(--text);
+}
+.stat-choice-vital {
+  white-space: nowrap;
+}
+/* Impact PV/MP prévisualisé — en vert. */
+.stat-choice-impact {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--building-quest);
+}
 .stat-choice-submit {
   display: block;
   width: 100%;
@@ -3106,19 +3139,22 @@ button:disabled {
 }
 
 /* ── Toasts (notifications éphémères) ───────────────────────────────────── */
+/* Bas au centre de l'écran (au-dessus du contenu, sans bloquer les clics). */
 .toast-container {
   position: fixed;
-  top: 16px;
-  right: 16px;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 1000;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 8px;
-  max-width: 340px;
+  max-width: min(90vw, 420px);
   pointer-events: none;
 }
 .toast {
-  padding: 10px 14px;
+  padding: 10px 16px;
   border-radius: 8px;
   background: var(--bg-panel-2);
   border: 1px solid var(--border);
@@ -3131,6 +3167,6 @@ button:disabled {
 .toast-success { border-left-color: var(--building-quest); }
 .toast-error { border-left-color: var(--hp); }
 @keyframes toast-in {
-  from { opacity: 0; transform: translateX(20px); }
-  to { opacity: 1; transform: translateX(0); }
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
 }

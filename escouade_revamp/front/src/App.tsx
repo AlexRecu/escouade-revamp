@@ -432,6 +432,7 @@ function App() {
       {inRoom && myPendingLevelUps.length > 0 && (
         <StatChoiceModal
           levelUps={myPendingLevelUps}
+          members={mergedMembers}
           onSubmit={(choices) => actions.combatSubmitStats(choices)}
         />
       )}

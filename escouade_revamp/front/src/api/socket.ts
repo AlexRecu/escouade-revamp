@@ -220,6 +220,12 @@ export function onPartyUpdated(cb: () => void): void {
   socket?.on('party:updated', () => cb());
 }
 
+/** Émis quand la partie est renommée (hôte) → met à jour le nom dans le header
+ *  SANS réémettre `hub:state` (qui resetterait l'exploration/combat en cours). */
+export function onPartyRenamed(cb: (name: string) => void): void {
+  socket?.on('party:renamed', ({ name }: { name: string }) => cb(name));
+}
+
 /** Émis quand le joueur quitte sa partie → retour au lobby. */
 export function onPartyLeft(cb: () => void): void {
   socket?.on('party:left', () => cb());
