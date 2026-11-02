@@ -44,6 +44,7 @@ import {
   partyJoin,
   partyLeave,
   partySave,
+  partyRename,
   partyDelete,
   partyCreateCharacter,
   type ExplorationDirection,
@@ -109,6 +110,8 @@ export type GameActions = {
   partyLeave: () => void;
   /** Sauvegarde explicite de la partie (bouton disquette). */
   partySave: () => void;
+  /** Renomme la partie courante (bouton crayon, hôte uniquement). */
+  partyRename: (name: string) => void;
   /** Supprime définitivement la partie (bouton poubelle, hôte uniquement).
    *  `roomId` optionnel : suppression depuis le lobby (room ciblée) ou room courante. */
   partyDelete: (roomId?: string) => void;
@@ -362,6 +365,7 @@ export function useGame(token: string | null): UseGame {
     partyJoin,
     partyLeave,
     partySave,
+    partyRename,
     partyDelete,
     partyCreateCharacter,
   };

@@ -318,6 +318,24 @@ export class PartyRoomService {
   }
 
   /**
+   * Renomme la partie. **Seul l'hôte** peut le faire. Le nom est tronqué à
+   * 40 caractères et replié sur le nom par défaut s'il est vide.
+   *
+   * @returns la room mise à jour.
+   */
+  static async renameRoom(playerId: string, roomId: string, name: string): Promise<PartyRoomDocument> {
+    const room = await this.model.findOne({ roomId });
+    if (!room) throw new Error("Partie introuvable.");
+    if (room.hostId.toString() !== playerId) {
+      throw new Error("Seul l'hôte de la partie peut la renommer.");
+    }
+    const trimmed = (name ?? "").trim().slice(0, 40);
+    room.name = trimmed || `${room.hostName}'s party`;
+    await room.save();
+    return room;
+  }
+
+  /**
    * Nettoie les rooms **vides** trop anciennes (supprime les parties
    * abandonnées). Appelé périodiquement au démarrage du serveur.
    *

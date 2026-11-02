@@ -188,6 +188,9 @@ export const partyLeave = (): void => { socket?.emit('party:leave', {}); };
 /** Sauvegarde explicite de la partie (bouton disquette). */
 export const partySave = (): void => { socket?.emit('party:save', {}); };
 
+/** Renomme la partie courante (bouton crayon, hôte uniquement). */
+export const partyRename = (name: string): void => { socket?.emit('party:rename', { name }); };
+
 /** Supprime définitivement la partie (bouton poubelle, hôte uniquement).
  *  `roomId` optionnel : s'il est fourni (suppression depuis le lobby), on
  *  supprime cette room ; sinon on supprime la room courante du joueur. */

@@ -264,6 +264,22 @@ export const initializeSocket = (io: Server) => {
         .catch((err) => socket.emit('error', { message: err?.message ?? 'Erreur' }));
     });
 
+    // `party:rename` — renomme la partie courante (bouton crayon). Seul l'hôte
+    // peut le faire (vérifié dans le service). Le lobby est rafraîchi pour tous
+    // (`party:updated`) et l'état de la room (nom dans le header) est rediffusé
+    // aux membres.
+    socket.on('party:rename', (data: { name?: string }) => {
+      const roomId = currentRoomId();
+      if (!roomId) return;
+      PartyRoomService.renameRoom(playerId, roomId, data?.name ?? '')
+        .then(async (room) => {
+          io.emit('party:updated', {}); // rafraîchit le lobby de tous
+          const { session } = await PartyRoomService.getHubState(room.roomId);
+          io.to(room.roomId).emit('hub:state', { state: PartyRoomService.serializeRoom(room, session) });
+        })
+        .catch((err) => socket.emit('error', { message: err?.message ?? 'Erreur' }));
+    });
+
     // `party:delete` — supprime définitivement la partie (bouton poubelle).
     // Seul l'hôte peut le faire. La room est retirée de la base et les
     // membres sont détachés (currentRoomId effacé). Le `roomId` est optionnel :

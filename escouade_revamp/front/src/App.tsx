@@ -260,6 +260,19 @@ function App() {
         {inRoom && state?.room ? (
           <span className="room-badge" title="Partie en cours">
             🎮 {state.room.name}
+            {myPlayerId != null && state.room.hostId === myPlayerId && (
+              <button
+                className="room-icon"
+                onClick={() => {
+                  const current = state?.room?.name ?? '';
+                  const name = window.prompt('Nom de la partie :', current);
+                  if (name !== null && name.trim() !== '') actions.partyRename(name);
+                }}
+                title="Renommer la partie (hôte)"
+              >
+                ✏️
+              </button>
+            )}
             <button
               className="room-icon"
               onClick={() => actions.partySave()}
