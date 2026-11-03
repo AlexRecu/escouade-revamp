@@ -732,6 +732,11 @@ export class CombatSessionService {
     // doit être re-calculé à la fin du combat (sinon il faudrait se déplacer
     // d'une case et revenir). On ne le fait pas en cas de défaite (on sort du
     // donjon) ni si des stats sont à choisir (re-détecté dans submitStatChoices).
+    // Migre les sacs individuels vers le sac commun (objets volés par le
+    // Voleur, etc.) pour qu'ils soient visibles dans l'interface, quel que
+    // soit le résultat du combat.
+    exploration.party.migrateMemberBags();
+
     let finalState = ExplorationSessionService.serializeForCombat(exploration);
     if (result !== "defeat" && !pendingLevelUps) {
       const tileResult = await ExplorationSessionService.resolveTileEvents(
