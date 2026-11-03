@@ -967,12 +967,10 @@ export class CombatSessionService {
       state.log = snapshot.log ?? [];
       state.lastHeroDeath = snapshot.lastHeroDeath ?? null;
       // Reconstruit l'ordre d'action du tour courant (unités vivantes triées
-      // par vitesse) **sans** pousser de marqueur `--- Tour N ---` : le log
-      // restauré contient déjà le marqueur du tour courant.
-      state.actionOrder = state.aliveUnits
-        .filter((u) => !u.isReplaced)
-        .slice()
-        .sort((a, b) => state.getSpeed(b) - state.getSpeed(a));
+      // par vitesse, monstres lents dupliqués en fin de file) **sans** pousser
+      // de marqueur `--- Tour N ---` : le log restauré contient déjà le
+      // marqueur du tour courant.
+      state.actionOrder = state.computeActionOrder();
       state.actionIndex = snapshot.actionIndex ?? 0;
 
       const session: CombatSession = {

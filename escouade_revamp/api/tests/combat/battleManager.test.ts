@@ -98,25 +98,51 @@ describe("CombatState", () => {
     });
 });
 
-describe("PhaseSystem", () => {
-    test("getActionCount : un ennemi lent agit deux fois", () => {
-        const hero = makeWarrior("h1", 0, 0); // Dex 1
-        const hero2 = makeWarrior("h2", 0, 1); // Dex 1
-        const enemy = makeFrelon(3, 3); // rank 1
-        const state = new CombatState([hero, hero2, enemy]);
-        const phases = new PhaseSystem(state);
+describe("CombatState — double action des monstres lents", () => {
+    test("shouldActTwice : 2×rang < Dextérité du héros ciblé", () => {
+        const hero = makeWarrior("h1", 0, 0);
+        const enemy = makeFrelon(3, 3); // rank 1 → 2×rang = 2
+        const state = new CombatState([hero, enemy]);
 
-        // Vitesse ennemi (1) < 2 * (1 + 1) = 4 => double action.
-        expect(phases.getActionCount(enemy)).toBe(2);
+        // Héros Dex 2 : 2 < 2 = false → le Frelon n'agit qu'une fois.
+        hero.stats.dexterity = 2;
+        expect(state.shouldActTwice(enemy)).toBe(false);
+        // Héros Dex 4 : 2 < 4 = true → le Frelon agit deux fois.
+        hero.stats.dexterity = 4;
+        expect(state.shouldActTwice(enemy)).toBe(true);
     });
 
-    test("getActionCount : un héros n'agit qu'une fois", () => {
+    test("shouldActTwice : un héros n'agit jamais deux fois", () => {
         const hero = makeWarrior("h1", 0, 0);
         const enemy = makeFrelon(3, 3);
         const state = new CombatState([hero, enemy]);
-        const phases = new PhaseSystem(state);
+        hero.stats.dexterity = 10;
+        expect(state.shouldActTwice(hero)).toBe(false);
+    });
 
-        expect(phases.getActionCount(hero)).toBe(1);
+    test("computeActionOrder : le monstre lent apparaît 2× en fin de file", () => {
+        const hero = makeWarrior("h1", 0, 0);
+        const enemy = makeFrelon(3, 3); // rank 1
+        const state = new CombatState([hero, enemy]);
+        hero.stats.dexterity = 4; // 2 < 4 → double action
+
+        const order = state.computeActionOrder();
+        // Héros (vitesse 4) d'abord, puis le Frelon 2× en fin de file.
+        expect(order).toHaveLength(3);
+        expect(order[0]).toBe(hero);
+        expect(order[1]).toBe(enemy);
+        expect(order[2]).toBe(enemy);
+    });
+
+    test("computeActionOrder : monstre rapide = 1 seule entrée", () => {
+        const hero = makeWarrior("h1", 0, 0);
+        const enemy = makeFrelon(3, 3); // rank 1
+        const state = new CombatState([hero, enemy]);
+        hero.stats.dexterity = 2; // 2 < 2 = false → simple action
+
+        const order = state.computeActionOrder();
+        expect(order).toHaveLength(2);
+        expect(order.filter((u) => u === enemy)).toHaveLength(1);
     });
 
     test("canAct est false si l'unité est endormie", () => {

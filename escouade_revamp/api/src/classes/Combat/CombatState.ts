@@ -190,18 +190,50 @@ export class CombatState {
 
     /**
      * Construit l'ordre d'action du tour : unités vivantes triées par
-     * vitesse décroissante (stabilité préservée en cas d'égalité).
+     * vitesse décroissante (stabilité préservée en cas d'égalité). Pousse le
+     * marqueur `--- Tour N ---` et réinitialise l'index.
      */
     buildActionOrder(): Unit[] {
-        // Les unités remplacées (ex. Démoniste invoqué) ne sont pas sur le
-        // plateau : elles n'agissent pas (c'est leur invocation qui agit).
-        this.actionOrder = this.aliveUnits
-            .filter((u) => !u.isReplaced)
-            .slice()
-            .sort((a, b) => this.getSpeed(b) - this.getSpeed(a));
+        this.actionOrder = this.computeActionOrder();
         this.actionIndex = 0;
         this.pushLog(`--- Tour ${this.turn} ---`);
         return this.actionOrder;
+    }
+
+    /**
+     * Calcule l'ordre d'action du tour **sans effet de bord** (pas de marqueur
+     * de tour, pas de reset d'index) — réutilisé par la restauration du
+     * snapshot de combat.
+     *
+     * Les monstres **lents** (2×rang < Dextérité du héros ciblé) agissent deux
+     * fois : une 2e entrée est ajoutée en **fin** de file (pas d'affilé), ce
+     * qui leur donne 2 déplacements et rend la double intervention visible
+     * dans la file d'ordre (Héros, Frelon, …, Frelon).
+     */
+    computeActionOrder(): Unit[] {
+        // Les unités remplacées (ex. Démoniste invoqué) ne sont pas sur le
+        // plateau : elles n'agissent pas (c'est leur invocation qui agit).
+        const base = this.aliveUnits
+            .filter((u) => !u.isReplaced)
+            .slice()
+            .sort((a, b) => this.getSpeed(b) - this.getSpeed(a));
+        const extras: Unit[] = [];
+        for (const u of base) {
+            if (this.shouldActTwice(u)) extras.push(u);
+        }
+        return [...base, ...extras];
+    }
+
+    /**
+     * Un monstre agit deux fois par tour si **2× son rang** est strictement
+     * inférieur à la **Dextérité du héros qu'il cible** (le plus proche). Les
+     * héros (et les invocations) n'agissent qu'une fois.
+     */
+    shouldActTwice(unit: Unit): boolean {
+        if (!(unit instanceof Monster)) return false;
+        const target = unit.getClosestUnit("Hero", this.aliveUnits);
+        if (!(target instanceof Character)) return false;
+        return 2 * unit.rank < target.stats.dexterity;
     }
 
     /** Passe à l'acteur suivant dans l'ordre d'action. */

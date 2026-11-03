@@ -1,6 +1,5 @@
 import { CombatState } from "./CombatState";
 import { Unit } from "../UnitTypes/Unit";
-import { Character } from "../UnitTypes/Character";
 import { Eon } from "../UnitTypes/Eon";
 import { Monster } from "../UnitTypes/Monster";
 import { manageStatusBeforePhase, manageStatusAfterPhase } from "../../utils/StatusUtils";
@@ -16,14 +15,37 @@ import { manageStatusBeforePhase, manageStatusAfterPhase } from "../../utils/Sta
  * par tour.
  */
 export class PhaseSystem {
+    /** Ids des unités dont le tour a déjà démarré ce tour (anti double
+     *  `turnCount`/`tickCooldowns` pour les monstres qui agissent 2×). */
+    private startedThisTurn = new Set<string>();
+    /** Ids des unités dont la fin de tour a déjà été traitée ce tour (anti
+     *  double poison/Grâce pour les monstres qui agissent 2×). */
+    private endedThisTurn = new Set<string>();
+    /** Numéro de tour pour lequel les Sets ci-dessus sont à jour. */
+    private trackedTurn = 0;
+
     constructor(private state: CombatState) {}
+
+    /** Réinitialise les Sets de suivi quand le tour change. */
+    private resetForTurnIfNeeded(): void {
+        if (this.state.turn !== this.trackedTurn) {
+            this.trackedTurn = this.state.turn;
+            this.startedThisTurn.clear();
+            this.endedThisTurn.clear();
+        }
+    }
 
     /**
      * Début de tour d'une unité : applique les statuts d'ouverture,
      * réinitialise sa capacité d'action et régénère ses AP.
+     *
+     * Un monstre qui agit deux fois apparaît deux fois dans la file : le
+     * compteur de tour et les cooldowns ne doivent avancer qu'**une fois** par
+     * tour (garde-fou `startedThisTurn`).
      * @returns le log généré.
      */
     startUnitTurn(unit: Unit): string[] {
+        this.resetForTurnIfNeeded();
         const log = manageStatusBeforePhase(unit);
         this.state.pushLogMany(log);
         // Le blocage de dégâts d'un Eon (Blocage de Titan, barrières) ne dure
@@ -33,8 +55,10 @@ export class PhaseSystem {
             log.push(`${unit.name} : le blocage de dégâts se dissipe.`);
         }
         // Monstre : on compte son tour (comportement "reculer tous les 2-3
-        // tours") et on fait avancer ses cooldowns de capacités.
-        if (unit instanceof Monster) {
+        // tours") et on fait avancer ses cooldowns de capacités — **une seule
+        // fois** par tour, même si le monstre agit deux fois.
+        if (unit instanceof Monster && !this.startedThisTurn.has(unit.id)) {
+            this.startedThisTurn.add(unit.id);
             unit.turnCount += 1;
             unit.tickCooldowns();
         }
@@ -57,9 +81,20 @@ export class PhaseSystem {
     /**
      * Fin de tour d'une unité : applique les statuts de fin de phase
      * (Poison, Grâce, ...) et décrémente les durées.
+     *
+     * Un monstre qui agit deux fois apparaît deux fois dans la file : les
+     * statuts de fin de phase (Poison, Grâce…) ne doivent se déclencher
+     * qu'**une fois** par tour (garde-fou `endedThisTurn`).
      * @returns le log généré.
      */
     endUnitTurn(unit: Unit): string[] {
+        this.resetForTurnIfNeeded();
+        // Un monstre qui agit deux fois apparaît deux fois dans la file : les
+        // statuts de fin de phase (Poison, Grâce…) ne se déclenchent qu'**une
+        // fois** par tour. La 2e entrée est un no-op.
+        if (this.endedThisTurn.has(unit.id)) return [];
+        this.endedThisTurn.add(unit.id);
+
         const log = manageStatusAfterPhase(unit);
         this.state.pushLogMany(log);
         // Un statut de fin de phase (ex. Poison) peut tuer l'unité.
@@ -74,23 +109,6 @@ export class PhaseSystem {
             unit.hpAtTurnStart = unit.currentHp;
         }
         return log;
-    }
-
-    /**
-     * Détermine le nombre d'actions qu'une unité peut effectuer ce tour.
-     * Règle : un ennemi dont la vitesse est inférieure à 2 fois la Dextérité
-     * totale de l'équipe attaque deux fois par tour.
-     */
-    getActionCount(unit: Unit): number {
-        if (unit.type !== "Enemy") return 1;
-
-        const teamDex = this.state.aliveHeroes.reduce(
-            (sum, hero) => sum + (hero instanceof Character ? hero.stats.dexterity : 0),
-            0
-        );
-
-        const speed = this.state.getSpeed(unit);
-        return speed < teamDex * 2 ? 2 : 1;
     }
 
     /**

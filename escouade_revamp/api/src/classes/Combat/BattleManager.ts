@@ -422,14 +422,10 @@ export class BattleManager {
                 continue;
             }
 
-            const actionCount = this.phases.getActionCount(unit);
-            for (let i = 0; i < actionCount; i++) {
-                if (unit.isDead() || this.state.isOver) break;
-                // Le déplacement de base ne se fait que sur la 1ère action (i===0) :
-                // un ennemi qui attaque 2× ne se déplace qu'une fois.
-                this.executeActorAction(unit, i === 0);
-                acted = true;
-            }
+            // Une entrée de la file = une action (déplacement + action). Un
+            // monstre qui agit 2× apparaît 2× dans la file → 2 déplacements.
+            this.executeActorAction(unit, true);
+            acted = true;
 
             this.phases.endUnitTurn(unit);
         }
@@ -519,11 +515,8 @@ export class BattleManager {
                 this.state.nextActor();
                 continue;
             }
-            const actionCount = this.phases.getActionCount(actor);
-            for (let i = 0; i < actionCount; i++) {
-                if (actor.isDead() || this.state.isOver) break;
-                this.executeActorAction(actor);
-            }
+            // Une entrée de la file = une action (déplacement + action).
+            this.executeActorAction(actor, true);
             this.phases.endUnitTurn(actor);
             this.state.nextActor();
             this.cleanupFinishedInvocations();
@@ -569,13 +562,9 @@ export class BattleManager {
                 this.cleanupFinishedInvocations();
                 continue; // acteur bloqué → on passe au suivant (héros ou ennemi).
             }
-            const actionCount = this.phases.getActionCount(actor);
-            for (let i = 0; i < actionCount; i++) {
-                if (actor.isDead() || this.state.isOver) break;
-                // Le déplacement de base ne se fait que sur la 1ère action (i===0) :
-                // un ennemi qui attaque 2× ne se déplace qu'une fois.
-                this.executeActorAction(actor, i === 0);
-            }
+            // Une entrée de la file = une action (déplacement + action). Un
+            // monstre qui agit 2× apparaît 2× dans la file → 2 déplacements.
+            this.executeActorAction(actor, true);
             this.phases.endUnitTurn(actor);
             this.state.nextActor();
             this.cleanupFinishedInvocations();

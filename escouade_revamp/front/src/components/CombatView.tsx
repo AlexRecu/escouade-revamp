@@ -391,9 +391,9 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
           {actionOrder.length > 0 && (
             <div className="combat-order">
               <span className="combat-order-label">Ordre :</span>
-              {actionOrder.map((entry) => (
+              {actionOrder.map((entry, i) => (
                 <span
-                  key={entry.id}
+                  key={`${entry.id}-${i}`}
                   className={`order-chip ${entry.type === 'Hero' ? 'order-hero' : 'order-enemy'} ${entry.acted ? 'order-acted' : ''} ${entry.id === currentUnitId ? 'order-current' : ''}`}
                   title={`${entry.name} (vitesse ${entry.speed})`}
                 >
