@@ -174,6 +174,10 @@ export class PartyRoomService {
     // où `party.gold = 100 × nb de membres`). S'ajoute à l'or de classe.
     party.gold += 100;
     party.consolidateGold(); // migre l'or de classe dans le pot commun
+    // Migre les objets de **départ** (Pièce marquée du Voleur, Monstronomicon
+    // du Mage bleu, …) du sac individuel vers le **sac commun** : sans ça,
+    // l'onglet « Spéciaux » (qui lit le sac commun) ne les affichait pas.
+    party.migrateMemberBags();
 
     room.party = party.toSerialized();
     room.questSystem = questSystem.toSerialized();
@@ -519,7 +523,7 @@ export class PartyRoomService {
     // L'objet acheté atterrit dans le sac du **personnage du joueur qui achète**
     // (ownerId = playerId), pas dans celui du 1er membre de l'équipe.
     const buyer = session.party.members.find((m) => m.ownerId === playerId) ?? session.party.members[0];
-    const logs = HubService.buyConsumable(session, buyer, itemName);
+    const logs = HubService.buyConsumable(session, buyer, itemName, room.difficulty ?? "easy");
     await this.persistRoom(roomId, session);
     return { logs, state: this.serializeRoom(room, session) };
   }

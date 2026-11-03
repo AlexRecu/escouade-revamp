@@ -37,6 +37,21 @@ export class ItemFactory {
         return this.fromData(data);
     }
 
+    /**
+     * Fabrique un objet aléatoire (Consommable ou Arme) dont le `zoneThreshold`
+     * correspond au rang donné. Utilisé par la compétence « Vol » du Voleur :
+     * voler sur un monstre donne un objet du rang de ce monstre.
+     * @returns l'objet, ou null si aucun objet ne correspond au rang.
+     */
+    static createForRank(rank: number): Item | null {
+        const pool = this.DATA.filter(
+            (d) => (d.type === "Consommable" || d.type === "Arme") && d.zoneThreshold === rank
+        );
+        if (pool.length === 0) return null;
+        const data = pool[Math.floor(Math.random() * pool.length)];
+        return this.fromData(data);
+    }
+
     /** Fabrique un objet à partir d'une entrée du JSON. */
     static fromData(data: any): Item | null {
         const id = `${data.name}_${IdGenerator.generateId()}`;

@@ -29,6 +29,15 @@ describe("Thief Class Tests", () => {
         expect(thief.currentAp).toBe(10);
     });
 
+    test("Thief démarre avec la Dague en fer + la Pièce marquée", () => {
+        // La Dague en fer est équipée en main droite ; la Pièce marquée (objet
+        // de classe, type "special") est dans le sac.
+        expect(thief.rightHandWeapon?.name).toBe("Dague en fer");
+        const piece = thief.bag.find((i) => i.name === "Pièce marquée");
+        expect(piece).toBeDefined();
+        expect(piece?.type).toBe("special");
+    });
+
     test("Thief gets abilities based on level", () => {
         thief.job.jobLevel = 1;
         const abilities: Omit<Skill, "formula">[] = thief.getAvailableAbilities();
@@ -45,7 +54,9 @@ describe("Thief Class Tests", () => {
         expect(log).toContain("TestThief utilise Vol sur "+enemy.name);
         expect(thief.currentAp).toBe(9);
         
-        expect(thief.bag.length).toBe(2);
+        // Le Thief a la Dague en fer + la Pièce marquée (objets de départ) +
+        // l'objet volé = 3 objets dans le sac.
+        expect(thief.bag.length).toBe(3);
         expect(enemy.bag.length).toBe(1);
         let stolenObject = thief.bag.find(item => item.name === "Potion");
         if(stolenObject){
@@ -61,6 +72,21 @@ describe("Thief Class Tests", () => {
         log = thief.useItem(stolenObject as Item, thief);
         expect(log).toContain(`${thief.name} utilise ${stolenObject?.name} sur ${thief.name}.`);
         expect(thief.currentHp).toBeGreaterThanOrEqual(6);
+    });
+
+    test("Vol sur un monstre sans sac : crée un objet du rang du monstre", () => {
+        // En jeu, les monstres n'ont pas de sac : le Vol crée un objet dont le
+        // zoneThreshold correspond au rang du monstre (Frelon = rang 1).
+        const bareMonster = new Monster("Frelon", { row: 7, col: 7 }, "Enemy", 2);
+        expect(bareMonster.bag).toHaveLength(0);
+        const bagBefore = thief.bag.length;
+        const log = thief.useAbilityByName("Vol", [bareMonster]);
+        expect(log.join(" ")).toContain("Obtenu :");
+        // Un objet a été ajouté au sac du voleur.
+        expect(thief.bag.length).toBe(bagBefore + 1);
+        const stolen = thief.bag[thief.bag.length - 1];
+        // L'objet volé correspond au rang du monstre (zoneThreshold = 1).
+        expect(stolen.zoneThreshold).toBe(1);
     });
 
     test("Skill Pas de l'ombre warps thief behind target and boost critical rate", () => {

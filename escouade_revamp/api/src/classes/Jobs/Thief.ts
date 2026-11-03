@@ -1,4 +1,5 @@
 import { IdGenerator } from "../../utils/IdGeneratorUtils";
+import { Item } from "../Items/Item";
 import { Tools } from "../Items/Tools";
 import { Dagger } from "../Items/Weapon";
 import { Statistics } from "../Types";
@@ -13,13 +14,16 @@ export class Thief extends Job {
             "Voleur",
             "Classe orientée sur la dextérité et les coups critiques",
             ['dague', 'katana', 'arc'],
-            [new Dagger("Thf_startDagger_"+IdGenerator.generateId(), "Dague en fer", "Une dague en fer, simple mais efficace.", 100, 1, 2, "", null)],
+            [
+                new Dagger("Thf_startDagger_"+IdGenerator.generateId(), "Dague en fer", "Une dague en fer, simple mais efficace.", 100, 1, 2, "", null),
+                new Item("Thf_startPiece_"+IdGenerator.generateId(), "Pièce marquée", "special", "Pièce portée par les voleurs, elle est marquée d'un étrange symbole. Ne peut être utilisée comme monnaie, elle ne semble avoir aucune utilité.", 0, 0),
+            ],
             50,
             [
                 {
                     level: 1, skill: {
                         name: "Vol",
-                        formula: "if(target.bag.length > 0){ const indexStealItem = Math.floor(Math.random() * target.bag.length);  const objectName =  target.bag[indexStealItem].name; this.bag.push(target.bag[indexStealItem]); target.bag.splice(indexStealItem,1); resultArray.push('Obtenu : '+objectName);} else {resultArray.push('Aucun objet à voler')}",
+                        formula: "const stolen = this.stealItemFrom(target); if(stolen){ resultArray.push('Obtenu : '+stolen);} else {resultArray.push('Aucun objet à voler')}",
                         target: 'enemy',
                         type: "single",
                         range: 0,

@@ -98,6 +98,9 @@ describe("NPCService — Guilde des voleurs", () => {
 
   test("Accès refusé sans pièce ni charisme", () => {
     const thief = makeHero("t1", new Thief(), 0);
+    // Le Voleur a la Pièce marquée par défaut (objet de départ) : on la retire
+    // pour tester le cas « sans pièce ».
+    thief.bag = thief.bag.filter((i) => i.name !== "Pièce marquée");
     const hub = makeHubState([thief]);
     const { granted } = NPCService.thievesGuildAccess(hub, 12);
     expect(granted).toBe(false);

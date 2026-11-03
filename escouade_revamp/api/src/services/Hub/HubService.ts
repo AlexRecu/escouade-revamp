@@ -45,7 +45,7 @@ export class HubService {
      * testable.
      * @returns les logs de l'opération.
      */
-    static buyConsumable(hub: HubState, buyer: Character, itemName: string): string[] {
+    static buyConsumable(hub: HubState, buyer: Character, itemName: string, difficulty: "easy" | "hard" = "easy"): string[] {
         const logs: string[] = [];
         if (!hub.hasService("shop")) {
             logs.push("Cette ville n'a pas de marchand.");
@@ -56,6 +56,20 @@ export class HubService {
             logs.push(`"${itemName}" n'est pas en vente ici.`);
             return logs;
         }
+
+        // **Limite du Bois** : pour équilibrer son usage (1 feu de bois = 1
+        // repos) avec le nombre d'étages du donjon. Max = 1 en mode difficile,
+        // `worldLevel` en mode facile (worldLevel 0 → 0, on ne peut pas en
+        // acheter tant que le monde n'a pas progressé).
+        if (itemName === "Bois") {
+            const maxWood = difficulty === "hard" ? 1 : hub.party.worldLevel;
+            const currentWood = hub.party.bag.filter((i) => i.name === "Bois").length;
+            if (currentWood >= maxWood) {
+                logs.push(`Limite de bois atteinte (${currentWood}/${maxWood}).`);
+                return logs;
+            }
+        }
+
         const price = data.purchasePrice ?? 0;
         if (hub.party.gold < price) {
             logs.push(`L'équipe n'a pas assez d'or (${hub.party.gold}/${price}).`);

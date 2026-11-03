@@ -7,8 +7,10 @@ import { Item } from "../Items/Item";
 import spellData from '../../config/spells_data.json'; // Charger le fichier JSON
 import { Consumable } from "../Items/Consumable";
 import { Tools } from "../Items/Tools";
+import { Monster } from "./Monster";
 import { Thief } from "../Jobs/Thief";
 import { Warrior } from "../Jobs/Warrior";
+import { ItemFactory } from "../../services/factory/ItemFactory";
 import { calculateDamageMultiplier, messageDamageMultiplier } from "../../utils/DamageUtils";
 import { applyStatus } from "../../utils/StatusUtils";
 
@@ -486,6 +488,37 @@ export class Character extends Unit {
         }
 
         return this.useAbility(recordLevelSkill.skill, allUnits, preferredTarget);
+    }
+
+    /**
+     * **Vol** : vole un objet à la cible.
+     *  - Si la cible a un sac non vide (PNJ, ou test) : vole un objet aléatoire
+     *    de ce sac.
+     *  - Sinon (monstre, qui n'a pas de sac) : crée un objet **du rang du
+     *    monstre** (`zoneThreshold === rank`) — un consommable ou une arme.
+     *
+     * L'objet volé est ajouté au sac du voleur. À la fin du combat,
+     * `migrateMemberBags` le migre dans le sac commun de l'équipe.
+     *
+     * @returns le nom de l'objet volé, ou null si rien à voler.
+     */
+    stealItemFrom(target: Unit): string | null {
+        // 1. Cible avec un sac (PNJ / test) : voler un objet existant.
+        if (target.bag && target.bag.length > 0) {
+            const idx = Math.floor(Math.random() * target.bag.length);
+            const stolen = target.bag.splice(idx, 1)[0];
+            this.bag.push(stolen);
+            return stolen.name;
+        }
+        // 2. Monstre (pas de sac) : créer un objet du rang du monstre.
+        if (target instanceof Monster) {
+            const item = ItemFactory.createForRank(target.rank);
+            if (item) {
+                this.bag.push(item);
+                return item.name;
+            }
+        }
+        return null;
     }
 
     /**

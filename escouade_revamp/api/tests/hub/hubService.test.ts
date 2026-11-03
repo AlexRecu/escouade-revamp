@@ -122,6 +122,39 @@ describe("HubService — Marchand", () => {
   });
 });
 
+describe("HubService — Limite du Bois", () => {
+  test("Facile : max = worldLevel (0 → aucun bois)", () => {
+    const { hub, hero } = makeHubState(100);
+    hub.party.worldLevel = 0;
+    const logs = HubService.buyConsumable(hub, hero, "Bois", "easy");
+    expect(logs.some((l) => l.includes("Limite de bois"))).toBe(true);
+    expect(hub.party.bag).toHaveLength(0);
+  });
+
+  test("Facile : peut acheter jusqu'à worldLevel bois (3)", () => {
+    const { hub, hero } = makeHubState(1000);
+    hub.party.worldLevel = 3;
+    for (let i = 0; i < 3; i++) {
+      HubService.buyConsumable(hub, hero, "Bois", "easy");
+    }
+    expect(hub.party.bag.filter((i) => i.name === "Bois")).toHaveLength(3);
+    // Le 4e est refusé.
+    const logs = HubService.buyConsumable(hub, hero, "Bois", "easy");
+    expect(logs.some((l) => l.includes("Limite de bois"))).toBe(true);
+    expect(hub.party.bag.filter((i) => i.name === "Bois")).toHaveLength(3);
+  });
+
+  test("Difficile : max = 1 bois", () => {
+    const { hub, hero } = makeHubState(1000);
+    hub.party.worldLevel = 5;
+    HubService.buyConsumable(hub, hero, "Bois", "hard");
+    expect(hub.party.bag.filter((i) => i.name === "Bois")).toHaveLength(1);
+    const logs = HubService.buyConsumable(hub, hero, "Bois", "hard");
+    expect(logs.some((l) => l.includes("Limite de bois"))).toBe(true);
+    expect(hub.party.bag.filter((i) => i.name === "Bois")).toHaveLength(1);
+  });
+});
+
 describe("HubService — Auberge", () => {
   test("Nuit : soin complet, or déduit", () => {
     const { hub, hero } = makeHubState(50);
