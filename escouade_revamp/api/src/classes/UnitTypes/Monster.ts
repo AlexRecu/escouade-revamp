@@ -24,6 +24,8 @@ export class Monster extends Unit {
     turnCount!: number;
     /** Cooldowns restants par nom de capacité (0 = disponible). */
     cooldowns!: Map<string, number>;
+    /** true si un objet a déjà été volé à ce monstre (anti-exploit du Vol). */
+    hasBeenStolen!: boolean;
 
     constructor(name: string, position: Position, type: 'Hero' | 'Enemy', zoneLevel: number);
     constructor(rank: number, name: string, type: 'Hero' | 'Enemy', zoneLevel: number, position: Position, status: Status[], monsterSkills: string[], atk: number[], pv: number[], xp: number[], gold: number[], items: Item[], weakness: string[], resistance: string[], immunity: string[])
@@ -45,6 +47,7 @@ export class Monster extends Unit {
                 this.zoneLevel = zoneLevel;
                 this.turnCount = 0;
                 this.cooldowns = new Map();
+                this.hasBeenStolen = false;
                 this.weakness = monster.weakness ?? [];
                 this.resistance = monster.resistance ?? [];
                 this.immunity = monster.immunity ?? [];
@@ -64,6 +67,7 @@ export class Monster extends Unit {
             this.zoneLevel = zoneLevel;
             this.turnCount = 0;
             this.cooldowns = new Map();
+            this.hasBeenStolen = false;
             this.weakness = weakness ?? [];
             this.resistance = resistance ?? [];
             this.immunity = immunity ?? [];

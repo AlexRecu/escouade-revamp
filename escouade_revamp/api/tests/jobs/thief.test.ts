@@ -6,7 +6,7 @@ import { Thief } from "../../src/classes/Jobs/Thief";
 import { Dagger } from "../../src/classes/Items/Weapon";
 import { Weapon } from "../../src/classes/Items/Weapon";
 import { Item } from "../../src/classes/Items/Item";
-import {Potion, PotionPlus} from "../../src/classes/Items/Consumable";
+import {Potion, PotionPlus, Antidote} from "../../src/classes/Items/Consumable";
 
 describe("Thief Class Tests", () => {
     const weapon: Weapon = new Dagger("Dague1", 'Dague en fer', "", 0, 0, 2, "", null);
@@ -87,6 +87,31 @@ describe("Thief Class Tests", () => {
         const stolen = thief.bag[thief.bag.length - 1];
         // L'objet volé correspond au rang du monstre (zoneThreshold = 1).
         expect(stolen.zoneThreshold).toBe(1);
+    });
+
+    test("Vol sur un monstre déjà volé : rien (anti-exploit)", () => {
+        // Un monstre ne peut être volé qu'une fois : le 2e Vol ne crée plus
+        // d'objet (sinon = butin infini).
+        const bareMonster = new Monster("Frelon", { row: 7, col: 7 }, "Enemy", 2);
+        const bagBefore = thief.bag.length;
+        const log1 = thief.useAbilityByName("Vol", [bareMonster]);
+        expect(log1.join(" ")).toContain("Obtenu :");
+        expect(thief.bag.length).toBe(bagBefore + 1);
+        // 2e vol sur le même monstre : rien.
+        const log2 = thief.useAbilityByName("Vol", [bareMonster]);
+        expect(log2.join(" ")).toContain("Aucun objet à voler");
+        expect(thief.bag.length).toBe(bagBefore + 1);
+    });
+
+    test("Antidote universel retire le statut Poison", () => {
+        // La cible est empoisonnée.
+        enemy.status.push({ name: "Poison", statusType: "curse", nbTurnEffect: null });
+        expect(enemy.status.some(s => s.name === "Poison")).toBe(true);
+        // L'Antidote universel guérit le Poison.
+        const antidote = new Antidote();
+        const log = thief.useItem(antidote, enemy);
+        expect(log.join(" ")).toContain("guéri de : Poison");
+        expect(enemy.status.some(s => s.name === "Poison")).toBe(false);
     });
 
     test("Skill Pas de l'ombre warps thief behind target and boost critical rate", () => {

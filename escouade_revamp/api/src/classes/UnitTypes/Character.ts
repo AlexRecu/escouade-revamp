@@ -511,9 +511,12 @@ export class Character extends Unit {
             return stolen.name;
         }
         // 2. Monstre (pas de sac) : créer un objet du rang du monstre.
+        //    Un monstre ne peut être volé qu'**une fois** (anti-exploit).
         if (target instanceof Monster) {
+            if (target.hasBeenStolen) return null;
             const item = ItemFactory.createForRank(target.rank);
             if (item) {
+                target.hasBeenStolen = true;
                 this.bag.push(item);
                 return item.name;
             }
@@ -583,6 +586,14 @@ export class Character extends Unit {
                         target.currentMp = target.maxMp;
                     } else if (item.mp) {
                         target.currentMp = Math.min(target.currentMp + item.mp, target.maxMp);
+                    }
+                }
+                // Guérit les statuts (Antidote, Sérum, etc.)
+                if (item.healingStatus.length > 0) {
+                    const before = target.status.length;
+                    target.status = target.status.filter(s => !item.healingStatus.includes(s.name));
+                    if (target.status.length < before) {
+                        resultArray.push(`${target.name} est guéri de : ${item.healingStatus.join(', ')}.`);
                     }
                 }
                 consumed = true;

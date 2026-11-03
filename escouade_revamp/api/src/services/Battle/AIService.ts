@@ -113,7 +113,7 @@ export class AIService {
         if (ability) {
             this.executeAbility(monster, ability, target, before);
         } else {
-            this.executeBasicAttack(monster, target, before);
+            this.executeBasicAttack(monster, target, before, canMove);
         }
     }
 
@@ -162,10 +162,15 @@ export class AIService {
      * que si la cible est à portée ; un "Magique" frappe à distance (kind
      * "spell" → projectile côté front).
      */
-    private executeBasicAttack(monster: Monster, target: Unit, before: Map<string, number>): void {
+    private executeBasicAttack(monster: Monster, target: Unit, before: Map<string, number>, canMove: boolean = true): void {
         const inMeleeRange = isAdjacentToGoal(monster.position, target.position);
         if (monster.attackType !== "Magique" && !inMeleeRange) {
-            this.state.pushLog(`${monster.name} est hors de portée de ${target.name}.`);
+            // Sur la 2e action (canMove=false), le monstre n'a pas bougé :
+            // s'il était hors de portée sur la 1re, il l'est encore → pas de
+            // double log "hors de portée".
+            if (canMove) {
+                this.state.pushLog(`${monster.name} est hors de portée de ${target.name}.`);
+            }
             this.state.recordAction(monster.id, target.id, [target.id], "attack");
             return;
         }
