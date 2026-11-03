@@ -214,13 +214,52 @@ export class ExplorationSessionService {
    *
    * @param zone l'étage du donjon qui porte le démon (le **dernier** étage).
    */
+  /**
+   * Vérifie si une case **bloque la sortie** : en la supprimant, il n'y a plus
+   * de chemin entre le point de départ et la sortie. Le démon ne doit jamais
+   * être placé sur une telle case (le combat serait obligatoire et un one-shot
+   * comme Combustion (72 PV) serait fatal).
+   */
+  private static blocksExit(zone: Zone, pos: Position): boolean {
+    const key = (p: Position) => `${p.row},${p.col}`;
+    const blockedKey = key(pos);
+    const startKey = key(zone.startTile);
+    const endKey = key(zone.endTile);
+    if (blockedKey === startKey || blockedKey === endKey) return true;
+
+    const rows = zone.tileMap.length;
+    const cols = zone.tileMap[0].length;
+    const visited = new Set<string>([startKey]);
+    const queue: Position[] = [zone.startTile];
+    const dirs = [
+      { row: -1, col: 0 }, { row: 1, col: 0 },
+      { row: 0, col: -1 }, { row: 0, col: 1 },
+    ];
+    while (queue.length > 0) {
+      const cur = queue.shift()!;
+      if (key(cur) === endKey) return false; // chemin trouvé → ne bloque pas
+      for (const d of dirs) {
+        const next = { row: cur.row + d.row, col: cur.col + d.col };
+        const nk = key(next);
+        if (visited.has(nk) || nk === blockedKey) continue;
+        if (next.row < 0 || next.col < 0 || next.row >= rows || next.col >= cols) continue;
+        if (!zone.tileMap[next.row][next.col]) continue;
+        visited.add(nk);
+        queue.push(next);
+      }
+    }
+    return true; // pas de chemin → bloque la sortie
+  }
+
   private static anchorZoneDemons(zone: Zone): void {
     const spec = ZONE_DEMONS.find((d) => d.biome === zone.biome);
     if (!spec) return;
 
     // Position : une impasse de préférence, sinon une case praticable. On
-    // exclut le point de départ ET la sortie (endTile) : le combat doit rester
-    // **optionnel** (impasse) et ne jamais bloquer la sortie du donjon.
+    // exclut le point de départ ET la sortie (endTile), et toute case qui
+    // **bloque la sortie** (le combat doit rester optionnel ; un one-shot
+    // comme Combustion (72 PV) serait fatal si le joueur est obligé de
+    // passer par le démon pour sortir).
     const key = (p: Position) => `${p.row},${p.col}`;
     const startKey = key(zone.startTile);
     const endKey = key(zone.endTile);
@@ -230,11 +269,11 @@ export class ExplorationSessionService {
         if (walkableTile) walkable.push({ row: r, col: c });
       })
     );
-    const deadEnd = zone.deadEnds.find((p) => key(p) !== startKey && key(p) !== endKey);
-    const position =
-      deadEnd ??
-      walkable.find((p) => key(p) !== startKey && key(p) !== endKey);
-    if (!position) return;
+    const isSafe = (p: Position) =>
+      key(p) !== startKey && key(p) !== endKey && !this.blocksExit(zone, p);
+    const deadEnd = zone.deadEnds.find(isSafe);
+    const position = deadEnd ?? walkable.find(isSafe);
+    if (!position) return; // aucune case sûre → pas de démon (combat optionnel).
 
     zone.specialEncounters.push({
       demonName: spec.demonName,

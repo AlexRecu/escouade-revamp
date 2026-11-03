@@ -61,7 +61,7 @@ export type BiomeProfile = {
 const BIOME_PROFILES: Record<ZoneType, BiomeProfile> = {
     Forest:     { spineLength: 10, turnChance: 0.5,  branches: [1, 2], branchLength: [1, 2], wide: false, campfires: [1, 1] },
     Cave:       { spineLength: 9,  turnChance: 0.6,  branches: [3, 4], branchLength: [1, 2], wide: false, campfires: [1, 1] },
-    Tower:      { spineLength: 11, turnChance: 0.25, branches: [0, 1], branchLength: [1, 1], wide: false, campfires: [1, 1] },
+    Tower:      { spineLength: 11, turnChance: 0.25, branches: [1, 1], branchLength: [1, 1], wide: false, campfires: [1, 1] },
     Castle:     { spineLength: 9,  turnChance: 0.4,  branches: [2, 3], branchLength: [1, 3], wide: false, campfires: [1, 1] },
     Canyon:     { spineLength: 9,  turnChance: 0.4,  branches: [2, 3], branchLength: [1, 2], wide: true,  campfires: [1, 1] },
     FrozenLand: { spineLength: 9,  turnChance: 0.4,  branches: [2, 3], branchLength: [1, 2], wide: true,  campfires: [1, 1] },

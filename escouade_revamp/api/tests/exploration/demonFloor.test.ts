@@ -55,4 +55,43 @@ describe("Démon de zone — ancrage sur le dernier étage (flux live)", () => {
     expect(`${row},${col}`).not.toEqual(`${last.startTile.row},${last.startTile.col}`);
     expect(`${row},${col}`).not.toEqual(`${last.endTile.row},${last.endTile.col}`);
   });
+
+  test("La case du démon ne bloque pas la sortie (combat optionnel)", async () => {
+    // Garde-fou contre le bug "Bélias devant la sortie" : si le démon est sur
+    // le seul chemin de la sortie, le combat devient obligatoire et un
+    // one-shot (Combustion, 72 PV) est fatal. `blocksExit` doit renvoyer false.
+    const session = await buildTowerSession();
+    const levels = session.dungeon.levels;
+    const last = levels[levels.length - 1];
+    const se = last.specialEncounters.find((s: any) => s.demonName === "Bélias, le Titan")!;
+    expect((ExplorationSessionService as any).blocksExit(last, se.position)).toBe(false);
+  });
+
+  test("blocksExit détecte une case qui coupe le chemin de la sortie", () => {
+    // Grille 1x5 : start(0,0) — (0,1) — (0,2) — (0,3) — end(0,4).
+    // La case (0,2) est le SEUL chemin → la supprimer bloque la sortie.
+    const zone = {
+      tileMap: [[true, true, true, true, true]],
+      startTile: { row: 0, col: 0 },
+      endTile: { row: 0, col: 4 },
+    } as any;
+    expect((ExplorationSessionService as any).blocksExit(zone, { row: 0, col: 2 })).toBe(true);
+    // La case de départ / la sortie sont considérées comme bloquantes.
+    expect((ExplorationSessionService as any).blocksExit(zone, { row: 0, col: 0 })).toBe(true);
+    expect((ExplorationSessionService as any).blocksExit(zone, { row: 0, col: 4 })).toBe(true);
+  });
+
+  test("blocksExit est false si un chemin de contournement existe", () => {
+    // Grille 2x3 : start(0,0) — (0,1) — (0,2) / (1,0) — (1,1) — (1,2)=end.
+    // La case (0,1) n'est PAS le seul chemin (on peut passer par la ligne 1).
+    const zone = {
+      tileMap: [
+        [true, true, true],
+        [true, true, true],
+      ],
+      startTile: { row: 0, col: 0 },
+      endTile: { row: 1, col: 2 },
+    } as any;
+    expect((ExplorationSessionService as any).blocksExit(zone, { row: 0, col: 1 })).toBe(false);
+  });
 });
