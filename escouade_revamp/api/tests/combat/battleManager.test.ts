@@ -345,8 +345,8 @@ describe("BattleManager", () => {
         const bm = new BattleManager([hero, enemy], sequenceRoller([6]));
 
         const log = bm.performAction(hero, "attack", [enemy], { roll: 6, critRoll: 6 });
-        // critRoll = 6 → marteau → X7 (pas X6)
-        expect(log.some((l) => l.includes("X7"))).toBe(true);
+        // critRoll = 6 → marteau → x7 (pas x6)
+        expect(log.some((l) => l.includes("x7"))).toBe(true);
     });
 
     test("épée : le critique utilise le multiplicateur normal (X6)", () => {
@@ -358,7 +358,7 @@ describe("BattleManager", () => {
         const bm = new BattleManager([hero, enemy], sequenceRoller([6]));
 
         const log = bm.performAction(hero, "attack", [enemy], { roll: 6, critRoll: 6 });
-        // critRoll = 6 → épée → X6 (pas X7)
-        expect(log.some((l) => l.includes("X6"))).toBe(true);
+        // critRoll = 6 → épée → x6 (pas x7)
+        expect(log.some((l) => l.includes("x6"))).toBe(true);
     });
 });

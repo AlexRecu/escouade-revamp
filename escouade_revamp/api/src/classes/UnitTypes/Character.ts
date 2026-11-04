@@ -154,7 +154,7 @@ export class Character extends Unit {
             // lieu de 2-7) — la frappe lourde est dévastatrice quand elle touche.
             const critMult = weapon.weaponType === 'marteau' ? critRoll + 1 : critRoll;
             damage *= critMult;
-            resultArray.push(`COUT CRITIQUE ! dégat X${critMult}!`);
+            resultArray.push(`COUP CRITIQUE ! (D6 = ${critRoll}) Dégats x${critMult}!`);
         }
 
         // Mode Berserk (Chevalier Noir) : chaque marqueur demonToken ajoute
@@ -168,6 +168,7 @@ export class Character extends Unit {
     }
 
     protected handleWeaponAttack(weapon: any, roll: number, critRoll: number, target: Unit, bonus: number | 0, resultArray: string[]): void {
+        resultArray.push(`${this.name} attaque ${target.name} avec ${weapon.name} (D6 = ${roll})`);
         if (roll === 1) {
             resultArray.push('ECHEC CRITIQUE !');
             return;
@@ -201,7 +202,7 @@ export class Character extends Unit {
      * @param bonus (facultatif 0 par défaut) dégats additionnels dans le cadre de skills
      * @returns La liste des actions à afficher côté front
      */
-    attack(target: Unit, roll: number, critRoll: number = 0, bonus: number = 0, resultArray: string[] = [`${this.name} attaque ${target.name}`]): string[] {
+    attack(target: Unit, roll: number, critRoll: number = 0, bonus: number = 0, resultArray: string[] = []): string[] {
 
         // Le clone Bunshin encaisse l'attaque à la place de la cible
         if (target.consumeBunshin(resultArray)) {
@@ -231,7 +232,7 @@ export class Character extends Unit {
                     damage *= critRoll;
                 }
                 const actualDamage = target.applyDamage(damage, resultArray);
-                resultArray.push(`${this.name} frappe sa cible à mains nues. ${target.name} perd ${actualDamage}PV !`);
+                resultArray.push(`${this.name} frappe sa cible à mains nues (D6 = ${roll}). ${target.name} perd ${actualDamage}PV !`);
             }
         }
 
@@ -248,7 +249,7 @@ export class Character extends Unit {
      */
     useSpellFromName(spellName: string, target: Unit, roll: number, critRoll: number): string[] {
         const spell = spellData.find(spell => spell.name === spellName) as Spell;
-        let resultArray: string[] = [`${this.name} lance ${spell.name} sur ${target.name}`];
+        let resultArray: string[] = [`${this.name} lance ${spell.name} sur ${target.name} (D6 = ${roll})`];
         if (spell) {
             // **Immunité magie** : la cible est insensible aux sorts (pas de
             // dégâts, pas de statut, pas de soin). Le lanceur ne perd pas de MP.
@@ -282,13 +283,13 @@ export class Character extends Unit {
                     if (roll >= (spell.power - this.stats.intelligence)) {
                         const damageMultiplier = calculateDamageMultiplier(this, spell.element, target);
                         damage += (Math.pow(spell.power + this.stats.intelligence, 2) / 2 + roll) * damageMultiplier;
-                        resultArray.push(messageDamageMultiplier(damageMultiplier));
                         // Dégats additionnels en cas de réussite critique
                         if (roll >= this.calculateCritThreshold()) {
                             const critMultiplier = (critRoll + 2) / 2;
                             damage = damage * critMultiplier;
-                            resultArray.push(`COUT CRITIQUE ! dégat X${critMultiplier}!`);
+                            resultArray.push(`COUP CRITIQUE ! (D6 = ${critRoll}) Dégats x${critMultiplier}!`);
                         }
+                        resultArray.push(messageDamageMultiplier(damageMultiplier));
                         damage = Math.round(damage);
                         resultArray.push(`${target.name} perd ${damage}PV`);
                     } else {

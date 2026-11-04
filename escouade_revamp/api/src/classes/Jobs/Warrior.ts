@@ -26,7 +26,7 @@ export class Warrior extends Job {
                         roll: 0,
                         status: [{ name: 'Bouclier Impénétrable', statusType: 'boon', nbTurnEffect: 4 }],
                         element: "",
-                        description: "lève son bouclier pour se protéger lui et ses alliés pendant 4 tours",
+                        description: "Utilise son bouclier pour se protéger lui et ses alliés pendant 4 tours",
                         move: 0
                     }
                 },
@@ -44,7 +44,7 @@ export class Warrior extends Job {
                         roll: 0,
                         status: [{ name: 'Provoque', statusType: 'curse', nbTurnEffect: 5 }],
                         element: "",
-                        description: "devient le centre d'attention des ennemis pendant 5 tours",
+                        description: "Attire l'attention des ennemis pendant 5 tours",
                         move: 0
                     }
                 },
@@ -62,8 +62,8 @@ export class Warrior extends Job {
                         roll: 0,
                         status: [],
                         element: "",
-                        description: "effectue une attaque perçante",
-                        move: 0
+                        description: "Effectue une attaque perçante vers l'avant",
+                        move: 1
                     }
                 },
                 {

@@ -78,7 +78,7 @@ describe("Warrior Class Tests", () => {
 
     test("Warrior do critical attack on roll 6 with damage X4", () => {
         const log = warrior.attack(enemy, 6, 4, weapon.weaponStat - 2);
-        expect(log).toContain("COUT CRITIQUE ! dégat X4!");
+        expect(log).toContain("COUP CRITIQUE ! (D6 = 4) Dégats x4!");
         expect(enemy.currentHp).toBe(0);
     });
 

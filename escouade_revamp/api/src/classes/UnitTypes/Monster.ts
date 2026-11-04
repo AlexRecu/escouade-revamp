@@ -77,7 +77,7 @@ export class Monster extends Unit {
     attack(target: Unit, roll: number, critRoll: number | 0): string[] {
         let resultArray: string[] = [];
         let damage: number = 0;
-        resultArray.push(`${this.name} attaque ${target.name}`);
+        resultArray.push(`${this.name} attaque ${target.name} (D6 = ${roll})`);
         if (roll > 1) {
             damage = this.atk;
             if (roll === 6) {
@@ -102,7 +102,7 @@ export class Monster extends Unit {
      */
     useSpellFromName(spellName: string, target: Unit, roll: number, critRoll: number): string[] {
         const spell = spellData.find((s) => s.name === spellName) as Spell | undefined;
-        const resultArray: string[] = [`${this.name} lance ${spellName} sur ${target.name}`];
+        const resultArray: string[] = [`${this.name} lance ${spellName} sur ${target.name} (D6 = ${roll})`];
         if (!spell) {
             resultArray.push("Sort introuvable.");
             return resultArray;

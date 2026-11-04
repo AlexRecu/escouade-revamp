@@ -153,14 +153,14 @@ describe("Thief Class Tests", () => {
 
     test("Thief do critical attack on roll 6 with damage X4", () => {
         const log = thief.attack(enemy, 6, 4, weapon.weaponStat - 2);
-        expect(log).toContain("COUT CRITIQUE ! dégat X4!");
+        expect(log).toContain("COUP CRITIQUE ! (D6 = 4) Dégats x4!");
         expect(enemy.currentHp).toBe(0);
     });
 
     test("Thief do critical attack on roll 5 with status Crit+ and damage X2", () => {
         thief.useAbilityByName("Pas de l'ombre", [thief, enemy]);
         const log = thief.attack(enemy, 5, 2, weapon.weaponStat - 2);
-        expect(log).toContain("COUT CRITIQUE ! dégat X2!");
+        expect(log).toContain("COUP CRITIQUE ! (D6 = 2) Dégats x2!");
         expect(enemy.currentHp).toBe(0);
     });
 
