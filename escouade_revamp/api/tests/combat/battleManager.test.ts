@@ -98,50 +98,56 @@ describe("CombatState", () => {
     });
 });
 
-describe("CombatState — double action des monstres lents", () => {
-    test("shouldActTwice : 2×rang < Dextérité du héros ciblé", () => {
+describe("CombatState — double action (unité rapide)", () => {
+    test("shouldActTwice : un héros rapide (Dex > 2×somme adverse) agit 2×", () => {
         const hero = makeWarrior("h1", 0, 0);
-        const enemy = makeFrelon(3, 3); // rank 1 → 2×rang = 2
+        const enemy = makeFrelon(3, 3); // rang 1 → vitesse 1
         const state = new CombatState([hero, enemy]);
 
-        // Héros Dex 2 : 2 < 2 = false → le Frelon n'agit qu'une fois.
+        // Héros Dex 2 : 2 > 2×1 = 2 ? non → 1×.
         hero.stats.dexterity = 2;
-        expect(state.shouldActTwice(enemy)).toBe(false);
-        // Héros Dex 4 : 2 < 4 = true → le Frelon agit deux fois.
-        hero.stats.dexterity = 4;
-        expect(state.shouldActTwice(enemy)).toBe(true);
-    });
-
-    test("shouldActTwice : un héros n'agit jamais deux fois", () => {
-        const hero = makeWarrior("h1", 0, 0);
-        const enemy = makeFrelon(3, 3);
-        const state = new CombatState([hero, enemy]);
-        hero.stats.dexterity = 10;
         expect(state.shouldActTwice(hero)).toBe(false);
+        // Héros Dex 5 : 5 > 2×1 = 2 ? oui → 2×.
+        hero.stats.dexterity = 5;
+        expect(state.shouldActTwice(hero)).toBe(true);
     });
 
-    test("computeActionOrder : le monstre lent apparaît 2× en fin de file", () => {
+    test("shouldActTwice : un monstre de haut rang (rang > 2×somme adverse) agit 2×", () => {
         const hero = makeWarrior("h1", 0, 0);
-        const enemy = makeFrelon(3, 3); // rank 1
+        const troll = new Monster("Troll", { row: 3, col: 3 }, "Enemy", 1); // rang 4
+        const state = new CombatState([hero, troll]);
+
+        // Héros Dex 1 : Troll 4 > 2×1 = 2 ? oui → 2×.
+        hero.stats.dexterity = 1;
+        expect(state.shouldActTwice(troll)).toBe(true);
+        // Héros Dex 3 : Troll 4 > 2×3 = 6 ? non → 1×.
+        hero.stats.dexterity = 3;
+        expect(state.shouldActTwice(troll)).toBe(false);
+    });
+
+    test("computeActionOrder : l'unité rapide apparaît 2× en fin de file", () => {
+        const hero = makeWarrior("h1", 0, 0);
+        const enemy = makeFrelon(3, 3); // rang 1
         const state = new CombatState([hero, enemy]);
-        hero.stats.dexterity = 4; // 2 < 4 → double action
+        hero.stats.dexterity = 5; // héros 5 > 2×1 → 2× ; Frelon 1 > 2×5 ? non
 
         const order = state.computeActionOrder();
-        // Héros (vitesse 4) d'abord, puis le Frelon 2× en fin de file.
+        // Héros (vitesse 5) d'abord, Frelon (1), puis le héros 2× en fin de file.
         expect(order).toHaveLength(3);
         expect(order[0]).toBe(hero);
         expect(order[1]).toBe(enemy);
-        expect(order[2]).toBe(enemy);
+        expect(order[2]).toBe(hero);
     });
 
-    test("computeActionOrder : monstre rapide = 1 seule entrée", () => {
+    test("computeActionOrder : camp équilibré = 1 entrée chacun", () => {
         const hero = makeWarrior("h1", 0, 0);
-        const enemy = makeFrelon(3, 3); // rank 1
+        const enemy = makeFrelon(3, 3); // rang 1
         const state = new CombatState([hero, enemy]);
-        hero.stats.dexterity = 2; // 2 < 2 = false → simple action
+        hero.stats.dexterity = 2; // héros 2 > 2×1 ? non ; Frelon 1 > 2×2 ? non
 
         const order = state.computeActionOrder();
         expect(order).toHaveLength(2);
+        expect(order.filter((u) => u === hero)).toHaveLength(1);
         expect(order.filter((u) => u === enemy)).toHaveLength(1);
     });
 

@@ -10,9 +10,9 @@ import { manageStatusBeforePhase, manageStatusAfterPhase } from "../../utils/Sta
  *  - phase d'action : l'unité agit (déplacement + 1 action)
  *  - fin de tour : application des statuts de fin (Poison, Grâce, ...) et décrément des durées
  *
- * Gère également la règle de la double attaque : si la vitesse d'un ennemi est
- * inférieure à 2 fois la Dextérité totale de l'équipe, cet ennemi agit deux fois
- * par tour.
+ * Gère également la règle de la double action : une unité (héros ou monstre)
+ * dont la vitesse est strictement supérieure à 2 fois la somme des vitesses du
+ * groupe adverse agit deux fois par tour (2e entrée en fin de file).
  */
 export class PhaseSystem {
     /** Ids des unités dont le tour a déjà démarré ce tour (anti double
@@ -39,13 +39,17 @@ export class PhaseSystem {
      * Début de tour d'une unité : applique les statuts d'ouverture,
      * réinitialise sa capacité d'action et régénère ses AP.
      *
-     * Un monstre qui agit deux fois apparaît deux fois dans la file : le
-     * compteur de tour et les cooldowns ne doivent avancer qu'**une fois** par
-     * tour (garde-fou `startedThisTurn`).
+     * Une unité qui agit deux fois (rapide) apparaît deux fois dans la file :
+     * tout le corps du début de tour (statuts d'ouverture, régénération d'AP,
+     * compteur de tour / cooldowns du monstre) ne doit se faire qu'**une fois**
+     * par tour (garde-fou `startedThisTurn`). La 2e entrée est un no-op.
      * @returns le log généré.
      */
     startUnitTurn(unit: Unit): string[] {
         this.resetForTurnIfNeeded();
+        if (this.startedThisTurn.has(unit.id)) return [];
+        this.startedThisTurn.add(unit.id);
+
         const log = manageStatusBeforePhase(unit);
         this.state.pushLogMany(log);
         // Le blocage de dégâts d'un Eon (Blocage de Titan, barrières) ne dure
@@ -55,10 +59,8 @@ export class PhaseSystem {
             log.push(`${unit.name} : le blocage de dégâts se dissipe.`);
         }
         // Monstre : on compte son tour (comportement "reculer tous les 2-3
-        // tours") et on fait avancer ses cooldowns de capacités — **une seule
-        // fois** par tour, même si le monstre agit deux fois.
-        if (unit instanceof Monster && !this.startedThisTurn.has(unit.id)) {
-            this.startedThisTurn.add(unit.id);
+        // tours") et on fait avancer ses cooldowns de capacités.
+        if (unit instanceof Monster) {
             unit.turnCount += 1;
             unit.tickCooldowns();
         }

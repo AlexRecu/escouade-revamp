@@ -205,10 +205,10 @@ export class CombatState {
      * de tour, pas de reset d'index) — réutilisé par la restauration du
      * snapshot de combat.
      *
-     * Les monstres **lents** (2×rang < Dextérité du héros ciblé) agissent deux
-     * fois : une 2e entrée est ajoutée en **fin** de file (pas d'affilé), ce
-     * qui leur donne 2 déplacements et rend la double intervention visible
-     * dans la file d'ordre (Héros, Frelon, …, Frelon).
+     * Les unités **rapides** (vitesse > 2× la somme des vitesses du groupe
+     * adverse) agissent deux fois : une 2e entrée est ajoutée en **fin** de
+     * file (pas d'affilé), ce qui leur donne 2 déplacements et rend la double
+     * intervention visible dans la file d'ordre (Héros, Frelon, …, Héros).
      */
     computeActionOrder(): Unit[] {
         // Les unités remplacées (ex. Démoniste invoqué) ne sont pas sur le
@@ -225,15 +225,22 @@ export class CombatState {
     }
 
     /**
-     * Un monstre agit deux fois par tour si **2× son rang** est strictement
-     * inférieur à la **Dextérité du héros qu'il cible** (le plus proche). Les
-     * héros (et les invocations) n'agissent qu'une fois.
+     * Une unité (héros **ou** monstre) agit deux fois par tour si sa vitesse
+     * (Dextérité pour un héros, rang pour un monstre) est **strictement
+     * supérieure à 2× la somme des vitesses du groupe adverse** (les unités
+     * vivantes de l'autre camp, non remplacées).
+     *
+     * Un héros très agile face à des ennemis lents agit 2× (récompense de
+     * l'investissement en Dextérité) ; un monstre de haut rang face à des
+     * héros lents est léthal (2×).
      */
     shouldActTwice(unit: Unit): boolean {
-        if (!(unit instanceof Monster)) return false;
-        const target = unit.getClosestUnit("Hero", this.aliveUnits);
-        if (!(target instanceof Character)) return false;
-        return 2 * unit.rank < target.stats.dexterity;
+        const speed = this.getSpeed(unit);
+        const enemyType = unit.type === "Hero" ? "Enemy" : "Hero";
+        const totalAdverse = this.aliveUnits
+            .filter((u) => u.type === enemyType && !u.isReplaced)
+            .reduce((sum, u) => sum + this.getSpeed(u), 0);
+        return speed > 2 * totalAdverse;
     }
 
     /** Passe à l'acteur suivant dans l'ordre d'action. */
