@@ -7,8 +7,9 @@ import type { Position, HubLayout } from '../types/world';
  * bloquée. Les bâtiments sont des obstacles (on ne marche pas dessus) : pour
  * interagir, on marche jusqu'à la case marchable la plus proche du bâtiment.
  *
- * Déplacement en 4 directions (haut/bas/gauche/droite) : plus lisible qu'en
- * 8 directions (pas de traversée de coins) pour un point-and-clic.
+ * Déplacement en 8 directions (4 orthogonales + 4 diagonales). Une diagonale
+ * n'est autorisée que si les deux cases orthogonales adjacentes sont marchables
+ * (pas de traversée de coin entre deux obstacles).
  */
 
 const DIRS: Position[] = [
@@ -16,9 +17,30 @@ const DIRS: Position[] = [
   { row: 1, col: 0 },
   { row: 0, col: -1 },
   { row: 0, col: 1 },
+  { row: -1, col: -1 },
+  { row: -1, col: 1 },
+  { row: 1, col: -1 },
+  { row: 1, col: 1 },
 ];
 
 const key = (p: Position) => `${p.row},${p.col}`;
+
+/**
+ * Une étape `from` → `to` est-elle autorisée ? La case d'arrivée doit être
+ * marchable, et une **diagonale** n'est autorisée que si les deux cases
+ * orthogonales adjacentes sont aussi marchables (on ne coupe pas un angle
+ * entre deux obstacles).
+ */
+function canStep(layout: HubLayout, from: Position, to: Position, buildings: Set<string>): boolean {
+  if (!isWalkable(layout, to, buildings)) return false;
+  const dr = to.row - from.row;
+  const dc = to.col - from.col;
+  if (dr !== 0 && dc !== 0) {
+    if (!isWalkable(layout, { row: from.row + dr, col: from.col }, buildings)) return false;
+    if (!isWalkable(layout, { row: from.row, col: from.col + dc }, buildings)) return false;
+  }
+  return true;
+}
 
 /** Les cases de bâtiment (obstacles). */
 export function buildingSet(layout: HubLayout): Set<string> {
@@ -54,7 +76,7 @@ export function findPath(layout: HubLayout, start: Position, goal: Position, bui
     for (const d of DIRS) {
       const next = { row: pos.row + d.row, col: pos.col + d.col };
       const k = key(next);
-      if (cameFrom.has(k) || !isWalkable(layout, next, buildings)) continue;
+      if (cameFrom.has(k) || !canStep(layout, pos, next, buildings)) continue;
       cameFrom.set(k, pos);
       queue.push(next);
     }
