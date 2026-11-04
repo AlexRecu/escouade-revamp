@@ -39,7 +39,7 @@ function App() {
   // sur la mappemonde ET en ville (colonne latérale permanente). Le token est
   // passé en paramètre : quand il devient disponible (premier login), le
   // socket est re-connecté avec le JWT (sinon il serait refusé par le back).
-  const { state, logs: gameLogs, connected, actions, rooms, error: gameError, inRoom, exploration, combat, pendingLevelUps, gameOver, dismissGameOver, setExplorationExitedHandler, setAuthErrorHandler, toasts } = useGame(getToken());
+  const { state, logs: gameLogs, connected, actions, rooms, roomsLoading, error: gameError, inRoom, exploration, combat, pendingLevelUps, gameOver, dismissGameOver, setExplorationExitedHandler, setAuthErrorHandler, toasts } = useGame(getToken());
 
   // Identité du joueur connecté (pour savoir s'il a déjà un personnage dans
   // la partie, et s'il est spectateur). Dépend de `user` : `<App />` n'est pas
@@ -347,11 +347,13 @@ function App() {
           {!inRoom && (
             <LobbyScreen
               rooms={rooms}
+              roomsLoading={roomsLoading}
               connected={connected}
               myPlayerId={myPlayerId}
               onCreate={(opts) => actions.partyCreate(opts)}
               onJoin={(roomId, isSpectator) => actions.partyJoin(roomId, isSpectator)}
               onDelete={(roomId) => actions.partyDelete(roomId)}
+              onRefresh={() => actions.partyList()}
             />
           )}
           {inRoom && error && <div className="worldmap">Erreur : {error}</div>}

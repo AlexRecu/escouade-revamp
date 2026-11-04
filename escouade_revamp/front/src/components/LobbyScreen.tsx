@@ -3,6 +3,8 @@ import type { RoomSummary } from '../types/game';
 
 type Props = {
   rooms: RoomSummary[];
+  /** true tant que la liste des parties n'a pas été reçue (spinner). */
+  roomsLoading: boolean;
   connected: boolean;
   /** Id du joueur connecté (pour savoir s'il est l'hôte d'une partie). */
   myPlayerId: string | null;
@@ -10,6 +12,8 @@ type Props = {
   onJoin: (roomId: string, isSpectator?: boolean) => void;
   /** Supprime définitivement une partie (hôte uniquement). */
   onDelete: (roomId: string) => void;
+  /** Relance la requête de liste des parties (bouton « Actualiser »). */
+  onRefresh: () => void;
 };
 
 /**
@@ -18,7 +22,7 @@ type Props = {
  * spectateur). C'est la porte d'entrée du mode multi-joueurs : une fois dans
  * une partie, le joueur accède à la mappemonde / ville / donjons.
  */
-export default function LobbyScreen({ rooms, connected, myPlayerId, onCreate, onJoin, onDelete }: Props) {
+export default function LobbyScreen({ rooms, roomsLoading, connected, myPlayerId, onCreate, onJoin, onDelete, onRefresh }: Props) {
   const [name, setName] = useState('');
   const [isPublic, setIsPublic] = useState(true);
   const [maxPlayers, setMaxPlayers] = useState(4);
@@ -33,7 +37,17 @@ export default function LobbyScreen({ rooms, connected, myPlayerId, onCreate, on
     <div className="lobby">
       <div className="lobby-head">
         <h2>Parties en cours</h2>
-        <span className="lobby-status">{connected ? '● En ligne' : '○ Connexion…'}</span>
+        <div className="lobby-head-right">
+          <button
+            className="lobby-btn ghost"
+            onClick={onRefresh}
+            disabled={!connected || roomsLoading}
+            title="Actualiser la liste des parties"
+          >
+            ↻ Actualiser
+          </button>
+          <span className="lobby-status">{connected ? '● En ligne' : '○ Connexion…'}</span>
+        </div>
       </div>
 
       <div className="lobby-create">
@@ -83,11 +97,16 @@ export default function LobbyScreen({ rooms, connected, myPlayerId, onCreate, on
       </div>
 
       <div className="lobby-list">
-        {rooms.length === 0 && (
+        {roomsLoading ? (
+          <div className="lobby-loading">
+            <span className="lobby-spinner" />
+            <span>Chargement des parties…</span>
+          </div>
+        ) : rooms.length === 0 ? (
           <p className="lobby-empty">
             Aucune partie publique pour le moment. Créez-en une pour commencer !
           </p>
-        )}
+        ) : null}
         {rooms.map((r) => {
           const full = r.playerCount >= r.maxPlayers;
           const isHost = myPlayerId != null && r.hostId === myPlayerId;

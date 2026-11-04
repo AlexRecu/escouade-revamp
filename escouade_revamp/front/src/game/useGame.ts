@@ -138,6 +138,8 @@ export type UseGame = {
   toasts: Toast[];
   /** Liste des parties publiques (pour le lobby). */
   rooms: RoomSummary[];
+  /** true tant que la liste des parties n'a pas été reçue (spinner lobby). */
+  roomsLoading: boolean;
   /** Dernière erreur serveur (ex. création de personnage refusée). */
   error: string | null;
   /** true si le joueur est dans une partie (room) — sinon il est au lobby. */
@@ -184,6 +186,8 @@ export function useGame(token: string | null): UseGame {
   const [pendingLevelUps, setPendingLevelUps] = useState<{ characterId: string; name: string; level: number }[]>([]);
   const [gameOver, setGameOver] = useState<GameOverRecap | null>(null);
   const [rooms, setRooms] = useState<RoomSummary[]>([]);
+  // true tant que la 1re liste des parties n'a pas été reçue (spinner lobby).
+  const [roomsLoading, setRoomsLoading] = useState(true);
   // Notifications éphémères (toasts) : sauvegarde, nouvel aventurier, renommage.
   const [toasts, setToasts] = useState<Toast[]>([]);
   // Compteur d'ids de toasts (stable, hors render).
@@ -300,7 +304,10 @@ export function useGame(token: string | null): UseGame {
     // Lobby de parties : liste des parties publiques + rafraîchissement à
     // chaque création/rejoindre/quitte. Quand le joueur quitte sa partie,
     // on retourne au lobby (state nulle → inRoom false).
-    onPartyList((rs) => setRooms(rs));
+    onPartyList((rs) => {
+      setRooms(rs);
+      setRoomsLoading(false);
+    });
     onPartyUpdated(() => partyList());
     onPartyRenamed((name) => {
       // Met à jour le nom de la room SANS toucher à exploration/combat.
@@ -331,8 +338,14 @@ export function useGame(token: string | null): UseGame {
     socket.on('connect', onConnect);
     if (socket.connected) onConnect();
 
+    // Filet de sécurité : si la 1re liste des parties n'arrive pas (requête
+    // échouée / socket instable au démarrage), on lève le spinner après 5 s
+    // pour ne jamais bloquer le lobby (le bouton « Actualiser » reste dispo).
+    const roomsTimeout = window.setTimeout(() => setRoomsLoading(false), 5000);
+
     return () => {
       socket.off('connect', onConnect);
+      window.clearTimeout(roomsTimeout);
       disconnectSocket();
     };
   }, [pushLogs, pushToast, token]);
@@ -386,7 +399,13 @@ export function useGame(token: string | null): UseGame {
       // renvoyé par le serveur confirmera la mise à jour des stats).
       setPendingLevelUps([]);
     },
-    partyList,
+    partyList: () => {
+      // Bouton « Actualiser » du lobby : on remonte le spinner le temps de la
+      // requête (les rafraîchissements internes appellent `partyList` direct,
+      // sans spinner, pour ne pas faire clignoter à chaque update).
+      setRoomsLoading(true);
+      partyList();
+    },
     partyCreate,
     partyJoin,
     partyLeave,
@@ -396,5 +415,5 @@ export function useGame(token: string | null): UseGame {
     partyCreateCharacter,
   };
 
-  return { state, logs, connected, actions, rooms, error, inRoom, exploration, combat, pendingLevelUps, gameOver, dismissGameOver, setExplorationExitedHandler, setAuthErrorHandler, toasts };
+  return { state, logs, connected, actions, rooms, roomsLoading, error, inRoom, exploration, combat, pendingLevelUps, gameOver, dismissGameOver, setExplorationExitedHandler, setAuthErrorHandler, toasts };
 }

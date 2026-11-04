@@ -1190,6 +1190,31 @@ button:disabled {
   font-size: 12px;
   color: var(--text-dim);
 }
+.lobby-head-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.lobby-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 28px 0;
+  color: var(--text-dim);
+  font-size: 14px;
+}
+.lobby-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent-2, #4ade80);
+  border-radius: 50%;
+  animation: lobby-spin 0.8s linear infinite;
+}
+@keyframes lobby-spin {
+  to { transform: rotate(360deg); }
+}
 .lobby-create {
   display: flex;
   flex-wrap: wrap;
