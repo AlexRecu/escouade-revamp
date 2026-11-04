@@ -73,10 +73,17 @@ export const initializeSocket = (io: Server) => {
     // Si le joueur est dans une partie (room), l'action mute l'état **partagé**
     // (PartyRoomService) et est diffusée à tous les membres. Sinon, mode solo
     // (HubSessionService).
-    // `hub:join` : si le joueur est dans une partie (room), renvoie l'état de
-    // la room (partagé). Sinon (pas de room), ne renvoie **rien** → le front
-    // reste au lobby (plus de création de partie solo automatique).
-    socket.on('hub:join', async () => {
+    /**
+     * Envoie l'état de la room courante au joueur (si le joueur en est dans
+     * une) : état de ville, puis exploration, puis combat en cours. Sinon
+     * (pas de room) ne renvoie **rien** → le front reste au lobby.
+     *
+     * Réutilisé par `hub:join` (demande du client) ET par le **push initial**
+     * à la connexion (voir fin du handler) : le serveur pousse l'état de
+     * lui-même, ce qui évite de perdre la 1re demande du client (envoyée
+     * avant que les `socket.on` ne soient enregistrés, pendant le `findById`).
+     */
+    const sendInitialRoomState = async (s: Socket) => {
       try {
         const roomId = currentRoomId();
         if (!roomId) return; // pas de room → pas d'état (le front reste au lobby)
@@ -84,21 +91,26 @@ export const initializeSocket = (io: Server) => {
         // On émet **d'abord** l'état de ville, **puis** l'état d'exploration :
         // le front `onState` remet `exploration` à null, donc l'état du donjon
         // doit arriver après pour que le front bascule bien sur la vue donjon.
-        socket.emit('hub:state', { state: PartyRoomService.serializeRoom(room, session) });
+        s.emit('hub:state', { state: PartyRoomService.serializeRoom(room, session) });
         const isDungeon = !!(await WorldService.getDungeonById(room.currentNodeId, room.worldSeed ?? undefined));
         if (isDungeon) {
           const explorationState = await ExplorationSessionService.ensureSession(roomId);
-          if (explorationState) socket.emit('exploration:state', { state: explorationState });
+          if (explorationState) s.emit('exploration:state', { state: explorationState });
           // **Combat en cours** : si un combat était en cours avant la
           // reconnexion, on le restaure (la session d'exploration doit être en
           // mémoire d'abord — `ensureCombat` en a besoin pour les héros).
           const combatState = await CombatSessionService.ensureCombat(roomId);
-          if (combatState) socket.emit('combat:state', { state: combatState });
+          if (combatState) s.emit('combat:state', { state: combatState });
         }
       } catch (err: any) {
-        socket.emit('error', { message: err?.message ?? 'Erreur inconnue' });
+        s.emit('error', { message: err?.message ?? 'Erreur inconnue' });
       }
-    });
+    };
+
+    // `hub:join` : si le joueur est dans une partie (room), renvoie l'état de
+    // la room (partagé). Sinon (pas de room), ne renvoie **rien** → le front
+    // reste au lobby (plus de création de partie solo automatique).
+    socket.on('hub:join', () => sendInitialRoomState(socket));
     socket.on('hub:buy', (data: { itemName: string }) => {
       const roomId = currentRoomId();
       if (roomId) return reply(() => PartyRoomService.buy(roomId, data.itemName, playerId), true);
@@ -515,6 +527,23 @@ export const initializeSocket = (io: Server) => {
         return result;
       }, currentRoomId() !== null)
     );
+
+    // ── État initial poussé par le SERVEUR ──────────────────────────────────
+    // Tous les `socket.on` ci-dessus sont maintenant enregistrés. On pousse
+    // l'état de départ **de nous-mêmes** : la liste des parties (lobby) +
+    // l'état de la room courante (si le joueur en est dans une).
+    //
+    // Pourquoi : le front envoie `party:list` / `hub:join` **immédiatement** à
+    // la connexion, mais ce handler est `async` et attend `PlayerModel.findById`
+    // avant d'enregistrer les `socket.on` → la 1re demande du client arrive
+    // pendant le `findById` et est **perdue** (d'où le « il faut recharger
+    // plusieurs fois »). En poussant l'état ici, le 1er chargement est fiable.
+    // Le front garde aussi ses demandes (idempotent) + le hook `party:updated`
+    // pour rester à jour.
+    PartyRoomService.list()
+      .then((rooms) => socket.emit('party:list', { rooms }))
+      .catch((err) => socket.emit('error', { message: err?.message ?? 'Erreur' }));
+    sendInitialRoomState(socket);
 
     socket.on('disconnect', () => {
       // Libère les sessions en mémoire (l'état est déjà persisté).
