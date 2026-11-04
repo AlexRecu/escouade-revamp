@@ -55,6 +55,43 @@ export function findAvailablePositions(currentPosition: Position, units: Unit[])
 }
 
 /**
+ * Trouve la case de recul d'une cible frappée par une masse : la case
+ * adjacente (Chebyshev, 8 directions) qui s'éloigne le plus de l'attaquant.
+ *
+ * @param attackerPos position de l'attaquant (celui qui frappe à la masse)
+ * @param targetPos position de la cible (le monstre à repousser)
+ * @param units toutes les unités du plateau (pour vérifier l'occupation)
+ * @returns la case de recul, ou null si aucune case libre n'est disponible
+ */
+export function findPushPosition(attackerPos: Position, targetPos: Position, units: Unit[]): Position | null {
+    const GRID_MIN = 0, GRID_MAX = 7;
+    const inBounds = (p: Position) => p.row >= GRID_MIN && p.row <= GRID_MAX && p.col >= GRID_MIN && p.col <= GRID_MAX;
+
+    // Direction de la poussée : de l'attaquant vers la cible.
+    const dr = Math.sign(targetPos.row - attackerPos.row);
+    const dc = Math.sign(targetPos.col - attackerPos.col);
+
+    const candidates = getAdjacentPositions(targetPos)
+        .filter(inBounds)
+        .filter((p) => !isOccupied(p, units));
+
+    if (candidates.length === 0) return null;
+
+    // Point idéal : la case juste derrière la cible, dans la direction opposée
+    // à l'attaquant (ex. attaquant à gauche → la case à droite de la cible).
+    const ideal = { row: targetPos.row + dr, col: targetPos.col + dc };
+    const chebyshev = (a: Position, b: Position) =>
+        Math.max(Math.abs(a.row - b.row), Math.abs(a.col - b.col));
+
+    // On choisit la case libre la plus proche du point idéal (distance de
+    // Chebyshev) : c'est le recul le plus direct, comme dans l'exemple du
+    // livret. Si le point idéal est occupé, on prend la plus proche.
+    return candidates.reduce((best, p) =>
+        chebyshev(p, ideal) < chebyshev(best, ideal) ? p : best
+    );
+}
+
+/**
  * Détermine si une position est occupée par une unité
  * 
  * @param {Position} pos Position à tester

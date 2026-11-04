@@ -268,4 +268,97 @@ describe("BattleManager", () => {
         expect(success).toBe(false);
         expect(bm.result).toBe("ongoing");
     });
+
+    // ── Passif Masse : recul de la cible ─────────────────────────────────────
+    test("masse : la cible est repoussée d'une case (direction opposée à l'attaquant)", () => {
+        const hero = makeWarrior("h1", 3, 3);
+        const enemy = makeFrelon(3, 4); // à droite du héros
+        enemy.currentHp = 100; enemy.maxHp = 100; // survit à l'attaque
+        hero.equipRightHand(new (require("../../src/classes/Items/Weapon").Mace)(
+            "mace1", "Masse d'arme", "test", 300, 1, 4, ""
+        ));
+        const bm = new BattleManager([hero, enemy], sequenceRoller([4]));
+
+        const log = bm.performAction(hero, "attack", [enemy], { roll: 4, critRoll: 2 });
+        // Le monstre doit avoir reculé (col 4 → col 5, s'éloigne du héros à col 3)
+        expect(enemy.position.col).toBe(5);
+        expect(enemy.position.row).toBe(3);
+        expect(log.some((l) => l.includes("repoussé"))).toBe(true);
+    });
+
+    test("masse : pas de recul si l'attaque rate (roll 1 = échec critique)", () => {
+        const hero = makeWarrior("h1", 3, 3);
+        const enemy = makeFrelon(3, 4);
+        hero.equipRightHand(new (require("../../src/classes/Items/Weapon").Mace)(
+            "mace1", "Masse d'arme", "test", 300, 1, 4, ""
+        ));
+        const bm = new BattleManager([hero, enemy], sequenceRoller([1]));
+
+        bm.performAction(hero, "attack", [enemy], { roll: 1, critRoll: 2 });
+        // Pas de dégâts → pas de recul
+        expect(enemy.position).toEqual({ row: 3, col: 4 });
+    });
+
+    test("masse : pas de recul si la cible meurt", () => {
+        const hero = makeWarrior("h1", 3, 3);
+        const enemy = makeFrelon(3, 4);
+        enemy.currentHp = 1; // 1 PV → meurt au 1er coup
+        hero.equipRightHand(new (require("../../src/classes/Items/Weapon").Mace)(
+            "mace1", "Masse d'arme", "test", 300, 1, 4, ""
+        ));
+        const bm = new BattleManager([hero, enemy], sequenceRoller([6]));
+
+        bm.performAction(hero, "attack", [enemy], { roll: 6, critRoll: 6 });
+        // La cible est morte → pas de recul
+        expect(enemy.isDead()).toBe(true);
+    });
+
+    test("masse : pas de recul si aucune case libre autour de la cible", () => {
+        const hero = makeWarrior("h1", 3, 3);
+        const enemy = makeFrelon(3, 4);
+        enemy.currentHp = 100; enemy.maxHp = 100; // survit à l'attaque
+        // On entoure la cible d'unités pour bloquer toutes les cases adjacentes
+        const blocker1 = makeFrelon(2, 3);
+        const blocker2 = makeFrelon(2, 4);
+        const blocker3 = makeFrelon(2, 5);
+        const blocker4 = makeFrelon(4, 3);
+        const blocker5 = makeFrelon(4, 4);
+        const blocker6 = makeFrelon(4, 5);
+        const blocker7 = makeFrelon(3, 5);
+        hero.equipRightHand(new (require("../../src/classes/Items/Weapon").Mace)(
+            "mace1", "Masse d'arme", "test", 300, 1, 4, ""
+        ));
+        const bm = new BattleManager([hero, enemy, blocker1, blocker2, blocker3, blocker4, blocker5, blocker6, blocker7], sequenceRoller([4]));
+
+        bm.performAction(hero, "attack", [enemy], { roll: 4, critRoll: 2 });
+        // Toutes les cases adjacentes sont occupées → pas de recul
+        expect(enemy.position).toEqual({ row: 3, col: 4 });
+    });
+
+    // ── Passif Marteau : multiplicateur de critique +1 ───────────────────────
+    test("marteau : le critique utilise un multiplicateur +1 (X7 au lieu de X6)", () => {
+        const hero = makeWarrior("h1", 3, 3);
+        const enemy = makeFrelon(3, 4);
+        hero.equipRightHand(new (require("../../src/classes/Items/Weapon").Hammer)(
+            "hammer1", "Marteau", "test", 300, 5, 3, ""
+        ));
+        const bm = new BattleManager([hero, enemy], sequenceRoller([6]));
+
+        const log = bm.performAction(hero, "attack", [enemy], { roll: 6, critRoll: 6 });
+        // critRoll = 6 → marteau → X7 (pas X6)
+        expect(log.some((l) => l.includes("X7"))).toBe(true);
+    });
+
+    test("épée : le critique utilise le multiplicateur normal (X6)", () => {
+        const hero = makeWarrior("h1", 3, 3);
+        const enemy = makeFrelon(3, 4);
+        hero.equipRightHand(new (require("../../src/classes/Items/Weapon").Sword)(
+            "sword1", "Épée", "test", 300, 1, 4, ""
+        ));
+        const bm = new BattleManager([hero, enemy], sequenceRoller([6]));
+
+        const log = bm.performAction(hero, "attack", [enemy], { roll: 6, critRoll: 6 });
+        // critRoll = 6 → épée → X6 (pas X7)
+        expect(log.some((l) => l.includes("X6"))).toBe(true);
+    });
 });

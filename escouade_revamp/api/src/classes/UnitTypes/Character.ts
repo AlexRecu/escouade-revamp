@@ -150,8 +150,11 @@ export class Character extends Unit {
         }
 
         if (roll >= this.calculateCritThreshold()) {
-            damage *= critRoll;
-            resultArray.push(`COUT CRITIQUE ! dégat X${critRoll}!`);
+            // Passif Marteau : le multiplicateur de critique est +1 (3-8 au
+            // lieu de 2-7) — la frappe lourde est dévastatrice quand elle touche.
+            const critMult = weapon.weaponType === 'marteau' ? critRoll + 1 : critRoll;
+            damage *= critMult;
+            resultArray.push(`COUT CRITIQUE ! dégat X${critMult}!`);
         }
 
         // Mode Berserk (Chevalier Noir) : chaque marqueur demonToken ajoute

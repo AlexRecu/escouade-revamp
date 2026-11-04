@@ -9,6 +9,7 @@ import { BlackMage, DEMON_SUMMON_COST } from "../Jobs/BlackMage";
 import { BlueMage } from "../Jobs/BlueMage";
 import { Position } from "../Types";
 import { AIService } from "../../services/Battle/AIService";
+import { findPushPosition } from "../../utils/PositionUtils";
 
 // Ré-exporté pour l'API publique : BattleManager est l'entrée qui reçoit le roller.
 export type { DiceRoller };
@@ -92,6 +93,26 @@ export class BattleManager {
     }
 
     /**
+     * Passif Masse : repousse la cible d'une case dans la direction opposée à
+     * l'attaquant (si l'attaquant porte une masse et que l'attaque a touché).
+     * @returns le message de recul, ou null si aucun recul n'est possible.
+     */
+    private applyMaceKnockback(unit: Unit, target: Unit): string | null {
+        if (!(unit instanceof Character)) return null;
+        const hasMace =
+            unit.rightHandWeapon?.weaponType === 'masse' ||
+            unit.leftHandWeapon?.weaponType === 'masse';
+        if (!hasMace) return null;
+
+        const newPos = findPushPosition(unit.position, target.position, this.state.units);
+        if (!newPos) return null; // aucune case libre → pas de recul
+
+        const prev = { ...target.position };
+        target.position = newPos;
+        return `${target.name} est repoussé par la masse (${prev.row},${prev.col} → ${newPos.row},${newPos.col}).`;
+    }
+
+    /**
      * Exécute une action pour une unité (héros ou ennemi).
      * @param unit l'unité qui agit
      * @param action type d'action
@@ -135,8 +156,17 @@ export class BattleManager {
                     if (dist > unit.getAttackRange()) {
                         return [`${unit.name} est hors de portée de ${target.name}.`];
                     }
+                    const hpBefore = target.currentHp;
+                    result.push(...unit.attack(target, roll, critRoll, bonus));
+                    // Passif Masse : si l'attaque a touché (dégâts infligés) et
+                    // que l'attaquant porte une masse, la cible recule d'une
+                    // case dans la direction opposée à l'attaquant (laisse le
+                    // temps de fuir / d'aider un allié en difficulté).
+                    if (target.currentHp < hpBefore && !target.isDead()) {
+                        const pushMsg = this.applyMaceKnockback(unit, target);
+                        if (pushMsg) result.push(pushMsg);
+                    }
                 }
-                result.push(...unit.attack(targets[0], roll, critRoll, bonus));
                 break;
             case "combo":
                 if (extra.combo) {
