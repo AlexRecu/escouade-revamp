@@ -428,6 +428,7 @@ function App() {
               seenMonsters={seenMonsters}
               currentHubId={currentHubId}
               currentNodeId={currentNodeId}
+              hasBoat={(state?.party.bag ?? []).some((i) => i.name === 'Embarcation')}
               onEnterHub={(hub) => {
                 // Le serveur persiste le hub courant (position de l'équipe) —
                 // c'est ce que le cercle blanc de la mappemonde suit. On note

@@ -163,3 +163,29 @@ describe("onEnterZone — étape goTo + récompense", () => {
     expect(progress.completedQuests.map((q) => q.id)).toContain("quest_peche_miraculeuse");
   });
 });
+
+describe("assertLakeAccess — accès au Lac de Qual-Chen", () => {
+  const { ExplorationSessionService } = require("../../src/services/dungeon/ExplorationSessionService");
+  const { QuestItemFactory } = require("../../src/services/factory/QuestItemFactory");
+  const assertLakeAccess = (party: Party, dungeonId: string) =>
+    (ExplorationSessionService as any).assertLakeAccess(party, dungeonId);
+
+  test("sans Embarcation, l'accès au lac est bloqué", async () => {
+    const party = new Party("p1", [], { row: 7, col: 7 });
+    await expect(assertLakeAccess(party, "Dungeon_Lake")).rejects.toThrow(/embarcation/i);
+  });
+
+  test("avec l'Embarcation au sac, l'accès au lac est autorisé", async () => {
+    const party = new Party("p1", [], { row: 7, col: 7 });
+    const boat = QuestItemFactory.create("Embarcation");
+    expect(boat).not.toBeNull();
+    party.bag.push(boat);
+    await expect(assertLakeAccess(party, "Dungeon_Lake")).resolves.toBeUndefined();
+  });
+
+  test("les autres zones ne sont pas affectées (pas de blocage)", async () => {
+    const party = new Party("p1", [], { row: 7, col: 7 });
+    // Une zone non-lac (Forêt) n'exige pas d'embarcation.
+    await expect(assertLakeAccess(party, "Dungeon_Forest")).resolves.toBeUndefined();
+  });
+});

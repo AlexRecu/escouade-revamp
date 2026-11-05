@@ -17,6 +17,8 @@ type Props = {
   currentHubId: string | null;
   /** Nœud de position (hub OU donjon) — le cercle blanc suit cette position. */
   currentNodeId: string | null;
+  /** L'équipe a-t-elle l'Embarcation (nécessaire pour traverser le lac) ? */
+  hasBoat: boolean;
   onEnterHub: (hub: Hub) => void;
   /** Entre dans un donjon (exploration) → régénère la map + mode déplacement. */
   onEnterDungeon: (dungeonId: string) => void;
@@ -38,6 +40,7 @@ export default function WorldTree({
   seenMonsters,
   currentHubId,
   currentNodeId,
+  hasBoat,
   onEnterHub,
   onEnterDungeon,
 }: Props) {
@@ -75,7 +78,10 @@ export default function WorldTree({
     if (node.id === currentNodeId) return false; // on est déjà ici
     if (inCity) {
       if (node.kind === 'hub') return true; // autres villes
-      return !adjacentIds.has(node.id); // zones non adjacentes
+      if (!adjacentIds.has(node.id)) return true; // zones non adjacentes
+      // Le lac exige l'Embarcation (objet de quête du Pêcheur).
+      if (node.biome === 'Lake' && !hasBoat) return true;
+      return false;
     }
     // Position sur un donjon (sortie de zone) : villes adjacentes accessibles.
     if (node.kind === 'hub') return !adjacentIds.has(node.id);

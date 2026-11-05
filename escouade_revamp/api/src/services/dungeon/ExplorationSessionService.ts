@@ -97,6 +97,7 @@ export class ExplorationSessionService {
     if (game.currentNodeId !== dungeonId && !(await WorldService.isAdjacent(game.currentNodeId, dungeonId))) {
       throw new Error("Cette zone n'est pas accessible depuis votre position actuelle.");
     }
+    await this.assertLakeAccess(game.party, dungeonId);
     const session = await this.buildSession(game.party, game.questSystem, dungeonId);
     session.storage = { kind: "player", playerId };
     session.hubId = game.currentHubId;
@@ -123,6 +124,7 @@ export class ExplorationSessionService {
     if (game.currentNodeId !== dungeonId && !(await WorldService.isAdjacent(game.currentNodeId, dungeonId, game.worldSeed))) {
       throw new Error("Cette zone n'est pas accessible depuis votre position actuelle.");
     }
+    await this.assertLakeAccess(game.party, dungeonId, game.worldSeed);
     const session = await this.buildSession(game.party, game.questSystem, dungeonId, undefined, game.worldSeed);
     session.storage = { kind: "room", roomId };
     session.hubId = game.currentHubId;
@@ -135,6 +137,20 @@ export class ExplorationSessionService {
     await PartyRoomService.setCurrentNodeId(roomId, dungeonId);
     await this.persistAll(session);
     return this.serialize(session);
+  }
+
+  /**
+   * **Accès au Lac de Qual-Chen** : il faut l'**Embarcation** (objet de quête
+   * remis par le Pêcheur) dans le sac commun pour traverser. Bloque l'entrée
+   * dans toute zone de biome `Lake` tant que l'objet n'est pas récupéré.
+   */
+  private static async assertLakeAccess(party: Party, dungeonId: string, worldSeed?: number): Promise<void> {
+    const dungeon = await WorldService.getDungeonById(dungeonId, worldSeed);
+    if (!dungeon || dungeon.biome !== "Lake") return;
+    const hasBoat = party.bag.some((i) => i.name === "Embarcation");
+    if (!hasBoat) {
+      throw new Error("Il vous faut une embarcation pour traverser le lac. Parlez au Pêcheur de Qual-Chen.");
+    }
   }
 
   /**
