@@ -190,6 +190,8 @@ export class HubSerializer {
         visitedHubs: Array.from(session.party.visitedHubs),
         gold: session.party.gold,
         seenMonsters: Array.from(session.party.seenMonsters),
+        // Quêtes de chasse (chasses de monstres, paliers d'XP).
+        huntQuests: session.party.huntQuests,
         // Sac commun de l'équipe (objets partagés, accessibles par tous).
         bag: session.party.bag.map((i: any) => ({
           id: i.id,

@@ -11,6 +11,7 @@ import { Party } from "../../classes/Exploration/Party";
 import { Position } from "../../classes/Types";
 import { LootEngine } from "../../classes/Progression/LootEngine";
 import { QuestService } from "../Progression/QuestService";
+import { HuntQuestService } from "../Progression/HuntQuestService";
 import { BlackMage } from "../../classes/Jobs/BlackMage";
 import { BlueMage } from "../../classes/Jobs/BlueMage";
 import {
@@ -577,6 +578,8 @@ export class CombatSessionService {
         exploration.party.consolidateGold();
         // Marque les monstres comme vus (bestiaire).
         defeated.forEach((m) => exploration.party.markMonsterSeen(m.name));
+        // Quêtes de chasse : tracke les kills + distribue les paliers d'XP.
+        logs.push(...HuntQuestService.recordKills(exploration.party, defeated));
         // Montées reportées (stat = null) → à choisir par le joueur.
         const pending = loot.levelUps.filter((lu) => lu.stat === null);
         if (pending.length > 0) {

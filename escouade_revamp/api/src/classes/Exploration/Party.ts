@@ -1,7 +1,7 @@
 // src/classes/Exploration/Party.ts
 import { Character } from "../UnitTypes/Character";
 import { Item } from "../Items/Item";
-import { Position } from "../Types";
+import { Position, HuntQuest } from "../Types";
 import { IdGenerator } from "../../utils/IdGeneratorUtils";
 
 export class Party {
@@ -40,6 +40,17 @@ export class Party {
    * transition) ou quand la partie y démarre.
    */
   visitedHubs: Set<string> = new Set();
+  /**
+   * **Quêtes de chasse** : chasses de monstres générées à la découverte des
+   * villes (1 par donjon adjacent). Trackées au fil des combats (kills) avec
+   * des paliers d'XP. Voir `HuntQuestService`.
+   */
+  huntQuests: HuntQuest[] = [];
+  /**
+   * **Familles déjà chassées** (terminées) : une famille ne peut être
+   * proposée qu'une fois (toutes villes confondues).
+   */
+  huntedFamilies: Set<string> = new Set();
 
   constructor(id: string, members: Character[], startPosition: Position) {
     this.id = id ?? IdGenerator.generate("Party");
@@ -161,6 +172,9 @@ export class Party {
       gold: this.gold,
       seenMonsters: Array.from(this.seenMonsters),
       visitedHubs: Array.from(this.visitedHubs),
+      // Quêtes de chasse (état complet : kills, paliers, complétion).
+      huntQuests: this.huntQuests,
+      huntedFamilies: Array.from(this.huntedFamilies),
       // Sac commun de l'équipe (objets partagés).
       bag: this.bag.map((i) => CharacterFactory.serializeItem(i)),
       members: this.members.map((m) => CharacterFactory.toSerialized(m)),

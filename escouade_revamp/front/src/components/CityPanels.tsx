@@ -486,6 +486,8 @@ function SanctuaryPanel({ state, actions, onClose }: { state: GameState; actions
 
 function QuestPanel({ state, actions, onClose }: { state: GameState; actions: GameActions; onClose: () => void }) {
   const { available, accepted } = state.quests;
+  // Quêtes de chasse de la ville courante (1 par donjon adjacent).
+  const hunts = (state.party.huntQuests ?? []).filter((h) => h.hubId === state.hub.id);
   return (
     <div className="panel-scroll">
       <h5>Disponibles</h5>
@@ -521,6 +523,32 @@ function QuestPanel({ state, actions, onClose }: { state: GameState; actions: Ga
                 </ul>
               </li>
             ))}
+          </ul>
+        </>
+      )}
+      {hunts.length > 0 && (
+        <>
+          <h5>🏹 Chasse</h5>
+          <ul className="quest-list">
+            {hunts.map((h) => {
+              const pct = Math.min(100, Math.round((h.kills / h.totalKills) * 100));
+              return (
+                <li key={h.id}>
+                  <div className="quest-head">
+                    <span className="quest-name">Chasse aux {h.family} (rang {h.rank})</span>
+                  </div>
+                  <div className="quest-reward">
+                    {h.kills}/{h.totalKills} tués · +{h.xpPerKill} XP/kill
+                  </div>
+                  <div className="hunt-progress">
+                    <div className="hunt-progress-bar" style={{ width: `${pct}%` }} />
+                  </div>
+                  <div className="quest-reward">
+                    Paliers atteints : {h.milestonesReached.length}/10
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </>
       )}

@@ -8,6 +8,7 @@ import { Item } from "../../classes/Items/Item";
 import { Weapon } from "../../classes/Items/Weapon";
 import { HubService } from "./HubService";
 import { NPCService } from "./NPCService";
+import { HuntQuestService } from "../Progression/HuntQuestService";
 import { PartyService } from "./PartyService";
 import { WorldService } from "../World/WorldService";
 import { ItemFactory } from "../factory/ItemFactory";
@@ -352,6 +353,8 @@ export class HubSessionService {
     session.hub = hub;
     session.currentNodeId = hub.id;
     session.party.markHubVisited(hub.id);
+    // Quêtes de chasse de la ville découverte (idempotent).
+    await HuntQuestService.generateForHub(session.party, hub.id);
     await this.persist(playerId, session);
     return this.serialize(session);
   }
@@ -378,6 +381,8 @@ export class HubSessionService {
     session.hub = dest;
     session.currentNodeId = dest.id;
     session.party.markHubVisited(dest.id);
+    // Quêtes de chasse de la ville découverte (idempotent).
+    await HuntQuestService.generateForHub(session.party, dest.id);
     await this.persist(playerId, session);
     return { logs: result.logs, state: this.serialize(session) };
   }

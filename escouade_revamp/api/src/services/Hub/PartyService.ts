@@ -232,6 +232,10 @@ export class PartyService {
     // (l'équipe y est donc elle est connue).
     for (const h of partyData.visitedHubs ?? []) party.visitedHubs.add(h);
     party.markHubVisited(currentHubId);
+    // Quêtes de chasse : restaure l'état (kills, paliers, complétion) + les
+    // familles déjà chassées (unicité).
+    party.huntQuests = partyData.huntQuests ?? [];
+    for (const f of partyData.huntedFamilies ?? []) party.huntedFamilies.add(f);
     // Pot commun d'or : restaure la valeur stockée, puis migre l'or par membre
     // (les parties antérieures stockaient l'or sur chaque `Character`).
     party.gold = partyData.gold ?? 0;

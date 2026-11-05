@@ -144,6 +144,35 @@ export type Quest = {
   completed: boolean;
 };
 
+/**
+ * Quête de chasse : tuer un certain nombre de monstres d'une famille
+ * (monstres de même rang regroupés sous une bannière). Paliers d'XP tous
+ * les 10%. Générée à la découverte d'une ville (1 par donjon adjacent).
+ */
+export type HuntQuest = {
+  id: string;
+  /** Famille ciblée (ex. "Bombo", "Dragon", "Frelon"). */
+  family: string;
+  /** Rang des monstres de la famille. */
+  rank: number;
+  /** Noms des monstres de la famille (tous comptent pour les kills). */
+  monsters: string[];
+  /** Nombre total de kills requis. */
+  totalKills: number;
+  /** Kills effectués. */
+  kills: number;
+  /** XP par kill. */
+  xpPerKill: number;
+  /** Paliers atteints (1-10). */
+  milestonesReached: number[];
+  /** Ville (hub) où la quête est proposée. */
+  hubId: string;
+  /** Zone (donjon) d'origine. */
+  zoneId: string;
+  /** true si la quête est terminée. */
+  completed: boolean;
+};
+
 export type ShopItem = {
   name: string;
   /** "weapon" (arme) ou "consommable". */
@@ -238,6 +267,8 @@ export type GameState = {
     gold: number;
     /** Monstres déjà vus (bestiaire, persisté côté serveur). */
     seenMonsters: string[];
+    /** Quêtes de chasse (chasses de monstres, paliers d'XP). */
+    huntQuests: HuntQuest[];
     /** Sac commun de l'équipe (objets partagés, accessibles par tous). */
     bag: BagItem[];
     members: PartyMember[];

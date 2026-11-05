@@ -691,6 +691,20 @@ button:disabled {
 .quest-steps { list-style: none; margin: 6px 0 0; padding: 0; font-size: 12px; }
 .quest-steps li { color: var(--text-dim); }
 .quest-steps li.done { color: #6bd66b; text-decoration: line-through; }
+/* Barre de progression d'une quête de chasse. */
+.hunt-progress {
+  height: 8px;
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 6px 0 4px;
+}
+.hunt-progress-bar {
+  height: 100%;
+  background: var(--building-quest);
+  transition: width 0.3s ease;
+}
 
 /* ── Layout responsive : colonne latérale équipe + contenu ─────────────── */
 .app-body {

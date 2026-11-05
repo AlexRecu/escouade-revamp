@@ -179,3 +179,36 @@ export type HubLayout = {
     /** Case de la caravane (en diagonale de la sortie) — ouvre le panneau de voyage. */
     caravan?: { row: number; col: number };
 };
+
+/**
+ * Quête de chasse : tuer un certain nombre de monstres d'une **famille**
+ * (monstres de même rang regroupés sous une bannière, ex. tous les Bombos).
+ *
+ * Générée à la découverte d'une ville (1 par donjon adjacent). Les kills sont
+ * trackés au fil des combats ; des **paliers** (tous les 10%) distribuent de
+ * l'XP. Une famille ne peut être chassée qu'une fois (toutes villes confondues).
+ */
+export type HuntQuest = {
+    /** Id unique de la quête de chasse. */
+    id: string;
+    /** Famille ciblée (ex. "Bombo", "Dragon", "Frelon"). */
+    family: string;
+    /** Rang des monstres de la famille (tous identiques). */
+    rank: number;
+    /** Noms des monstres de la famille (tous comptent pour les kills). */
+    monsters: string[];
+    /** Nombre total de kills requis. */
+    totalKills: number;
+    /** Kills effectués. */
+    kills: number;
+    /** XP par kill (au worldLevel de génération). */
+    xpPerKill: number;
+    /** Paliers atteints (1-10, ex. [1, 2] = 10% et 20% atteints). */
+    milestonesReached: number[];
+    /** Ville (hub) où la quête est proposée. */
+    hubId: string;
+    /** Zone (donjon) d'origine. */
+    zoneId: string;
+    /** true si la quête est terminée (totalKills atteints). */
+    completed: boolean;
+};

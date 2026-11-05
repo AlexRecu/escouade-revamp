@@ -12,6 +12,7 @@ import { HubService } from "./HubService";
 import { NPCService } from "./NPCService";
 import { PartyService } from "./PartyService";
 import { HubSerializer } from "./HubSerializer";
+import { HuntQuestService } from "../Progression/HuntQuestService";
 import { WorldService } from "../World/WorldService";
 import { JobFactory } from "../factory/JobFactory";
 import { BlueMage } from "../../classes/Jobs/BlueMage";
@@ -76,6 +77,8 @@ export class PartyRoomService {
     // Équipe **vide** : chaque joueur crée son propre personnage (voir
     // `createCharacter`). L'équipe se constitue au fil des créations.
     const game = await PartyService.createEmptyGame();
+    // Quêtes de chasse du hub de départ (générées à la découverte de la ville).
+    await HuntQuestService.generateForHub(game.party, game.currentHubId, worldSeed);
     const roomId = IdGenerator.generate("Room");
     const members: RoomMember[] = [
       { playerId: hostId as any, username: hostName, isSpectator: false },
@@ -704,6 +707,8 @@ export class PartyRoomService {
     session.hub = hub;
     session.currentNodeId = hub.id;
     session.party.markHubVisited(hub.id);
+    // Quêtes de chasse de la ville découverte (idempotent).
+    await HuntQuestService.generateForHub(session.party, hub.id, seed);
     await this.persistRoom(roomId, session);
     return this.serializeRoom(room, session);
   }
@@ -738,6 +743,8 @@ export class PartyRoomService {
     session.hub = dest;
     session.currentNodeId = dest.id;
     session.party.markHubVisited(dest.id);
+    // Quêtes de chasse de la ville découverte (idempotent).
+    await HuntQuestService.generateForHub(session.party, dest.id, seed);
     await this.persistRoom(roomId, session);
     return { logs: result.logs, state: this.serializeRoom(room, session) };
   }
