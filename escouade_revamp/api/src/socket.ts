@@ -348,6 +348,11 @@ export const initializeSocket = (io: Server) => {
     const replyExploration = async (action: () => Promise<any>, broadcast = false) => {
       try {
         const result = await action();
+        // **Anti course** : si un combat est déjà actif et que cette réponse ne
+        // porte pas de nouveau combat, on l'ignore. Sinon l'émission de
+        // `exploration:state` ferait `setCombat(null)` côté front et annulerait
+        // le combat en cours (ex. un `move` en retard pendant le chargement).
+        if (CombatSessionService.isActive(explorationKey()) && !result?.combat) return;
         const target = broadcast ? io.to(currentRoomId()!) : socket;
         if (result && result.state) target.emit('exploration:state', { state: result.state });
         if (result && result.logs) target.emit('exploration:log', { logs: result.logs });

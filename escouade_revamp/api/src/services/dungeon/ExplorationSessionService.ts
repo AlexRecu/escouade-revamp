@@ -322,6 +322,15 @@ export class ExplorationSessionService {
       return { logs: ["Le donjon est terminé."], state: this.serialize(session), exited: true };
     }
 
+    // **Garde-fou anti course** : si un combat est déjà actif (déclenché par le
+    // pas précédent, mais le front n'a pas encore basculé sur la vue de combat),
+    // on refuse le déplacement. Sans ça, un 2e `move` enchaîné pendant le
+    // chargement du combat déplacerait l'équipe et relancerait un roll de
+    // rencontre → le 1er combat serait orphelin (annulé).
+    if (CombatSessionService.isActive(sessionKey)) {
+      return { logs: ["Un combat est en cours."], state: this.serialize(session) };
+    }
+
     const zone = session.dungeon.levels[session.currentFloor];
     const delta = DIRECTIONS[direction];
     if (!delta) throw new Error(`Direction invalide : ${direction}`);
