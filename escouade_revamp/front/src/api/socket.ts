@@ -50,6 +50,8 @@ export const hubForgetAbility = (memberId: string, abilityName: string): void =>
 };
 export const hubQuestBoard = (): void => { socket?.emit('hub:questBoard', {}); };
 export const hubAcceptQuest = (questId: string): void => { socket?.emit('hub:acceptQuest', { questId }); };
+/** Parler à un PNJ de la ville (dialogue + étapes de quête + récompenses). */
+export const hubTalk = (npcName: string): void => { socket?.emit('hub:talk', { npcName }); };
 export const hubChangeHub = (hubId: string): void => { socket?.emit('hub:changeHub', { hubId }); };
 export const hubCaravan = (destHubId: string): void => { socket?.emit('hub:caravan', { destHubId }); };
 export const hubCompleteZone = (zoneId: string): void => { socket?.emit('hub:completeZone', { zoneId }); };

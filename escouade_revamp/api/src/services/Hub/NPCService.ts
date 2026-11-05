@@ -3,6 +3,7 @@ import { HubState } from "../../classes/World/HubState";
 import { Character } from "../../classes/UnitTypes/Character";
 import { Quest } from "../../classes/Progression/QuestSystem";
 import { QuestService } from "../Progression/QuestService";
+import { QuestItemFactory } from "../factory/QuestItemFactory";
 
 /**
  * PNJ de ville (Phase 2 — reste du mode ville).
@@ -60,6 +61,78 @@ export class NPCService {
         if (dialogue) return [dialogue];
         const info = RESIDENT_INFO[npcName];
         return info ? [info] : [`${npcName} vous adresse la parole.`];
+    }
+
+    /**
+     * Parler à un **PNJ de quête** (ancré dans le layout de la ville).
+     *
+     * C'est le point d'entrée des étapes `talk` et `retrieve` des quêtes :
+     *  1. **talk** : signale la conversation au nom du PNJ **et** au nom de la
+     *     ville (une étape peut viser « Qual-Chen » = parler aux PNJ de la ville,
+     *     ou « Franny » = parler à un PNJ précis).
+     *  2. **retrieve** : si le PNJ donne un objet de quête (`questItem`), on le
+     *     remet au sac commun de l'équipe (une seule fois) et on signale l'étape.
+     *  3. **récompenses** : les quêtes complétées par cette conversation ont leur
+     *     récompense distribuée (démon recruté + or/XP).
+     *
+     * @param hub l'état de la ville (fournit le système de quêtes + l'équipe).
+     * @param npcName le nom du PNJ.
+     * @param dialogue le dialogue à afficher.
+     * @param questItem l'objet de quête remis par le PNJ (nom, optionnel).
+     * @returns les logs (dialogue + progression de quêtes + récompenses).
+     */
+    static talkQuestNpc(
+        hub: HubState,
+        npcName: string,
+        dialogue: string,
+        questItem?: string
+    ): string[] {
+        const logs: string[] = [`${npcName} : « ${dialogue} »`];
+
+        // 1. Étapes `talk` (cible = nom du PNJ OU nom de la ville).
+        const talkProgress = this.mergeProgress(
+            QuestService.onTalk(hub.questSystem, npcName),
+            QuestService.onTalk(hub.questSystem, hub.hub.name)
+        );
+        logs.push(...talkProgress.logs);
+
+        // 2. Étape `retrieve` : remettre l'objet de quête (une seule fois).
+        let retrieveProgress: ReturnType<typeof QuestService.onRetrieve> | null = null;
+        if (questItem) {
+            const alreadyHas = hub.party.bag.some((i) => i.name === questItem);
+            if (!alreadyHas) {
+                const item = QuestItemFactory.create(questItem);
+                if (item) {
+                    hub.party.bag.push(item);
+                    logs.push(`Vous obtenez : ${questItem}.`);
+                }
+            }
+            retrieveProgress = QuestService.onRetrieve(hub.questSystem, questItem);
+            logs.push(...retrieveProgress.logs);
+        }
+
+        // 3. Récompenses des quêtes complétées par cette conversation (talk OU
+        //    retrieve) — distribuées une seule fois.
+        const allCompleted = [
+            ...talkProgress.completedQuests,
+            ...(retrieveProgress?.completedQuests ?? []),
+        ];
+        const seen = new Set<string>();
+        const uniqueCompleted = allCompleted.filter((q) => (seen.has(q.id) ? false : (seen.add(q.id), true)));
+        for (const quest of uniqueCompleted) {
+            logs.push(...QuestService.distributeRewards(quest, hub.party.members));
+        }
+
+        return logs;
+    }
+
+    /** Fusionne deux progressions de quêtes (étapes + quêtes terminées + logs). */
+    private static mergeProgress(a: ReturnType<typeof QuestService.onTalk>, b: ReturnType<typeof QuestService.onTalk>) {
+        return {
+            completedSteps: [...a.completedSteps, ...b.completedSteps],
+            completedQuests: [...a.completedQuests, ...b.completedQuests],
+            logs: [...a.logs, ...b.logs],
+        };
     }
 
     /**

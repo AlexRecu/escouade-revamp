@@ -30,6 +30,15 @@ const BUILDING_LABEL: Record<string, string> = {
   caravan: 'Caravane',
 };
 
+/** Icône d'un PNJ de ville (cliquable — dialogue + objets de quête). */
+const RESIDENT_ICON = '🧑';
+
+/** Libellé d'un service de ville (bâtiment, caravane ou PNJ `resident:<nom>`). */
+function resolveLabel(service: string): string {
+  if (service.startsWith('resident:')) return service.slice('resident:'.length);
+  return BUILDING_LABEL[service] ?? service;
+}
+
 type Props = {
   hub: Hub;
   onBack: () => void;
@@ -63,11 +72,12 @@ export default function City({ hub, onBack, world, state, gameLogs, actions }: P
   const [sideCollapsed, setSideCollapsed] = useState(false);
   const timerRef = useRef<number | null>(null);
 
-  // Obstacles pour le pathfinding : les bâtiments + la case caravane (on marche
-  // jusqu'à côté, pas dessus).
+  // Obstacles pour le pathfinding : les bâtiments + la case caravane + les PNJ
+  // (on marche jusqu'à côté, pas dessus).
   const buildings = useMemo(() => {
     const s = layout ? buildingSet(layout) : new Set<string>();
     if (layout?.caravan) s.add(`${layout.caravan.row},${layout.caravan.col}`);
+    for (const r of layout?.residents ?? []) s.add(`${r.row},${r.col}`);
     return s;
   }, [layout]);
 
@@ -105,8 +115,8 @@ export default function City({ hub, onBack, world, state, gameLogs, actions }: P
       setPos(next);
       setPath(rest);
       if (rest.length === 0 && activeBuilding) {
-        // Arrivé devant le bâtiment : on ouvre le panneau.
-        pushLog(`Vous êtes devant le ${BUILDING_LABEL[activeBuilding] ?? activeBuilding}.`);
+        // Arrivé devant le bâtiment / PNJ : on ouvre le panneau.
+        pushLog(`Vous êtes devant ${resolveLabel(activeBuilding)}.`);
       }
     }, STEP_MS);
     return () => {
@@ -136,12 +146,14 @@ export default function City({ hub, onBack, world, state, gameLogs, actions }: P
 
   const onTileClick = (row: number, col: number) => {
     const target = { row, col };
-    // Bâtiment ou caravane ? On marche jusqu'à la case marchable la plus proche.
+    // Bâtiment, caravane ou PNJ ? On marche jusqu'à la case marchable la plus
+    // proche, puis on ouvre le panneau correspondant.
     const building = layout.buildings.find((b) => b.row === row && b.col === col);
+    const resident = layout.residents?.find((r) => r.row === row && r.col === col);
     const isCaravan = !!layout.caravan && layout.caravan.row === row && layout.caravan.col === col;
-    if (building || isCaravan) {
-      const service = building ? building.service : 'caravan';
-      const anchor = building ?? layout.caravan!;
+    if (building || resident || isCaravan) {
+      const service = building ? building.service : resident ? `resident:${resident.name}` : 'caravan';
+      const anchor = building ?? resident ?? layout.caravan!;
       const stop = nearestWalkableToBuilding(layout, anchor, buildings);
       if (!stop) return;
       const alreadyThere = pos.row === stop.row && pos.col === stop.col;
@@ -154,8 +166,9 @@ export default function City({ hub, onBack, world, state, gameLogs, actions }: P
       if (p.length > 0) {
         setPath(p);
       } else {
-        // Déjà devant le bâtiment : on ouvre le panneau directement.
-        pushLog(`Vous êtes devant le ${BUILDING_LABEL[service] ?? service}.`);
+        // Déjà devant : on ouvre le panneau directement.
+        const label = building ? BUILDING_LABEL[building.service] : resident ? resident.name : BUILDING_LABEL.caravan;
+        pushLog(`Vous êtes devant ${label}.`);
       }
       return;
     }
@@ -213,31 +226,35 @@ export default function City({ hub, onBack, world, state, gameLogs, actions }: P
             Array.from({ length: cols }).map((_, col) => {
               const walkable = layout.tileMap[row]?.[col];
               const building = layout.buildings.find((b) => b.row === row && b.col === col);
+              const resident = layout.residents?.find((r) => r.row === row && r.col === col);
               const isExit = layout.exit.row === row && layout.exit.col === col;
               const isCaravan = !!layout.caravan && layout.caravan.row === row && layout.caravan.col === col;
               const onPath = pathSet.has(`${row},${col}`);
               let cls = 'tile ' + (walkable ? 'walk' : 'block');
               if (!walkable && fenceSet.has(`${row},${col}`)) cls += ' fence';
               if (building) cls = `tile building ${building.service}`;
-              if (isCaravan) cls = 'tile building caravan';
-              if (isExit) cls = 'tile exit';
+              else if (resident) cls = 'tile resident';
+              else if (isCaravan) cls = 'tile building caravan';
+              else if (isExit) cls = 'tile exit';
               if (onPath) cls += ' path';
               return (
                 <div
                   key={`${row}-${col}`}
                   className={cls}
-                  onClick={() => (walkable || building || isCaravan) && onTileClick(row, col)}
+                  onClick={() => (walkable || building || resident || isCaravan) && onTileClick(row, col)}
                   title={
                     building
                       ? BUILDING_LABEL[building.service]
-                      : isCaravan
-                        ? BUILDING_LABEL.caravan
-                        : isExit
-                          ? layout.exit.label
-                          : undefined
+                      : resident
+                        ? `${resident.name} (PNJ)`
+                        : isCaravan
+                          ? BUILDING_LABEL.caravan
+                          : isExit
+                            ? layout.exit.label
+                            : undefined
                   }
                 >
-                  {building ? BUILDING_ICON[building.service] : isCaravan ? BUILDING_ICON.caravan : isExit ? '🚪' : ''}
+                  {building ? BUILDING_ICON[building.service] : resident ? RESIDENT_ICON : isCaravan ? BUILDING_ICON.caravan : isExit ? '🚪' : ''}
                 </div>
               );
             }),

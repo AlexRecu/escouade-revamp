@@ -9,6 +9,7 @@ import { Weapon } from "../../classes/Items/Weapon";
 import { Dungeon } from "../../classes/World/Dungeon";
 import { Hub } from "../../classes/World/Hub";
 import { HubService } from "./HubService";
+import { NPCService } from "./NPCService";
 import { PartyService } from "./PartyService";
 import { HubSerializer } from "./HubSerializer";
 import { WorldService } from "../World/WorldService";
@@ -664,6 +665,21 @@ export class PartyRoomService {
     const recruited = HubSerializer.recruitedDemons(session.party);
     const quest = HubService.acceptQuest(session, questId, recruited);
     const logs = quest ? [`Quête acceptée : ${quest.name}.`] : ["Cette quête n'est pas disponible."];
+    await this.persistRoom(roomId, session);
+    return { logs, state: this.serializeRoom(room, session) };
+  }
+
+  /**
+   * Parler à un PNJ de la ville (dialogue + étapes de quête talk/retrieve +
+   * récompenses). Le PNJ est résolu par son nom dans le layout de la ville.
+   */
+  static async talk(roomId: string, npcName: string): Promise<{ logs: string[]; state: any }> {
+    const { room, session } = await this.getHubState(roomId);
+    const resident = session.hub.layout?.residents?.find((r) => r.name === npcName);
+    if (!resident) {
+      return { logs: [`"${npcName}" n'est pas un PNJ de ${session.hub.name}.`], state: this.serializeRoom(room, session) };
+    }
+    const logs = NPCService.talkQuestNpc(session, resident.name, resident.dialogue, resident.questItem);
     await this.persistRoom(roomId, session);
     return { logs, state: this.serializeRoom(room, session) };
   }

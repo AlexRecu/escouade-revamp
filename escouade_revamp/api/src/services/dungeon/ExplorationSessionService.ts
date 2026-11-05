@@ -19,6 +19,7 @@ import { HubSerializer } from "../Hub/HubSerializer";
 import { Weapon } from "../../classes/Items/Weapon";
 import { Consumable } from "../../classes/Items/Consumable";
 import { BlueMage } from "../../classes/Jobs/BlueMage";
+import { QuestService } from "../Progression/QuestService";
 
 /** Direction de déplacement (4 directions, pas de diagonale). */
 export type Direction = "north" | "south" | "east" | "west";
@@ -181,6 +182,13 @@ export class ExplorationSessionService {
     // donc on re-cale le démon du biome sur une impasse du **dernier étage**
     // (le défi se joue en fin de donjon, pas à l'entrée).
     this.anchorZoneDemons(levels[levels.length - 1]);
+
+    // Quêtes : entrer dans la zone complète les étapes `goTo` dont la cible est
+    // le nom du donjon (ex. « Aller pêcher au Lac de Qual-Chen »). Idempotent :
+    // à la restauration, les étapes sont déjà faites → rien ne se passe. La
+    // récompense d'une quête ainsi complétée est distribuée (démon + or/XP).
+    const enterProgress = QuestService.onEnterZone(questSystem, node.name);
+    QuestService.distributeCompletedRewards(enterProgress, party.members);
 
     // Position de départ : la tuile de départ du 1er étage. En mode
     // restauration, la position vient de la party (déjà à jour en base) → on

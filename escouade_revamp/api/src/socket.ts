@@ -165,6 +165,13 @@ export const initializeSocket = (io: Server) => {
       if (roomId) return reply(() => PartyRoomService.acceptQuest(roomId, data.questId), true);
       return reply(() => HubSessionService.acceptQuest(playerId, data.questId));
     });
+    // Parler à un PNJ de la ville (dialogue + étapes de quête talk/retrieve +
+    // récompenses). Diffusé à la room (l'équipe est partagée).
+    socket.on('hub:talk', (data: { npcName: string }) => {
+      const roomId = currentRoomId();
+      if (roomId) return reply(() => PartyRoomService.talk(roomId, data.npcName), true);
+      return reply(() => HubSessionService.talk(playerId, data.npcName));
+    });
     socket.on('hub:changeHub', (data: { hubId: string }) =>
       reply(async () => {
         const roomId = currentRoomId();

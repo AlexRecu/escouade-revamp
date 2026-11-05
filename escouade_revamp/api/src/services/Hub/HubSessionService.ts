@@ -7,6 +7,7 @@ import { Character } from "../../classes/UnitTypes/Character";
 import { Item } from "../../classes/Items/Item";
 import { Weapon } from "../../classes/Items/Weapon";
 import { HubService } from "./HubService";
+import { NPCService } from "./NPCService";
 import { PartyService } from "./PartyService";
 import { WorldService } from "../World/WorldService";
 import { ItemFactory } from "../factory/ItemFactory";
@@ -302,6 +303,21 @@ export class HubSessionService {
     const logs = quest
       ? [`Quête acceptée : ${quest.name}.`]
       : ["Cette quête n'est pas disponible."];
+    await this.persist(playerId, session);
+    return { logs, state: this.serialize(session) };
+  }
+
+  /**
+   * Parler à un PNJ de la ville (dialogue + étapes de quête talk/retrieve +
+   * récompenses). Le PNJ est résolu par son nom dans le layout de la ville.
+   */
+  static async talk(playerId: string, npcName: string): Promise<{ logs: string[]; state: any }> {
+    const session = this.require(playerId);
+    const resident = session.hub.layout?.residents?.find((r) => r.name === npcName);
+    if (!resident) {
+      return { logs: [`"${npcName}" n'est pas un PNJ de ${session.hub.name}.`], state: this.serialize(session) };
+    }
+    const logs = NPCService.talkQuestNpc(session, resident.name, resident.dialogue, resident.questItem);
     await this.persist(playerId, session);
     return { logs, state: this.serialize(session) };
   }

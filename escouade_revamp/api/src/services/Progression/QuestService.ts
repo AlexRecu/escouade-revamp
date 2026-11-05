@@ -4,6 +4,7 @@ import { Character } from "../../classes/UnitTypes/Character";
 import { Statistics } from "../../classes/Types";
 import { LootEngine } from "../../classes/Progression/LootEngine";
 import { QuestItemFactory } from "../factory/QuestItemFactory";
+import { BlackMage } from "../../classes/Jobs/BlackMage";
 
 /**
  * Service de progression des quêtes (Phase C2b).
@@ -172,5 +173,71 @@ export class QuestService {
 
     logs.push(`Récompense : ${quest.reward.description}`);
     return { gold, xp, logs };
+  }
+
+  /**
+   * Distribue la récompense **complète** d'une quête terminée :
+   *  - le **démon** (pacte) : un Démoniste de l'équipe avec un slot libre le
+   *    recrute (c'est la récompense principale des 3 quêtes du livret) ;
+   *  - l'**or + XP** (si la récompense en a) via `applyReward`.
+   *
+   * Contrairement au recrutement en combat (démon **vaincu**), ici le démon est
+   * la **récompense** de la quête (ex. Mateus pour « Une pêche miraculeuse ») :
+   * il n'a pas été affronté, il rejoint l'équipe en remerciement.
+   *
+   * @param quest la quête terminée.
+   * @param party les membres de l'équipe (pour trouver le Démoniste + distribuer l'or/XP).
+   * @param statChoices choix de stat à la montée de niveau (défaut : force).
+   */
+  static distributeRewards(
+    quest: Quest,
+    party: Character[],
+    statChoices: (char: Character) => keyof Statistics = () => "strength"
+  ): string[] {
+    const logs: string[] = [];
+
+    // 1. Le démon (pacte) — recruté par un Démoniste avec un slot libre.
+    if (quest.reward.demon) {
+      const demonist = party.find(
+        (c) => c.job instanceof BlackMage && c.job.name === "Démoniste"
+      );
+      if (demonist) {
+        const bm = demonist.job as BlackMage;
+        if (bm.canRecruit()) {
+          logs.push(...bm.recruitDemon(quest.reward.demon));
+        } else {
+          logs.push(`Aucun pacte libre : le pacte de ${quest.reward.demon} est perdu.`);
+        }
+      } else {
+        logs.push(`Aucun Démoniste dans l'équipe : le pacte de ${quest.reward.demon} est perdu.`);
+      }
+    }
+
+    // 2. L'or + XP (si la récompense en a).
+    const { logs: rewardLogs } = this.applyReward(quest, party, statChoices);
+    logs.push(...rewardLogs);
+
+    return logs;
+  }
+
+  /**
+   * Distribue la récompense de **toutes** les quêtes terminées dans une
+   * progression (les `completedQuests` renvoyés par `onTalk` / `onEnterZone` /
+   * `onRetrieve` / …). C'est le point d'appel unique des call-sites qui
+   * déclenchent un événement de quête (parler à un PNJ, entrer dans une zone).
+   *
+   * NB : le recrutement d'un démon **vaincu en combat** est géré séparément
+   * (CombatSessionService) ; ici on ne traite que les récompenses de quête.
+   */
+  static distributeCompletedRewards(
+    progress: QuestProgress,
+    party: Character[],
+    statChoices: (char: Character) => keyof Statistics = () => "strength"
+  ): string[] {
+    const logs: string[] = [];
+    for (const quest of progress.completedQuests) {
+      logs.push(...this.distributeRewards(quest, party, statChoices));
+    }
+    return logs;
   }
 }

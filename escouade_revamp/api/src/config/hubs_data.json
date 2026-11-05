@@ -55,6 +55,10 @@
         { "service": "church", "row": 10, "col": 10 },
         { "service": "questBoard", "row": 11, "col": 5 }
       ],
+      "residents": [
+        { "name": "Franny", "row": 0, "col": 3, "dialogue": "Ma sœur a disparu dans les bois... S'il vous plaît, trouvez le coupable. C'est dans la Forêt des soupirs." },
+        { "name": "Voyante", "row": 13, "col": 3, "dialogue": "Les voies du seigneur sont impénétrables. La salle de voyance du château détient la réponse. Voici la clef.", "questItem": "Clef de voyance" }
+      ],
       "exit": { "row": 7, "col": 0, "label": "Sortie vers les donjons" },
       "caravan": { "row": 8, "col": 1 }
     },
@@ -83,6 +87,9 @@
         { "service": "inn", "row": 10, "col": 10 },
         { "service": "church", "row": 3, "col": 9 },
         { "service": "questBoard", "row": 11, "col": 4 }
+      ],
+      "residents": [
+        { "name": "Pêcheur", "row": 0, "col": 3, "dialogue": "Le lac est hanté, mon ami. Quelque chose se cache sous l'eau... Prenez mon embarcation et allez pêcher au lac.", "questItem": "Embarcation" }
       ],
       "exit": { "row": 13, "col": 7, "label": "Sortie vers les donjons" },
       "caravan": { "row": 12, "col": 6 }

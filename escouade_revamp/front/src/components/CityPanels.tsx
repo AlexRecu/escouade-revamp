@@ -45,6 +45,9 @@ export default function CityPanels({ activeBuilding, state, actions, caravanDest
     case 'caravan':
       return <CaravanPanel state={state} actions={actions} destinations={caravanDestinations} />;
     default:
+      if (activeBuilding.startsWith('resident:')) {
+        return <ResidentPanel state={state} actions={actions} npcName={activeBuilding.slice('resident:'.length)} onClose={onClose} />;
+      }
       return (
         <div>
           <p style={{ fontSize: 13 }}>{activeBuilding}</p>
@@ -52,6 +55,42 @@ export default function CityPanels({ activeBuilding, state, actions, caravanDest
         </div>
       );
   }
+}
+
+// ── PNJ (dialogue + objets de quête) ───────────────────────────────────────
+
+/**
+ * Panneau PNJ : dialogue du résident + bouton « Parler ».
+ *
+ * Le dialogue est affiché tel quel (données de la ville) ; « Parler » émet
+ * `hub:talk` qui, côté serveur, déclenche les étapes de quête (talk /
+ * retrieve) et distribue les récompenses. Les logs (dialogue, objet obtenu,
+ * quête accomplie) arrivent dans le journal via `hub:log`.
+ */
+function ResidentPanel({ state, actions, npcName, onClose }: { state: GameState; actions: GameActions; npcName: string; onClose: () => void }) {
+  const resident = state.hub.layout?.residents?.find((r) => r.name === npcName);
+  if (!resident) {
+    return (
+      <div>
+        <p style={{ fontSize: 13 }}>{npcName}</p>
+        <button onClick={onClose}>Fermer</button>
+      </div>
+    );
+  }
+  return (
+    <div>
+      <h3 style={{ margin: '0 0 8px', fontSize: 15 }}>
+        🧑 {resident.name}
+      </h3>
+      <p style={{ fontSize: 13, lineHeight: 1.5, margin: '0 0 12px', color: 'var(--text-dim)' }}>
+        « {resident.dialogue} »
+      </p>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button onClick={() => actions.talk(resident.name)}>Parler</button>
+        <button onClick={onClose}>Fermer</button>
+      </div>
+    </div>
+  );
 }
 
 // ── Caravane ───────────────────────────────────────────────────────────────

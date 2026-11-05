@@ -16,6 +16,7 @@ import {
   hubForgetAbility,
   hubQuestBoard,
   hubAcceptQuest,
+  hubTalk,
   hubCompleteZone,
   hubChangeHub,
   hubCaravan,
@@ -78,6 +79,8 @@ export type GameActions = {
   forgetAbility: (memberId: string, abilityName: string) => void;
   questBoard: () => void;
   acceptQuest: (questId: string) => void;
+  /** Parler à un PNJ de la ville (dialogue + étapes de quête + récompenses). */
+  talk: (npcName: string) => void;
   completeZone: (zoneId: string) => void;
   changeHub: (hubId: string) => void;
   caravan: (destHubId: string) => void;
@@ -420,6 +423,7 @@ export function useGame(token: string | null, confirmCombatEnd = false): UseGame
       exploration ? explorationForgetAbility(memberId, abilityName) : hubForgetAbility(memberId, abilityName),
     questBoard: hubQuestBoard,
     acceptQuest: hubAcceptQuest,
+    talk: hubTalk,
     completeZone: hubCompleteZone,
     changeHub: hubChangeHub,
     caravan: hubCaravan,

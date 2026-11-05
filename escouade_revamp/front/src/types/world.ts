@@ -15,11 +15,23 @@ export type HubBuilding = {
   col: number;
 };
 
+/** PNJ de ville (ancré sur une case, cliquable — dialogue + objets de quête). */
+export type HubResident = {
+  name: string;
+  row: number;
+  col: number;
+  dialogue: string;
+  /** Objet de quête remis par le PNJ (nom). */
+  questItem?: string;
+};
+
 export type HubLayout = {
   size: { rows: number; cols: number };
   tileMap: boolean[][];
   startTile: Position;
   buildings: HubBuilding[];
+  /** PNJ de la ville (cliquables — dialogues + objets de quête). */
+  residents?: HubResident[];
   exit: { row: number; col: number; label: string };
   /** Case de la caravane (en diagonale de la sortie) — ouvre le panneau de voyage. */
   caravan?: { row: number; col: number };

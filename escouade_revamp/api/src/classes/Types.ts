@@ -140,6 +140,27 @@ export type HubBuilding = {
 };
 
 /**
+ * PNJ de ville (ancré sur une case, cliquable).
+ *
+ * Le joueur marche jusqu'à côté et clique pour **parler**. Le dialogue :
+ *  - complète les étapes de quête `talk` dont la cible est le **nom du PNJ**
+ *    OU le **nom de la ville** (ex. « Parler aux PNJ de Qual-Chen »),
+ *  - remet l'**objet de quête** (`questItem`) si le PNJ en donne un
+ *    (ex. le Pêcheur donne l'Embarcation),
+ *  - distribue la récompense des quêtes ainsi complétées.
+ */
+export type HubResident = {
+    /** Nom du PNJ (doit correspondre à la cible d'une étape `talk` si pertinent). */
+    name: string;
+    row: number;
+    col: number;
+    /** Dialogue affiché quand on lui parle. */
+    dialogue: string;
+    /** Objet de quête remis au joueur (nom, cf. `quest-items.json`). */
+    questItem?: string;
+};
+
+/**
  * Layout d'une ville (mode point-and-clic).
  *
  * La ville est une **grille de tuiles** (comme les zones) : `true` = case
@@ -152,6 +173,8 @@ export type HubLayout = {
     tileMap: boolean[][];
     startTile: Position;
     buildings: HubBuilding[];
+    /** PNJ de la ville (cliquables — dialogues + objets de quête). */
+    residents?: HubResident[];
     exit: { row: number; col: number; label: string };
     /** Case de la caravane (en diagonale de la sortie) — ouvre le panneau de voyage. */
     caravan?: { row: number; col: number };
