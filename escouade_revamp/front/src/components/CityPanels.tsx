@@ -535,7 +535,10 @@ function QuestPanel({ state, actions, onClose }: { state: GameState; actions: Ga
               return (
                 <li key={h.id}>
                   <div className="quest-head">
-                    <span className="quest-name">Chasse aux {h.family} (rang {h.rank})</span>
+                    <span className="quest-name">Chasse aux {h.family}s (rang {h.rank})</span>
+                  </div>
+                  <div className="quest-reward hunt-targets">
+                    Cibles : {h.monsters.join(", ")}
                   </div>
                   <div className="quest-reward">
                     {h.kills}/{h.totalKills} tués · +{h.xpPerKill} XP/kill
