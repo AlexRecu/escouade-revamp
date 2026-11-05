@@ -13,15 +13,16 @@ export class RedMage extends Job {
             [],
             [
                 { level: 1, spell: "Brasier" },
-                { level: 5, spell: "Glacier" },
-                { level: 5, spell: "Soin" },
-                { level: 7, spell: "Foudre" },
-                { level: 10, spell: "Brasier +" },
-                { level: 12, spell: "Glacier +" },
+                { level: 1, spell: "Grâce" },
+                { level: 2, spell: "Air" },
+                { level: 4, spell: "Soin" },
+                { level: 5, spell: "Foudre" },
+                { level: 7, spell: "Lumen" },
+                { level: 10, spell: "Glacier +" },
                 { level: 12, spell: "Barrière" },
-                { level: 15, spell: "Lumen" },
+                { level: 15, spell: "Tremblement" },
                 { level: 15, spell: "Foudre +" },
-                { level: 18, spell: "Grâce" }
+                { level: 18, spell: "Grâce +" }
             ],
             [
                 {

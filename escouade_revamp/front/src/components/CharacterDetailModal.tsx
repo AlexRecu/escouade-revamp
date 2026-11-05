@@ -189,7 +189,7 @@ export default function CharacterDetailModal({ member, sharedBag, onClose, actio
                     <span className="char-detail-stat-value">
                       {stats[s.key]}
                       {s.key === 'intelligence' && scepterIntBonus > 0 && (
-                        <span className="char-detail-stat-bonus" title="Bonus du sceptre équipé (Résonance arcanique)">
+                        <span className="char-detail-stat-bonus" title="Focus arcanique du sceptre">
                           {' '}+{scepterIntBonus}
                         </span>
                       )}
