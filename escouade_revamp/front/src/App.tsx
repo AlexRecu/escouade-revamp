@@ -14,7 +14,9 @@ import StatChoiceModal from './components/StatChoiceModal';
 import CharacterDetailModal from './components/CharacterDetailModal';
 import GameOverScreen from './components/GameOverScreen';
 import ToastContainer from './components/ToastContainer';
+import CombatTransition from './components/CombatTransition';
 import { useGame } from './game/useGame';
+import { useSettings } from './game/useSettings';
 
 type View =
   | { name: 'world' }
@@ -35,11 +37,38 @@ function App() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
 
+  // Paramètres utilisateur (validation fin de combat, animation de
+  // transition) — persistés en localStorage, réglables depuis le menu 👤.
+  const { settings, update: updateSettings } = useSettings();
+
   // Partie temps réel (socket) : levée ici pour que l'équipe soit visible
   // sur la mappemonde ET en ville (colonne latérale permanente). Le token est
   // passé en paramètre : quand il devient disponible (premier login), le
   // socket est re-connecté avec le JWT (sinon il serait refusé par le back).
-  const { state, logs: gameLogs, connected, actions, rooms, roomsLoading, error: gameError, inRoom, exploration, combat, pendingLevelUps, gameOver, dismissGameOver, setExplorationExitedHandler, setAuthErrorHandler, toasts } = useGame(getToken());
+  const { state, logs: gameLogs, connected, actions, rooms, roomsLoading, error: gameError, inRoom, exploration, combat, combatEndPending, combatEndLogs, pendingLevelUps, gameOver, dismissGameOver, setExplorationExitedHandler, setAuthErrorHandler, toasts } = useGame(getToken(), settings.confirmCombatEnd);
+
+  // Animation de transition à l'entrée en combat (bandes noires, façon
+  // Pokémon) : se déclenche quand `combat` passe de null à un état (entrée
+  // en combat / phase de placement), si le réglage est actif.
+  const [transitionActive, setTransitionActive] = useState(false);
+  const prevCombatRef = useRef<typeof combat>(null);
+  useEffect(() => {
+    const wasInCombat = prevCombatRef.current !== null;
+    prevCombatRef.current = combat;
+    if (!wasInCombat && combat && settings.combatTransition) {
+      setTransitionActive(true);
+    }
+  }, [combat, settings.combatTransition]);
+  // Auto-fermeture : séparée du déclenchement (dépend de `transitionActive`
+  // seul) pour que le timer ne soit pas annulé si `combat` se met à jour
+  // pendant l'animation (ex. placement d'un héros) → l'overlay ne resterait
+  // pas bloqué à l'écran.
+  useEffect(() => {
+    if (!transitionActive) return;
+    // Durée = animation (1.1 s) + décalage max des bandes (7 × 0.03 s).
+    const t = setTimeout(() => setTransitionActive(false), 1350);
+    return () => clearTimeout(t);
+  }, [transitionActive]);
 
   // Identité du joueur connecté (pour savoir s'il a déjà un personnage dans
   // la partie, et s'il est spectateur). Dépend de `user` : `<App />` n'est pas
@@ -306,6 +335,24 @@ function App() {
           </button>
           {userMenuOpen && (
             <div className="user-menu-dropdown">
+              <div className="user-menu-settings">
+                <label className="user-menu-setting">
+                  <input
+                    type="checkbox"
+                    checked={settings.confirmCombatEnd}
+                    onChange={(e) => updateSettings({ confirmCombatEnd: e.target.checked })}
+                  />
+                  Valider la fin des combats
+                </label>
+                <label className="user-menu-setting">
+                  <input
+                    type="checkbox"
+                    checked={settings.combatTransition}
+                    onChange={(e) => updateSettings({ combatTransition: e.target.checked })}
+                  />
+                  Animation d'entrée en combat
+                </label>
+              </div>
               {inRoom && (
                 <button
                   className="user-menu-item"
@@ -413,6 +460,9 @@ function App() {
                 onEndTurn={(unitId) => actions.combatEndTurn(unitId)}
                 onAiStep={() => actions.combatAiStep()}
                 onFlee={() => actions.combatFlee()}
+                combatEndPending={combatEndPending}
+                combatEndLogs={combatEndLogs}
+                onConfirmEnd={() => actions.confirmCombatEnd()}
               />
             ) : exploration ? (
               <DungeonView
@@ -430,8 +480,10 @@ function App() {
         </main>
       </div>
       {/* Écran de choix de stat (montée de niveau reportée après un combat).
-          Affiché uniquement pour les montées du personnage du joueur connecté. */}
-      {inRoom && myPendingLevelUps.length > 0 && (
+          Affiché uniquement pour les montées du personnage du joueur connecté.
+          Masqué pendant la relecture de fin de combat (combatEndPending) : le
+          joueur relit le journal d'abord, puis choisit ses stats après. */}
+      {inRoom && myPendingLevelUps.length > 0 && !combatEndPending && (
         <StatChoiceModal
           levelUps={myPendingLevelUps}
           members={mergedMembers}
@@ -457,6 +509,8 @@ function App() {
       {gameOver && (
         <GameOverScreen recap={gameOver} onDismiss={dismissGameOver} />
       )}
+      {/* Animation de transition à l'entrée en combat (bandes noires). */}
+      {transitionActive && <CombatTransition />}
       {/* Notifications éphémères (toasts) : sauvegarde, nouvel aventurier,
           renommage de partie… Affichées en surimpression, en haut à droite. */}
       <ToastContainer toasts={toasts} />

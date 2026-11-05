@@ -103,6 +103,8 @@ export type GameActions = {
   combatAiStep: () => void;
   combatFlee: () => void;
   combatEnd: () => void;
+  /** Valide la fin du combat (quitte l'écran de relecture → exploration). */
+  confirmCombatEnd: () => void;
   /** Soumet les stats choisies pour les montées de niveau reportées. */
   combatSubmitStats: (choices: { characterId: string; stat: string }[]) => void;
   // Lobby de parties (multi-joueurs).
@@ -148,6 +150,12 @@ export type UseGame = {
   exploration: ExplorationState | null;
   /** État de combat courant (null si pas de combat en cours). */
   combat: CombatState | null;
+  /** true si on est en phase de **validation de fin de combat** (relecture du
+   *  journal : dégâts + butin/XP + montée de niveau) avant de passer à la suite. */
+  combatEndPending: boolean;
+  /** Logs de butin/XP capturés pendant la phase de validation (pour l'écran
+   *  de relecture, en complément du journal de combat). */
+  combatEndLogs: string[];
   /** Montées de niveau reportées (stat à choisir) — non vide = afficher
    *  l'écran de choix de stat. */
   pendingLevelUps: { characterId: string; name: string; level: number }[];
@@ -177,14 +185,30 @@ export type UseGame = {
  *   null à une valeur (premier login), le socket est **re-connecté** avec le
  *   token — sinon il serait connecté sans token et refusé par le middleware.
  */
-export function useGame(token: string | null): UseGame {
+export function useGame(token: string | null, confirmCombatEnd = false): UseGame {
   const [state, setState] = useState<GameState | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
   const [connected, setConnected] = useState(false);
   const [exploration, setExploration] = useState<ExplorationState | null>(null);
   const [combat, setCombat] = useState<CombatState | null>(null);
+  // Phase de validation de fin de combat (relecture du journal avant de
+  // passer à la suite). `combatEndPending` = on est en relecture ;
+  // `combatEndLogs` = logs de butin/XP capturés pendant la relecture.
+  const [combatEndPending, setCombatEndPending] = useState(false);
+  const [combatEndLogs, setCombatEndLogs] = useState<string[]>([]);
   const [pendingLevelUps, setPendingLevelUps] = useState<{ characterId: string; name: string; level: number }[]>([]);
   const [gameOver, setGameOver] = useState<GameOverRecap | null>(null);
+  // Refs miroir (lues par les handlers socket, qui sont dans une closure aux
+  // deps [pushLogs, pushToast, token] — on évite de resouscrire le socket à
+  // chaque changement de réglage).
+  const confirmEndRef = useRef(confirmCombatEnd);
+  confirmEndRef.current = confirmCombatEnd;
+  const combatEndPendingRef = useRef(false);
+  combatEndPendingRef.current = combatEndPending;
+  // Sortie de donjon différée : si le combat se termine ET que le donjon est
+  // quitté (cas rare), on diffère la navigation vers la mappemonde jusqu'à la
+  // validation de fin de combat.
+  const exitedDeferredRef = useRef(false);
   const [rooms, setRooms] = useState<RoomSummary[]>([]);
   // true tant que la 1re liste des parties n'a pas été reçue (spinner lobby).
   const [roomsLoading, setRoomsLoading] = useState(true);
@@ -278,11 +302,25 @@ export function useGame(token: string | null): UseGame {
     onExplorationState((s) => {
       setExploration(s);
       // Un nouvel état d'exploration = le combat est terminé (butin/défaite
-      // appliqués) → on quitte la vue de combat.
-      setCombat(null);
+      // appliqués). En phase de validation de fin de combat, on NE quitte PAS
+      // la vue de combat (le joueur relit le journal) ; sinon on quitte.
+      if (!combatEndPendingRef.current) setCombat(null);
     });
-    onExplorationLog(pushLogs);
+    onExplorationLog((newLogs) => {
+      pushLogs(newLogs);
+      // En phase de validation, on capture les logs de butin/XP pour l'écran
+      // de relecture (ils arrivent via exploration:log après combatEnd).
+      if (combatEndPendingRef.current) {
+        setCombatEndLogs((prev) => [...prev, ...newLogs]);
+      }
+    });
     onExplorationExited(() => {
+      // Sortie de donjon : en phase de validation, on diffère la navigation
+      // vers la mappemonde (le joueur valide d'abord la fin du combat).
+      if (combatEndPendingRef.current) {
+        exitedDeferredRef.current = true;
+        return;
+      }
       setExploration(null);
       setPendingLevelUps([]);
       exitedHandlerRef.current?.();
@@ -294,9 +332,16 @@ export function useGame(token: string | null): UseGame {
     // Combat : on met à jour l'état du plateau. Quand le combat est terminé
     // (result !== "ongoing"), on demande au serveur d'appliquer le résultat
     // (butin / défaite) → il renvoie l'état d'exploration et on quitte le combat.
+    // Si le réglage « valider la fin du combat » est actif, on entre en phase
+    // de relecture (on garde l'écran de combat visible) au lieu de quitter.
     onCombatState((s) => {
       setCombat(s);
       if (s.result !== 'ongoing') {
+        if (confirmEndRef.current) {
+          setCombatEndPending(true);
+          setCombatEndLogs([]);
+          exitedDeferredRef.current = false;
+        }
         combatEnd();
       }
     });
@@ -393,6 +438,20 @@ export function useGame(token: string | null): UseGame {
     combatAiStep,
     combatFlee,
     combatEnd,
+    confirmCombatEnd: () => {
+      // Quitte l'écran de relecture → exploration (le butin/XP est déjà
+      // appliqué par combatEnd, appelé à la détection de la fin du combat).
+      setCombatEndPending(false);
+      setCombatEndLogs([]);
+      setCombat(null);
+      // Si la sortie de donjon avait été différée, on la déclenche maintenant.
+      if (exitedDeferredRef.current) {
+        exitedDeferredRef.current = false;
+        setExploration(null);
+        setPendingLevelUps([]);
+        exitedHandlerRef.current?.();
+      }
+    },
     combatSubmitStats: (choices: { characterId: string; stat: string }[]) => {
       combatSubmitStats(choices);
       // On ferme l'écran de choix dès la soumission (l'état d'exploration
@@ -415,5 +474,5 @@ export function useGame(token: string | null): UseGame {
     partyCreateCharacter,
   };
 
-  return { state, logs, connected, actions, rooms, roomsLoading, error, inRoom, exploration, combat, pendingLevelUps, gameOver, dismissGameOver, setExplorationExitedHandler, setAuthErrorHandler, toasts };
+  return { state, logs, connected, actions, rooms, roomsLoading, error, inRoom, exploration, combat, combatEndPending, combatEndLogs, pendingLevelUps, gameOver, dismissGameOver, setExplorationExitedHandler, setAuthErrorHandler, toasts };
 }

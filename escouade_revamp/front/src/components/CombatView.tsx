@@ -21,6 +21,12 @@ type Props = {
   /** Un tour IA à la fois (animation des ennemis un par un). */
   onAiStep: () => void;
   onFlee: () => void;
+  /** true si on est en phase de validation de fin de combat (relecture). */
+  combatEndPending?: boolean;
+  /** Logs de butin/XP capturés pendant la relecture (complément du journal). */
+  combatEndLogs?: string[];
+  /** Valide la fin du combat (quitte l'écran de relecture). */
+  onConfirmEnd?: () => void;
 };
 
 /** Catégorie de sous-menu (les 3 qui ont une liste). */
@@ -38,7 +44,7 @@ type Submenu = 'none' | 'items' | 'skills' | 'spells';
  * disponible), puis choisit une action dans le menu. Si l'action a des cibles,
  * les cibles valides clignotent et le joueur clique sur la cible pour valider.
  */
-export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove, onAct, onEndTurn, onAiStep, onFlee }: Props) {
+export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove, onAct, onEndTurn, onAiStep, onFlee, combatEndPending = false, combatEndLogs = [], onConfirmEnd }: Props) {
   const { units, gridSize, turn, result, currentUnitId, actions, log, actionOrder, placement } = combat;
 
   // Unité courante (dont c'est le tour, contrôlée par le joueur).
@@ -567,6 +573,21 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
                   ✅ Valider le placement
                 </button>
               </>
+            ) : isOver && combatEndPending ? (
+              <div className="combat-end-review">
+                <p className="combat-over-msg">
+                  {result === 'victory' ? "🏆 Victoire !"
+                    : result === 'defeat' ? "💀 Défaite…"
+                    : "💨 Fuite !"}
+                </p>
+                <p className="combat-end-hint">
+                  Relisez le journal (dernière attaque, butin, XP, montée de
+                  niveau) puis validez pour continuer.
+                </p>
+                <button className="action-endturn combat-end-confirm" onClick={onConfirmEnd}>
+                  ✅ Valider la fin du combat
+                </button>
+              </div>
             ) : isOver ? (
               <p className="combat-over-msg">
                 {result === 'victory' ? "🏆 Victoire ! Le butin est en train d'être distribué…"
@@ -718,12 +739,16 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
           </div>
 
           {/* Journal du combat (uniquement les événements de combat, pas
-              les logs d'exploration qui noieraient les actions). */}
+              les logs d'exploration qui noieraient les actions). En phase de
+              validation de fin de combat, on ajoute les logs de butin/XP. */}
           <div className="combat-log">
             <h4>Journal</h4>
             <div className="combat-log-entries" ref={logRef}>
               {log.map((entry, i) => (
                 <p key={i} className="log-entry">{entry}</p>
+              ))}
+              {combatEndPending && combatEndLogs.map((entry, i) => (
+                <p key={`end-${i}`} className="log-entry log-entry-loot">{entry}</p>
               ))}
             </div>
           </div>
