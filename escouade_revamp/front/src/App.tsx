@@ -50,25 +50,32 @@ function App() {
   // Animation de transition à l'entrée en combat (bandes noires, façon
   // Pokémon) : se déclenche quand `combat` passe de null à un état (entrée
   // en combat / phase de placement), si le réglage est actif.
-  const [transitionActive, setTransitionActive] = useState(false);
+  // Deux phases : `closing` (bandes se referment SUR L'EXPLORATION — le
+  // CombatView n'est PAS encore rendu) puis `opening` (bandes s'ouvrent SUR
+  // LE COMBAT — CombatView rendu). Sans ça on verrait d'abord l'écran de
+  // combat puis les bandes par-dessus (l'inverse du souhaité).
+  const [transitionPhase, setTransitionPhase] = useState<'closing' | 'opening' | null>(null);
   const prevCombatRef = useRef<typeof combat>(null);
   useEffect(() => {
     const wasInCombat = prevCombatRef.current !== null;
     prevCombatRef.current = combat;
     if (!wasInCombat && combat && settings.combatTransition) {
-      setTransitionActive(true);
+      setTransitionPhase('closing');
     }
   }, [combat, settings.combatTransition]);
-  // Auto-fermeture : séparée du déclenchement (dépend de `transitionActive`
+  // Avance des phases : séparée du déclenchement (dépend de `transitionPhase`
   // seul) pour que le timer ne soit pas annulé si `combat` se met à jour
   // pendant l'animation (ex. placement d'un héros) → l'overlay ne resterait
   // pas bloqué à l'écran.
   useEffect(() => {
-    if (!transitionActive) return;
-    // Durée = animation (1.1 s) + décalage max des bandes (7 × 0.03 s).
-    const t = setTimeout(() => setTransitionActive(false), 1350);
+    if (!transitionPhase) return;
+    // Durée d'une phase = animation (0.55 s) + décalage max des bandes
+    // (7 × 0.03 s = 0.21 s).
+    const t = setTimeout(() => {
+      setTransitionPhase((p) => (p === 'closing' ? 'opening' : null));
+    }, 760);
     return () => clearTimeout(t);
-  }, [transitionActive]);
+  }, [transitionPhase]);
 
   // Identité du joueur connecté (pour savoir s'il a déjà un personnage dans
   // la partie, et s'il est spectateur). Dépend de `user` : `<App />` n'est pas
@@ -449,7 +456,11 @@ function App() {
             />
           )}
           {inRoom && !needsCharacter && inDungeon && (
-            combat ? (
+            // Pendant la phase `closing` de la transition, le CombatView n'est
+            // PAS rendu : on reste sur l'écran d'exploration (les bandes se
+            // referment dessus), puis le CombatView apparaît quand les bandes
+            // s'ouvrent.
+            combat && transitionPhase !== 'closing' ? (
               <CombatView
                 combat={combat}
                 logs={gameLogs}
@@ -510,7 +521,7 @@ function App() {
         <GameOverScreen recap={gameOver} onDismiss={dismissGameOver} />
       )}
       {/* Animation de transition à l'entrée en combat (bandes noires). */}
-      {transitionActive && <CombatTransition />}
+      {transitionPhase && <CombatTransition phase={transitionPhase} />}
       {/* Notifications éphémères (toasts) : sauvegarde, nouvel aventurier,
           renommage de partie… Affichées en surimpression, en haut à droite. */}
       <ToastContainer toasts={toasts} />
