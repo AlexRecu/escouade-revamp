@@ -12,7 +12,7 @@ import { Warrior } from "../../src/classes/Jobs/Warrior";
  * « Bouclier Impénétrable » peut l'intercepter — il se place à la place de la
  * cible et encaisse l'attaque à sa place.
  *  - Guerrier : un roll, protège si roll >= 5.
- *  - Paladin : double roll, protège si roll + doubleRoll >= 6.
+ *  - Paladin : double roll, protège si l'un des deux dés >= 5 (≈ 55,5 %).
  *
  * Deux niveaux testés :
  *  - `Character.protectTarget` : la logique métier (roll + swap de position).
@@ -64,21 +64,21 @@ describe("Character.protectTarget (logique métier)", () => {
     expect(ally.position).toEqual({ row: 6, col: 2 });
   });
 
-  test("Paladin double roll : roll + doubleRoll >= 6 protège", () => {
+  test("Paladin double roll : l'un des deux >= 5 protège (55,5 %)", () => {
     const warrior = makeWarrior("w3", { row: 6, col: 0 });
     const ally = makeAlly("a3", { row: 6, col: 2 });
     giveShield(warrior);
     const log: string[] = [];
-    const protected_ = warrior.protectTarget(ally, 3, 3, log); // 3 + 3 = 6
+    const protected_ = warrior.protectTarget(ally, 5, 1, log); // 5 >= 5 → protège
     expect(protected_).toBe(true);
   });
 
-  test("Paladin double roll : roll + doubleRoll < 6 ne protège pas", () => {
+  test("Paladin double roll : les deux < 5 ne protège pas", () => {
     const warrior = makeWarrior("w4", { row: 6, col: 0 });
     const ally = makeAlly("a4", { row: 6, col: 2 });
     giveShield(warrior);
     const log: string[] = [];
-    const protected_ = warrior.protectTarget(ally, 2, 3, log); // 2 + 3 = 5
+    const protected_ = warrior.protectTarget(ally, 2, 3, log); // 2 < 5 et 3 < 5
     expect(protected_).toBe(false);
   });
 

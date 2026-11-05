@@ -675,8 +675,10 @@ export class Character extends Unit {
     protectTarget(target: Unit, roll: number, doubleRoll: number = 0, resultArray: string[]): boolean {
         let protect: boolean = false;
         if (this.job.name !== "Chevalier Noir" && this.status.some(statut => statut.name === "Bouclier Impénétrable")) {
-            // Si le roll du guerrier est d'au moins 5 ou que celui du Paladin est au moins de 6
-            if ((doubleRoll === 0 && roll >= 5) || (doubleRoll > 0 && roll + doubleRoll >= 6)) {
+            // Guerrier : 1 D6, succès si >= 5 (2/6 ≈ 33 %).
+            // Paladin : 2 D6, succès si l'UN des deux est >= 5 (« double les rolls
+            // de protection » = 2 fois plus de chances) → 1 - (4/6)² = 20/36 ≈ 55,5 %.
+            if (doubleRoll === 0 ? roll >= 5 : (roll >= 5 || doubleRoll >= 5)) {
                 resultArray.push(`Une lumière enveloppe ${this.name}`);
                 //switchPosition with target
                 const postionBuffer: Position = this.position;

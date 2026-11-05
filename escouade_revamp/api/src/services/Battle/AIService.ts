@@ -137,6 +137,12 @@ export class AIService {
             return;
         }
 
+        // Protection : un allié sous "Bouclier Impénétrable" peut intercepter
+        // la compétence/sort (même mécanique que l'attaque de base).
+        if (this.tryProtect(target)) {
+            return;
+        }
+
         let log: string[];
         let kind: "skill" | "spell";
         if (info.kind === "spell") {
@@ -219,6 +225,7 @@ export class AIService {
 
     /**
      * Tente de faire protéger la cible par un allié sous "Bouclier impénétrable".
+     * Teste **tous** les protecteurs éligibles (jusqu'au 1er qui bloque).
      * Le protecteur (Guerrier, ou Paladin avec double roll) se place à la place
      * de la cible et encaisse l'attaque à sa place.
      * @returns true si l'attaque a été interceptée.
@@ -226,21 +233,25 @@ export class AIService {
     private tryProtect(target: Unit): boolean {
         if (!(target instanceof Character)) return false;
 
-        const protector = this.state.aliveHeroes.find(
+        const protectors = this.state.aliveHeroes.filter(
             (u) =>
                 u instanceof Character &&
                 u !== target &&
                 u.job.name !== "Chevalier Noir" &&
                 u.status.some((s) => s.name === "Bouclier Impénétrable")
-        ) as Character | undefined;
+        ) as Character[];
 
-        if (!protector) return false;
-
-        const isPaladin = protector.job.specialAbility.startsWith("Protection divine");
-        const roll = this.roll();
-        const doubleRoll = isPaladin ? this.roll() : 0;
-        const log: string[] = [];
-        return protector.protectTarget(target, roll, doubleRoll, log);
+        for (const protector of protectors) {
+            const isPaladin = protector.job.specialAbility.startsWith("Protection divine");
+            const roll = this.roll();
+            const doubleRoll = isPaladin ? this.roll() : 0;
+            const log: string[] = [];
+            if (protector.protectTarget(target, roll, doubleRoll, log)) {
+                this.state.pushLogMany(log);
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
