@@ -107,6 +107,15 @@ export default function CharacterDetailModal({ member, sharedBag, onClose, actio
   // Le Mage bleu peut oublier les capacités apprises (hors "Scan"/"Apprendre").
   const isBlueMage = member.job === 'Mage Bleu' || member.job === 'Mage bleu';
 
+  // Passif Sceptre « Résonance arcanique » : bonus d'Intelligence apporté par
+  // les sceptres équipés (main droite et/ou gauche), scalable selon la
+  // puissance du sceptre (floor(weaponStat / 2)). Affiché en vert à côté de
+  // l'Intelligence. Miroir du getter `scepterIntBonus` côté back.
+  const scepterIntBonus = [member.rightHand, member.leftHand].reduce(
+    (sum, w) => (w && w.weaponType === 'sceptre' ? sum + Math.floor(w.weaponStat / 2) : sum),
+    0
+  );
+
   return (
     <div className="char-detail-overlay" onClick={onClose}>
       <div className="char-detail-modal" onClick={(e) => e.stopPropagation()}>
@@ -177,7 +186,14 @@ export default function CharacterDetailModal({ member, sharedBag, onClose, actio
                 {STAT_LABELS.map((s) => (
                   <div key={s.key} className="char-detail-stat" data-desc={s.desc}>
                     <span className="char-detail-stat-label">{s.label}</span>
-                    <span className="char-detail-stat-value">{stats[s.key]}</span>
+                    <span className="char-detail-stat-value">
+                      {stats[s.key]}
+                      {s.key === 'intelligence' && scepterIntBonus > 0 && (
+                        <span className="char-detail-stat-bonus" title="Bonus du sceptre équipé (Résonance arcanique)">
+                          {' '}+{scepterIntBonus}
+                        </span>
+                      )}
+                    </span>
                   </div>
                 ))}
               </div>

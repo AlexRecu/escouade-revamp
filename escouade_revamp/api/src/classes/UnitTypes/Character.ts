@@ -134,6 +134,30 @@ export class Character extends Unit {
     get leftHandWeapon(): Weapon | null {
         return this.leftHand;
     }
+
+    /**
+     * Passif Sceptre « Résonance arcanique » : bonus d'Intelligence effective
+     * apporté par les sceptres équipés (main droite et/ou gauche). Le bonus est
+     * scalable selon la puissance du sceptre : `floor(weaponStat / 2)` → +1
+     * (Bâton de mage/doré, Caducée), +2 (Sceptre Ophidien), +3 (Sceptre Céleste,
+     * Sceptre de la foi). Calculé à la volée (pas de mutation des stats) → aucun
+     * souci de persistance.
+     */
+    get scepterIntBonus(): number {
+        let bonus = 0;
+        for (const w of [this.rightHand, this.leftHand]) {
+            if (w && w.weaponType === 'sceptre') {
+                bonus += Math.floor(w.weaponStat / 2);
+            }
+        }
+        return bonus;
+    }
+
+    /** Intelligence effective = base + bonus des sceptres équipés. */
+    get effectiveIntelligence(): number {
+        return this.stats.intelligence + this.scepterIntBonus;
+    }
+
     private calculateCritThreshold(): number {
         return 6 - this.status.reduce((acc, status) => acc + (status.name === "Crit+" ? 1 : status.name === "Crit++" ? 2 : 0), 0) - (this.job.name === "Ninja" ? 1 : 0);
     }
@@ -279,10 +303,12 @@ export class Character extends Unit {
             if (spell.mpCost) {
                 // Offensive spells
                 if (spell.power) {
-                    // Clause de réussite
-                    if (roll >= (spell.power - this.stats.intelligence)) {
+                    // Clause de réussite (Intelligence effective = base + bonus
+                    // des sceptres équipés, passif « Résonance arcanique »).
+                    const effInt = this.effectiveIntelligence;
+                    if (roll >= (spell.power - effInt)) {
                         const damageMultiplier = calculateDamageMultiplier(this, spell.element, target);
-                        damage += (Math.pow(spell.power + this.stats.intelligence, 2) / 2 + roll) * damageMultiplier;
+                        damage += (Math.pow(spell.power + effInt, 2) / 2 + roll) * damageMultiplier;
                         // Dégats additionnels en cas de réussite critique
                         if (roll >= this.calculateCritThreshold()) {
                             const critMultiplier = (critRoll + 2) / 2;

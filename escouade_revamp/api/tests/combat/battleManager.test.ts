@@ -361,4 +361,53 @@ describe("BattleManager", () => {
         // critRoll = 6 → épée → x6 (pas x7)
         expect(log.some((l) => l.includes("x6"))).toBe(true);
     });
+
+    // ── Passif Sceptre : bonus d'Intelligence (Résonance arcanique) ──────────
+    test("sceptre : sans sceptre, le bonus d'Intelligence est 0", () => {
+        const hero = makeWarrior("h1", 3, 3); // le Guerrier n'a pas de sceptre
+        expect(hero.scepterIntBonus).toBe(0);
+        expect(hero.effectiveIntelligence).toBe(hero.stats.intelligence);
+    });
+
+    test("sceptre : le bonus est scalable selon la puissance (floor(weaponStat/2))", () => {
+        const hero = makeWhiteMage("h1", 3, 3);
+        // Le Mage blanc démarre avec un Bâton de mage (+1) → on déséquipe
+        // d'abord pour partir de zéro.
+        hero.equipRightHand(null);
+        hero.equipLeftHand(null);
+        const baseInt = hero.stats.intelligence;
+        expect(hero.scepterIntBonus).toBe(0);
+        // Bâton de mage (weaponStat 2) → +1
+        hero.equipRightHand(new (require("../../src/classes/Items/Weapon").Scepter)(
+            "scepter1", "Bâton de mage", "test", 500, 3, 2, ""
+        ));
+        expect(hero.scepterIntBonus).toBe(1);
+        expect(hero.effectiveIntelligence).toBe(baseInt + 1);
+        // Sceptre Céleste (weaponStat 7) → +3
+        hero.equipRightHand(new (require("../../src/classes/Items/Weapon").Scepter)(
+            "scepter2", "Sceptre Céleste", "test", 1300, 8, 7, ""
+        ));
+        expect(hero.scepterIntBonus).toBe(3);
+        expect(hero.effectiveIntelligence).toBe(baseInt + 3);
+    });
+
+    test("sceptre : le bonus augmente les dégâts de sort (Ruine)", () => {
+        const hero = makeWhiteMage("h1", 3, 3);
+        // Déséquipe le Bâton de mage de départ pour partir de zéro.
+        hero.equipRightHand(null);
+        hero.equipLeftHand(null);
+        const enemy = makeFrelon(3, 4);
+        enemy.currentHp = 100; enemy.maxHp = 100;
+        // Sans sceptre : effInt = 2 → (5+2)²/2 + 5 = 29.5 → 30 PV
+        const logSans = hero.useSpellFromName("Ruine", enemy, 5, 1);
+        const dmgSans = parseInt(logSans.find((l) => l.includes("perd"))!.match(/perd (\d+)/)![1], 10);
+        // Avec Sceptre Céleste (weaponStat 7 → +3) : effInt = 5 → (5+5)²/2 + 5 = 55 PV
+        hero.equipRightHand(new (require("../../src/classes/Items/Weapon").Scepter)(
+            "scepter2", "Sceptre Céleste", "test", 1300, 8, 7, ""
+        ));
+        const logAvec = hero.useSpellFromName("Ruine", enemy, 5, 1);
+        const dmgAvec = parseInt(logAvec.find((l) => l.includes("perd"))!.match(/perd (\d+)/)![1], 10);
+        expect(dmgAvec).toBeGreaterThan(dmgSans);
+        expect(dmgAvec).toBe(55);
+    });
 });

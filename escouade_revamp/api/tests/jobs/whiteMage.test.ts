@@ -62,7 +62,9 @@ describe("White Mage Spell Tests", () => {
         const enemy2 = new Monster(1, "M2", "Enemy", 1, { row: 1, col: 1 }, [], [], [1], [100], [100], [100], [], ["Sacré"], [], []);
         const log = whiteMage.useSpellFromName("Lumen", enemy2, 6, 1);
         expect(log).toContain("C'est super efficace !");
-        expect(enemy2.currentHp).toBe(44);
+        // Le Mage blanc porte un Bâton de mage de départ (+1 Intelligence,
+        // passif « Résonance arcanique ») → Intelligence effective 3 → 72 PV.
+        expect(enemy2.currentHp).toBe(28);
     });
 
     // test("Soin + soigne 7 PV d'un allié", () => {

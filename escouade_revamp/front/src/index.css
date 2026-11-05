@@ -2616,6 +2616,12 @@ button:disabled {
   font-weight: 700;
   color: var(--accent);
 }
+/* Bonus d'Intelligence apporté par un sceptre équipé (Résonance arcanique). */
+.char-detail-stat-bonus {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--building-quest, #45c98a);
+}
 /* Tooltip visible au survol : description de la stat (data-desc). */
 .char-detail-stat::after {
   content: attr(data-desc);
