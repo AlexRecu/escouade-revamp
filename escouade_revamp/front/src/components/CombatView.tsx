@@ -94,6 +94,32 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
     if (el) el.scrollTop = el.scrollHeight;
   }, [log]);
 
+  // ── Animation bouclier (protection) ─────────────────────────────────────
+  // Quand le log contient « X protège Y » ou « X se protège », on affiche un
+  // gros 🛡️ animé sur le protecteur pendant 1,2 s.
+  const [shieldFx, setShieldFx] = useState<string | null>(null);
+  const prevLogLenRef = useRef(0);
+  useEffect(() => {
+    const prevLen = prevLogLenRef.current;
+    prevLogLenRef.current = log.length;
+    if (log.length <= prevLen) return;
+    // Vérifier les nouvelles entrées (depuis prevLen).
+    for (let i = prevLen; i < log.length; i++) {
+      const entry = log[i];
+      // « X protège Y » ou « X se protège »
+      const m = entry.match(/^(.+?) (?:se )?protège/);
+      if (m) {
+        const protectorName = m[1];
+        const unit = units.find((u) => u.name === protectorName);
+        if (unit) {
+          setShieldFx(unit.id);
+          const t = setTimeout(() => setShieldFx(null), 1200);
+          return () => clearTimeout(t);
+        }
+      }
+    }
+  }, [log, units]);
+
   // ── Enchaînement des tours IA (animation un ennemi à la fois) ────────────
   // Quand l'état de combat arrive et que l'acteur courant est un **ennemi**
   // (`currentUnitId` null, combat en cours, placement validé), on demande au
@@ -656,6 +682,10 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
                           >
                             {actionIcon(actionFx.kind)}
                           </span>
+                        )}
+                        {/* Animation bouclier : gros 🛡️ quand la protection se déclenche. */}
+                        {shieldFx === unit.id && (
+                          <span className="unit-shield-fx">🛡️</span>
                         )}
                         {/* Infos superposées sur le token (nom + barres PV/AP avec valeurs). */}
                         <div className="unit-overlay">

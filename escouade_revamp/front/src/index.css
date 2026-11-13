@@ -803,15 +803,16 @@ button:disabled {
     width: 100%;
     border-right: none;
     border-bottom: 1px solid var(--border);
-    padding: 5px 8px;
+    padding: 4px 8px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
     overflow: hidden;
   }
-  .party-sidebar-head { margin-bottom: 0; }
-  .party-sidebar-head h3 { font-size: 12px; }
-  .party-level-row { margin: 0; padding: 3px 8px; font-size: 11px; }
+  /* En-tête « Équipe / En ligne » masqué : redondant, libère de la hauteur
+     pour que le plateau de combat tienne sur une page. */
+  .party-sidebar-head { display: none; }
+  .party-level-row { margin: 0; padding: 2px 8px; font-size: 11px; }
   .party-gold-inline { font-size: 11px; }
   .party-gold-inline b { font-size: 12px; }
   .party-list {
@@ -820,24 +821,24 @@ button:disabled {
     gap: 6px;
     overflow-x: auto;
     overflow-y: hidden;
-    padding-bottom: 2px;
+    padding-bottom: 0;
     scrollbar-width: thin;
   }
   .party-list li {
     flex: 0 0 auto;
-    width: 138px;
+    width: 132px;
     margin-bottom: 0;
-    padding: 6px;
+    padding: 4px 6px;
   }
-  .party-head { margin-bottom: 3px; font-size: 11px; gap: 5px; }
+  .party-head { margin-bottom: 2px; font-size: 11px; gap: 5px; }
   .party-head > span:nth-child(2) {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     min-width: 0;
   }
-  .party-token { width: 30px; height: 30px; border-radius: 5px; }
-  .party-token-defeated { width: 58px; height: 15px; }
+  .party-token { width: 26px; height: 26px; border-radius: 5px; }
+  .party-token-defeated { width: 52px; height: 14px; }
   .party-job { display: none; } /* trop dense pour la bande ; le détail l'affiche */
   .bar-row { margin: 1px 0; }
   .bar { height: 4px; }
@@ -2043,6 +2044,26 @@ button:disabled {
 .unit-action-badge.fx-action-skill { color: #ff9f43; }
 .unit-action-badge.fx-action-combo { color: #c78bff; }
 .unit-action-badge.fx-action-attack { color: #d64545; }
+/* ── Animation bouclier (protection déclenchée) ──────────────────────────
+   Gros 🛡️ qui apparaît au centre du protecteur, grossit puis s'estompe. */
+.unit-shield-fx {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(28px, 6vw, 48px);
+  z-index: 8;
+  pointer-events: none;
+  filter: drop-shadow(0 0 8px rgba(90, 140, 255, 0.9)) drop-shadow(0 0 3px rgba(0, 0, 0, 0.9));
+  animation: fx-shield-pop 1.2s ease-out forwards;
+}
+@keyframes fx-shield-pop {
+  0%   { transform: scale(0.2); opacity: 0; }
+  20%  { transform: scale(1.6); opacity: 1; }
+  45%  { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
 
 /* ── Projectile d'attaque à distance / sort (acteur → cible) ──────────── */
 /* Couche pleine (inset 0) : le cœur est positionné en left/top en % de la
@@ -3526,7 +3547,7 @@ button:disabled {
 
 /* ── Combat mobile : plateau en haut, actions en bas, journal repliable ── */
 @media (max-width: 600px) {
-  .combat-view { padding: 6px; gap: 6px; }
+  .combat-view { padding: 6px; gap: 6px; flex: 1; min-width: 0; }
   .combat-header {
     flex-wrap: wrap;
     gap: 6px;
@@ -3539,8 +3560,8 @@ button:disabled {
     min-height: 0;
     flex-direction: column;
     flex-wrap: nowrap; /* empile plateau + actions (pas de 2e colonne à droite) */
-    gap: 8px;
-    overflow-y: auto;
+    gap: 6px;
+    overflow-y: auto; /* filet de sécurité (ne devrait plus se déclencher) */
   }
   .combat-board-wrap {
     flex: 0 0 auto;
@@ -3556,17 +3577,20 @@ button:disabled {
     flex-wrap: wrap;
   }
   .combat-board {
-    /* Le menu d'actions est dans le bottom-sheet → le plateau peut grossir. */
-    width: min(94vw, 60dvh);
+    /* Plateau **carré** 8×8 (tuiles carrées). Dimensionné pour que tout tienne
+       sur une page : limité par la largeur (94vw) ET par la hauteur restante
+       (100dvh - le reste de l'écran). */
+    width: min(94vw, calc(100dvh - 292px));
     max-width: 100%;
+    aspect-ratio: 1 / 1;
   }
   .combat-legend { font-size: 10px; gap: 8px; }
   .combat-side {
-    flex: 1 1 auto;
+    flex: 0 0 auto;
     width: 100%;
     max-width: none;
     min-width: 0;
-    gap: 8px;
+    gap: 4px;
   }
   /* Le menu d'actions (action-mode) est remplacé par le bottom-sheet sur
      mobile → on le masque. Le placement / la fin de combat (sans action-mode)
@@ -3576,11 +3600,12 @@ button:disabled {
     padding: 8px;
     gap: 6px;
   }
-  /* Fin de tour permanent : pleine largeur, bien visible sous le plateau. */
+  /* Fin de tour permanent : pleine largeur, bien visible sous le plateau.
+     padding-right laisse la place au bouton 📜 (fixed, en superposition). */
   .combat-endturn-persistent {
     width: 100%;
-    padding: 12px;
-    font-size: 14px;
+    padding: 10px 56px 10px 10px;
+    font-size: 13px;
     flex-shrink: 0;
   }
   .action-grid {
@@ -3606,7 +3631,7 @@ button:disabled {
   display: none;
   position: fixed;
   right: 10px;
-  bottom: 10px;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   z-index: 60;
   width: 46px;
   height: 46px;
@@ -3684,7 +3709,7 @@ button:disabled {
     right: 0;
     bottom: 0;
     z-index: 71;
-    max-height: 70dvh;
+    max-height: 85dvh;
     background: var(--bg-panel);
     border-top: 1px solid var(--border);
     border-radius: 14px 14px 0 0;
