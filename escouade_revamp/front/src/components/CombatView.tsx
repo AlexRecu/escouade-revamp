@@ -349,6 +349,9 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
     // auto-cible) : le joueur choisit explicitement sur qui l'appliquer.
     // Les autres actions (sort/sort auto-cible unique) peuvent s'exécuter
     // directement.
+    // Ferme le bottom-sheet mobile : l'action est lancée, le joueur passe au
+    // ciblage sur le plateau (aucune autre action n'est requise dans le menu).
+    setMobileMenuOpen(false);
     if (
       action !== 'item' &&
       validTargets &&
@@ -384,7 +387,7 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
           <button
             className={`action-cat ${mode === 'move' ? 'active' : ''}`}
             disabled={!actions.canMove}
-            onClick={() => { setMode(mode === 'move' ? 'idle' : 'move'); setPendingAction(null); setSubmenu('none'); }}
+            onClick={() => { setMobileMenuOpen(false); setMode(mode === 'move' ? 'idle' : 'move'); setPendingAction(null); setSubmenu('none'); }}
           >
             🚶 Déplacer
           </button>
@@ -503,11 +506,6 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
             </div>
           </div>
         )}
-
-        {/* Fin de tour (en dessous du menu). */}
-        <button className="action-endturn" onClick={() => onEndTurn(currentUnit.id)}>
-          ⏭️ Fin de tour
-        </button>
 
         {mode === 'target' && (
           <p className="combat-hint">Cliquez sur une cible clignotante pour valider.</p>
@@ -767,6 +765,16 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
               <p className="combat-waiting">En attente…</p>
             )}
           </div>
+
+          {/* Fin de tour **permanent** : toujours visible (desktop + mobile),
+              hors du menu d'actions. Sur mobile, c'est le seul élément du
+              panneau visible (le menu est dans le bottom-sheet, le journal
+              dans le repliable 📜). */}
+          {currentUnit && actions && !placement && !isOver && (
+            <button className="action-endturn combat-endturn-persistent" onClick={() => onEndTurn(currentUnit.id)}>
+              ⏭️ Fin de tour
+            </button>
+          )}
 
           {/* Journal du combat (uniquement les événements de combat, pas
               les logs d'exploration qui noieraient les actions). En phase de

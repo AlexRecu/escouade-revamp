@@ -304,6 +304,7 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
+        <img src="/pwa/favicon-32x32.png" alt="Escouade" className="app-header-logo" />
         <h1>ESCOUADE</h1>
         {inRoom && state?.room ? (
           <span className="room-badge" title="Partie en cours">

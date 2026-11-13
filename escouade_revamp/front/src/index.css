@@ -84,6 +84,9 @@ button:disabled {
   background: var(--bg-panel);
   border-bottom: 1px solid var(--border);
 }
+.app-header-logo {
+  display: none; /* masqué sur desktop, visible en mobile (voir media query) */
+}
 .app-header h1 {
   font-size: 18px;
   margin: 0;
@@ -3328,12 +3331,18 @@ button:disabled {
    MOBILE (téléphone, portrait) — refonte pour tenir sur un écran sans scroll
    ═══════════════════════════════════════════════════════════════════════ */
 @media (max-width: 600px) {
-  /* Header compact : titre + badge, sous-titre masqué. */
+  /* Header compact : favicon à la place du titre (gain de hauteur). */
   .app-header {
-    padding: 6px 10px;
+    padding: 4px 10px;
     gap: 8px;
   }
-  .app-header h1 { font-size: 14px; letter-spacing: 0.5px; }
+  .app-header-logo {
+    display: block;
+    width: 26px;
+    height: 26px;
+    flex-shrink: 0;
+  }
+  .app-header h1 { display: none; }
   .app-header .subtitle { display: none; }
   .app-header .room-badge { font-size: 11px; padding: 2px 8px; }
   .user-menu { font-size: 11px; }
@@ -3567,6 +3576,13 @@ button:disabled {
     padding: 8px;
     gap: 6px;
   }
+  /* Fin de tour permanent : pleine largeur, bien visible sous le plateau. */
+  .combat-endturn-persistent {
+    width: 100%;
+    padding: 12px;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
   .action-grid {
     grid-template-columns: repeat(3, 1fr);
     gap: 6px;
@@ -3579,14 +3595,8 @@ button:disabled {
     max-height: 160px;
     font-size: 11px;
   }
-  .combat-log {
-    height: 0;
-    min-height: 0;
-    padding: 0;
-    border: none;
-    overflow: hidden;
-  }
-  .combat-log .log { display: none; }
+  /* Journal masqué en mobile : accessible via le bouton 📜 (CollapsibleLog). */
+  .combat-log { display: none; }
 }
 
 /* ── Journal repliable (bouton 📜) — mobile uniquement ────────────────────
