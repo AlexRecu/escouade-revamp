@@ -172,6 +172,17 @@ function App() {
   // local (`view`), mais le donjon/combat est dérivé de l'état serveur.
   const inDungeon = !!(exploration || combat);
 
+  // **Anti écran noir** : si la vue locale est sur le donjon mais que l'état
+  // serveur ne porte plus d'exploration/combat (ex. après un wipe survivable
+  // qui ramène l'équipe en ville, ou une sortie de donjon), on force le retour
+  // à la mappemonde. Sans ça, `view.name === 'dungeon'` + `inDungeon === false`
+  // → aucune vue ne se rend → écran noir.
+  useEffect(() => {
+    if (view.name === 'dungeon' && !inDungeon) {
+      setView({ name: 'world' });
+    }
+  }, [view.name, inDungeon]);
+
   // Montées de niveau **du joueur connecté** seulement. Le serveur diffuse les
   // montées de TOUS les personnages à toute la room ; on ne doit afficher
   // l'écran de choix que pour les montées de SON personnage (sinon le mauvais
