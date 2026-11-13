@@ -293,8 +293,9 @@ export class ExplorationSessionService {
         if (walkableTile) walkable.push({ row: r, col: c });
       })
     );
+    const chestKeys = new Set(zone.chests.map((c) => key(c.position)));
     const isSafe = (p: Position) =>
-      key(p) !== startKey && key(p) !== endKey && !this.blocksExit(zone, p);
+      key(p) !== startKey && key(p) !== endKey && !chestKeys.has(key(p)) && !this.blocksExit(zone, p);
     const deadEnd = zone.deadEnds.find(isSafe);
     const position = deadEnd ?? walkable.find(isSafe);
     if (!position) return; // aucune case sûre → pas de démon (combat optionnel).

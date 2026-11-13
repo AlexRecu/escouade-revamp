@@ -41,16 +41,24 @@ export class Demon extends Unit {
             
             const spell = spellData.find(spell => spell.name === this.actions[this.currentTurn]) as Spell;
             if(spell){
-                let targets: Unit[] = []
-                if(spell.hp){ // Soin + et Soin X
-                    targets = allUnits.filter(unit => unit.type === this.type);
-                }else{
-                    targets = allUnits.filter(unit => unit.type !== this.type);
+                // Les sorts des démons sont **mono-cible** (comme dans le livret) :
+                // - Sorts offensifs/statuts → le héros le plus proche.
+                // - Sorts de soin → l'allié le plus blessé (ou soi-même).
+                let target: Unit | null;
+                if (spell.hp) {
+                    // Soin : cible l'allié le plus blessé (PV les plus bas).
+                    const allies = allUnits.filter(u => u.type === this.type && !u.isDead());
+                    target = allies.sort((a, b) => a.currentHp / a.maxHp - b.currentHp / b.maxHp)[0] ?? this;
+                } else {
+                    // Offensif / statut : cible l'unité du **camp adverse** la plus
+                    // proche. Le camp adverse dépend du type du démon : un démon
+                    // de zone (type "Enemy") cible les héros ; un démon invoqué
+                    // (type "Hero", au service du héros) cible les ennemis.
+                    const enemyType = this.type === "Hero" ? "Enemy" : "Hero";
+                    target = this.getClosestUnit(enemyType, allUnits);
                 }
-                // Un sort qui frappe plusieurs cibles inflige la moitié des dégâts par cible (équilibrage)
-                const damageDivisor = targets.length > 1 ? 2 : 1;
-                for(const target of targets){
-                    resultArray.push(...this.useSpell(spell, target, 6, damageDivisor));
+                if (target) {
+                    resultArray.push(...this.useSpell(spell, target, 6));
                 }
             }else{
                 // Action "Attaque" : frappe l'ennemi le plus proche

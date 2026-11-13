@@ -42,8 +42,9 @@ describe("Demon Class", () => {
         let result = demon.act([target, ally, target2]);
         expect(result[0]).toContain("Mateus, le Corrompu exécute : Congélation");
         expect(demon.currentTurn).toBe(1);
-        // Sort multi-cible : les dégâts sont divisés par 2 par cible (équilibrage)
-        expect(result).toContain(target.name+" perd 36PV");
+        // Sort **mono-cible** : le démon (type "Hero") cible l'unité du camp
+        // adverse la plus proche = le Dark Knight (Enemy). Dégâts pleins (72).
+        expect(result).toContain(target.name+" perd 72PV");
         expect(target.currentHp).toBe(0);
         result = demon.act([target, ally, target2]);
         expect(result[0]).toContain("Mateus, le Corrompu exécute : Attaque");
