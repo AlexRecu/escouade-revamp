@@ -1833,6 +1833,15 @@ button:disabled {
 .combat-unit.unit-active {
   box-shadow: inset 0 0 0 2px var(--accent), 0 0 10px rgba(201, 162, 39, 0.8);
 }
+/* Unité dont c'est le tour : cliquable (ouvre le menu d'actions). La couche
+   d'unités est en pointer-events:none → on réactive le clic sur le token. */
+.combat-unit-overlay.unit-clickable {
+  pointer-events: auto;
+  cursor: pointer;
+}
+.combat-unit-overlay.unit-clickable .combat-unit {
+  pointer-events: auto;
+}
 /* Token en image de fond : remplit toute la case. */
 .unit-token {
   position: absolute;
@@ -3309,6 +3318,10 @@ button:disabled {
 .gameover-log ul {
   margin: 0;
   padding-left: 18px;
+  font-size: 12px;
+  color: var(--text-dim);
+  max-height: 180px;
+  overflow-y: auto;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -3534,7 +3547,8 @@ button:disabled {
     flex-wrap: wrap;
   }
   .combat-board {
-    width: min(92vw, 52dvh);
+    /* Le menu d'actions est dans le bottom-sheet → le plateau peut grossir. */
+    width: min(94vw, 60dvh);
     max-width: 100%;
   }
   .combat-legend { font-size: 10px; gap: 8px; }
@@ -3545,6 +3559,10 @@ button:disabled {
     min-width: 0;
     gap: 8px;
   }
+  /* Le menu d'actions (action-mode) est remplacé par le bottom-sheet sur
+     mobile → on le masque. Le placement / la fin de combat (sans action-mode)
+     restent visibles dans le flux. */
+  .combat-actions.action-mode { display: none; }
   .combat-actions {
     padding: 8px;
     gap: 6px;
@@ -3623,11 +3641,98 @@ button:disabled {
   .log-toggle { display: flex; }
   .log-sheet { display: block; }
 }
-  font-size: 12px;
-  color: var(--text-dim);
-  max-height: 180px;
-  overflow-y: auto;
+
+/* ── Menu d'actions mobile (bottom-sheet) — combat ───────────────────────
+   S'ouvre en touchant le personnage dont c'est le tour. Caché par défaut
+   (desktop : le menu est dans le panneau latéral). */
+.combat-menu-backdrop {
+  display: none;
 }
+.combat-menu-sheet {
+  display: none;
+}
+@media (max-width: 600px) {
+  .combat-menu-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    background: rgba(0, 0, 0, 0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  .combat-menu-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .combat-menu-sheet {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 71;
+    max-height: 70dvh;
+    background: var(--bg-panel);
+    border-top: 1px solid var(--border);
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.55);
+    transform: translateY(100%);
+    transition: transform 0.22s ease;
+  }
+  .combat-menu-sheet.open {
+    transform: translateY(0);
+  }
+  .combat-menu-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .combat-menu-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .combat-menu-close {
+    font-size: 16px;
+    padding: 4px 10px;
+    background: var(--bg-panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+  }
+  .combat-menu-body {
+    padding: 12px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  /* Le menu dans le bottom-sheet : grille 3 colonnes + sous-menus. */
+  .combat-menu-body .action-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .combat-menu-body .action-grid button {
+    padding: 12px 6px;
+    font-size: 13px;
+  }
+  .combat-menu-body .submenu-list {
+    max-height: 200px;
+    font-size: 13px;
+  }
+  .combat-menu-body .action-endturn {
+    width: 100%;
+    padding: 12px;
+    font-size: 14px;
+  }
+}
+
 .gameover-log li {
   margin: 2px 0;
 }

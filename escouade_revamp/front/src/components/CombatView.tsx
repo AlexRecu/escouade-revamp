@@ -82,6 +82,9 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
     name?: string;
     extra?: { spell?: { name: string }; skill?: { name: string }; item?: any };
   } | null>(null);
+  // Menu d'actions mobile (bottom-sheet) : ouvert quand le joueur touche le
+  // personnage dont c'est le tour. Masqué sur desktop (CSS).
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Auto-scroll du journal : on reste collé au bas (dernière entrée) quand de
   // nouvelles lignes arrivent.
@@ -370,6 +373,152 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
   const isOver = result !== 'ongoing';
   const isSamurai = currentUnit?.jobName === 'Samouraï';
 
+  // Menu d'actions de l'unité courante (grille 3×2 + sous-menus + fin de tour).
+  // Réutilisé par le panneau latéral (desktop) ET le bottom-sheet (mobile).
+  const renderActionMenu = () => {
+    if (!currentUnit || !actions) return null;
+    return (
+      <>
+        {/* Grille 3x2 de catégories (style Pokémon). */}
+        <div className="action-grid">
+          <button
+            className={`action-cat ${mode === 'move' ? 'active' : ''}`}
+            disabled={!actions.canMove}
+            onClick={() => { setMode(mode === 'move' ? 'idle' : 'move'); setPendingAction(null); setSubmenu('none'); }}
+          >
+            🚶 Déplacer
+          </button>
+          <button
+            className={`action-cat ${pendingAction?.action === 'attack' ? 'active' : ''}`}
+            disabled={!actions.canAct || actions.attack.validTargets.length === 0}
+            onClick={() => { setSubmenu('none'); launchAction('attack', undefined, undefined, actions.attack.validTargets); }}
+          >
+            ⚔️ Attaquer
+          </button>
+          <button
+            className={`action-cat ${submenu === 'items' ? 'active' : ''}`}
+            disabled={!actions.canAct || actions.items.length === 0}
+            onClick={() => toggleSubmenu('items')}
+          >
+            🎒 Objets
+          </button>
+          <button
+            className={`action-cat ${submenu === 'skills' ? 'active' : ''}`}
+            disabled={!actions.canAct || actions.skills.length === 0}
+            onClick={() => toggleSubmenu('skills')}
+          >
+            {isSamurai ? '🌀 Combo' : '✨ Compétences'}
+          </button>
+          <button
+            className={`action-cat ${submenu === 'spells' ? 'active' : ''}`}
+            disabled={!actions.canAct || actions.spells.length === 0}
+            onClick={() => toggleSubmenu('spells')}
+          >
+            🔮 Sorts
+          </button>
+          <button
+            className="action-cat action-flee"
+            onClick={onFlee}
+          >
+            🏃 Fuir
+          </button>
+        </div>
+
+        {/* Sous-menu : liste de la catégorie sélectionnée. */}
+        {submenu === 'items' && (
+          <div className="submenu">
+            <div className="submenu-header">
+              <span>Objets</span>
+              <button className="submenu-close" onClick={() => setSubmenu('none')}>✕</button>
+            </div>
+            <div className="submenu-list">
+              {groupedItems.map((g) => (
+                <button
+                  key={g.id}
+                  className={`submenu-item ${pendingAction?.name === g.id ? 'active' : ''}`}
+                  disabled={g.validTargets.length === 0}
+                  onClick={() => launchAction('item', g.id, { item: { id: g.id, name: g.name } }, g.validTargets)}
+                >
+                  🧪 {g.name}
+                  {g.count > 1 && <span className="bag-count"> ×{g.count}</span>}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {submenu === 'skills' && (
+          <div className="submenu">
+            <div className="submenu-header">
+              <span>{isSamurai ? 'Combo' : 'Compétences'}</span>
+              <button className="submenu-close" onClick={() => setSubmenu('none')}>✕</button>
+            </div>
+            <div className="submenu-list">
+              {actions.skills.map((sk) => {
+                const notEnoughAp = currentUnit.currentAp! < sk.apCost;
+                const noTarget = sk.validTargets.length === 0;
+                // Explication de la grisaille : AP insuffisante, hors
+                // de portée, ou compétence intrinsèquement désactivée
+                // (ex. "Apprendre" sans slot). Affichée en tooltip.
+                const disabledReason = sk.disabled
+                  ? sk.disabledReason ?? 'Indisponible'
+                  : notEnoughAp
+                    ? `AP insuffisante (${sk.apCost} requis, ${currentUnit.currentAp} dispo)`
+                    : noTarget
+                      ? 'Hors de portée — rapprochez-vous de la cible'
+                      : null;
+                return (
+                  <button
+                    key={sk.name}
+                    className={`submenu-item ${pendingAction?.name === sk.name ? 'active' : ''}`}
+                    disabled={sk.disabled || notEnoughAp || noTarget}
+                    title={disabledReason ? `${sk.description}\n⚠️ ${disabledReason}` : sk.description}
+                    onClick={() => launchAction('skill', sk.name, { skill: { name: sk.name } }, sk.validTargets)}
+                  >
+                    {sk.name} <span className="action-cost">({sk.apCost} AP)</span>{' '}
+                    <span className="action-range" title="Portée de ciblage">{skillRangeLabel(sk)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        {submenu === 'spells' && (
+          <div className="submenu">
+            <div className="submenu-header">
+              <span>Sorts</span>
+              <button className="submenu-close" onClick={() => setSubmenu('none')}>✕</button>
+            </div>
+            <div className="submenu-list">
+              {actions.spells.map((sp) => (
+                <button
+                  key={sp.name}
+                  className={`submenu-item ${pendingAction?.name === sp.name ? 'active' : ''}`}
+                  disabled={(currentUnit.currentMp ?? 0) < (sp.mpCost ?? 0) || sp.validTargets.length === 0}
+                  title={sp.description}
+                  onClick={() => launchAction('spell', sp.name, { spell: { name: sp.name } }, sp.validTargets)}
+                >
+                  {sp.name} <span className="action-cost">({sp.mpCost ?? 0} MP)</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Fin de tour (en dessous du menu). */}
+        <button className="action-endturn" onClick={() => onEndTurn(currentUnit.id)}>
+          ⏭️ Fin de tour
+        </button>
+
+        {mode === 'target' && (
+          <p className="combat-hint">Cliquez sur une cible clignotante pour valider.</p>
+        )}
+        {mode === 'move' && (
+          <p className="combat-hint">Cliquez sur une case verte pour vous déplacer.</p>
+        )}
+      </>
+    );
+  };
+
   // Token (image) d'une unité : classe pour les héros, nom du monstre sinon.
   const unitTokenUrl = (u: CombatUnit): string =>
     u.type === 'Hero' ? classTokenUrl(u.jobName ?? '') : monsterTokenUrl(u.name);
@@ -465,13 +614,25 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
                       ? defeatedTokenStyle(unit.jobName ?? '')
                       : null
                     : null;
+                  // L'unité courante (tour du joueur) est **cliquable** : elle
+                  // ouvre le menu d'actions (bottom-sheet sur mobile).
+                  const isPlayerTurn =
+                    !placement && !isOver && unit.id === currentUnitId;
                   return (
                     <div
                       key={unit.id}
-                      className="combat-unit-overlay"
+                      className={`combat-unit-overlay${isPlayerTurn ? ' unit-clickable' : ''}`}
                       style={{
                         transform: `translate(${unit.position.col * 100}%, ${unit.position.row * 100}%)`,
                       }}
+                      onClick={
+                        isPlayerTurn
+                          ? (e) => {
+                              e.stopPropagation();
+                              setMobileMenuOpen(true);
+                            }
+                          : undefined
+                      }
                     >
                       <div
                         className={`combat-unit ${unit.type === 'Hero' ? 'unit-hero' : 'unit-enemy'} ${isCurrent ? 'unit-active' : ''} ${isPlacingHero ? 'unit-placing' : ''} ${unit.isDead ? 'unit-dead' : ''}${fxCls}`}
@@ -562,7 +723,12 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
 
         {/* Panneau latéral : actions + journal */}
         <div className="combat-side">
-          <div className="combat-actions">
+          {/* action-mode = le menu d'actions est affiché (masqué sur mobile,
+              remplacé par le bottom-sheet). Le placement / la fin de combat
+              restent visibles (pas de action-mode). */}
+          <div
+            className={`combat-actions${currentUnit && actions && !placement && !isOver ? ' action-mode' : ''}`}
+          >
             {placement ? (
               <>
                 <h4 className="placement-title">📍 Placement de l'équipe</h4>
@@ -596,144 +762,7 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
                   : "💨 L'équipe s'est échappée."}
               </p>
             ) : currentUnit && actions ? (
-              <>
-                {/* Grille 3x2 de catégories (style Pokémon). */}
-                <div className="action-grid">
-                  <button
-                    className={`action-cat ${mode === 'move' ? 'active' : ''}`}
-                    disabled={!actions.canMove}
-                    onClick={() => { setMode(mode === 'move' ? 'idle' : 'move'); setPendingAction(null); setSubmenu('none'); }}
-                  >
-                    🚶 Déplacer
-                  </button>
-                  <button
-                    className={`action-cat ${pendingAction?.action === 'attack' ? 'active' : ''}`}
-                    disabled={!actions.canAct || actions.attack.validTargets.length === 0}
-                    onClick={() => { setSubmenu('none'); launchAction('attack', undefined, undefined, actions.attack.validTargets); }}
-                  >
-                    ⚔️ Attaquer
-                  </button>
-                  <button
-                    className={`action-cat ${submenu === 'items' ? 'active' : ''}`}
-                    disabled={!actions.canAct || actions.items.length === 0}
-                    onClick={() => toggleSubmenu('items')}
-                  >
-                    🎒 Objets
-                  </button>
-                  <button
-                    className={`action-cat ${submenu === 'skills' ? 'active' : ''}`}
-                    disabled={!actions.canAct || actions.skills.length === 0}
-                    onClick={() => toggleSubmenu('skills')}
-                  >
-                    {isSamurai ? '🌀 Combo' : '✨ Compétences'}
-                  </button>
-                  <button
-                    className={`action-cat ${submenu === 'spells' ? 'active' : ''}`}
-                    disabled={!actions.canAct || actions.spells.length === 0}
-                    onClick={() => toggleSubmenu('spells')}
-                  >
-                    🔮 Sorts
-                  </button>
-                  <button
-                    className="action-cat action-flee"
-                    onClick={onFlee}
-                  >
-                    🏃 Fuir
-                  </button>
-                </div>
-
-                {/* Sous-menu : liste de la catégorie sélectionnée. */}
-                {submenu === 'items' && (
-                  <div className="submenu">
-                    <div className="submenu-header">
-                      <span>Objets</span>
-                      <button className="submenu-close" onClick={() => setSubmenu('none')}>✕</button>
-                    </div>
-                    <div className="submenu-list">
-                      {groupedItems.map((g) => (
-                        <button
-                          key={g.id}
-                          className={`submenu-item ${pendingAction?.name === g.id ? 'active' : ''}`}
-                          disabled={g.validTargets.length === 0}
-                          onClick={() => launchAction('item', g.id, { item: { id: g.id, name: g.name } }, g.validTargets)}
-                        >
-                          🧪 {g.name}
-                          {g.count > 1 && <span className="bag-count"> ×{g.count}</span>}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {submenu === 'skills' && (
-                  <div className="submenu">
-                    <div className="submenu-header">
-                      <span>{isSamurai ? 'Combo' : 'Compétences'}</span>
-                      <button className="submenu-close" onClick={() => setSubmenu('none')}>✕</button>
-                    </div>
-                    <div className="submenu-list">
-                      {actions.skills.map((sk) => {
-                        const notEnoughAp = currentUnit.currentAp! < sk.apCost;
-                        const noTarget = sk.validTargets.length === 0;
-                        // Explication de la grisaille : AP insuffisante, hors
-                        // de portée, ou compétence intrinsèquement désactivée
-                        // (ex. "Apprendre" sans slot). Affichée en tooltip.
-                        const disabledReason = sk.disabled
-                          ? sk.disabledReason ?? 'Indisponible'
-                          : notEnoughAp
-                            ? `AP insuffisante (${sk.apCost} requis, ${currentUnit.currentAp} dispo)`
-                            : noTarget
-                              ? 'Hors de portée — rapprochez-vous de la cible'
-                              : null;
-                        return (
-                          <button
-                            key={sk.name}
-                            className={`submenu-item ${pendingAction?.name === sk.name ? 'active' : ''}`}
-                            disabled={sk.disabled || notEnoughAp || noTarget}
-                            title={disabledReason ? `${sk.description}\n⚠️ ${disabledReason}` : sk.description}
-                            onClick={() => launchAction('skill', sk.name, { skill: { name: sk.name } }, sk.validTargets)}
-                          >
-                            {sk.name} <span className="action-cost">({sk.apCost} AP)</span>{' '}
-                            <span className="action-range" title="Portée de ciblage">{skillRangeLabel(sk)}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-                {submenu === 'spells' && (
-                  <div className="submenu">
-                    <div className="submenu-header">
-                      <span>Sorts</span>
-                      <button className="submenu-close" onClick={() => setSubmenu('none')}>✕</button>
-                    </div>
-                    <div className="submenu-list">
-                      {actions.spells.map((sp) => (
-                        <button
-                          key={sp.name}
-                          className={`submenu-item ${pendingAction?.name === sp.name ? 'active' : ''}`}
-                          disabled={(currentUnit.currentMp ?? 0) < (sp.mpCost ?? 0) || sp.validTargets.length === 0}
-                          title={sp.description}
-                          onClick={() => launchAction('spell', sp.name, { spell: { name: sp.name } }, sp.validTargets)}
-                        >
-                          {sp.name} <span className="action-cost">({sp.mpCost ?? 0} MP)</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Fin de tour (en dessous du menu). */}
-                <button className="action-endturn" onClick={() => onEndTurn(currentUnit.id)}>
-                  ⏭️ Fin de tour
-                </button>
-
-                {mode === 'target' && (
-                  <p className="combat-hint">Cliquez sur une cible clignotante pour valider.</p>
-                )}
-                {mode === 'move' && (
-                  <p className="combat-hint">Cliquez sur une case verte pour vous déplacer.</p>
-                )}
-              </>
+              renderActionMenu()
             ) : (
               <p className="combat-waiting">En attente…</p>
             )}
@@ -758,6 +787,32 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
 
       {/* Journal repliable (mobile) : bouton 📜 + feuille. */}
       <CollapsibleLog entries={[...log, ...(combatEndPending ? combatEndLogs ?? [] : [])]} />
+
+      {/* Menu d'actions mobile (bottom-sheet) : s'ouvre en touchant le
+          personnage dont c'est le tour. Masqué sur desktop (CSS). */}
+      {currentUnit && actions && !placement && !isOver && (
+        <>
+          <div
+            className={`combat-menu-backdrop${mobileMenuOpen ? ' open' : ''}`}
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          <div className={`combat-menu-sheet${mobileMenuOpen ? ' open' : ''}`}>
+            <div className="combat-menu-head">
+              <span className="combat-menu-title">
+                {currentUnit.name} — au tour
+              </span>
+              <button
+                className="combat-menu-close"
+                onClick={() => setMobileMenuOpen(false)}
+                aria-label="Fermer le menu"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="combat-menu-body">{renderActionMenu()}</div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
