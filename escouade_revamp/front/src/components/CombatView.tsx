@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CombatState, CombatUnit } from '../types/game';
 import { classTokenUrl, monsterTokenUrl, DEFAULT_TOKEN_URL, defeatedTokenStyle } from '../utils/tokens';
 import { skillRangeLabel } from '../utils/weapons';
+import CollapsibleLog from './CollapsibleLog';
 
 type Props = {
   combat: CombatState;
@@ -754,6 +755,9 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
           </div>
         </div>
       </div>
+
+      {/* Journal repliable (mobile) : bouton 📜 + feuille. */}
+      <CollapsibleLog entries={[...log, ...(combatEndPending ? combatEndLogs ?? [] : [])]} />
     </div>
   );
 }

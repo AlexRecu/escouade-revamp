@@ -8,6 +8,7 @@ import {
   nearestWalkableToBuilding,
 } from '../game/pathfinding';
 import CityPanels from './CityPanels';
+import CollapsibleLog from './CollapsibleLog';
 
 const TILE = 34; // px (doit correspondre à .tile dans index.css)
 const GAP = 2; // px (gap de la grille)
@@ -71,6 +72,11 @@ export default function City({ hub, onBack, world, state, gameLogs, actions }: P
   // Barre latérale repliable (rendu mobile : libérer de la place à la carte).
   const [sideCollapsed, setSideCollapsed] = useState(false);
   const timerRef = useRef<number | null>(null);
+  // Taille de tuile **réactive** : sur mobile la grille (14×14) ne tient pas
+  // avec 34px fixes → on mesure la largeur du conteneur et on réduit la tuile
+  // (plafonnée à 34px pour ne pas changer le rendu desktop).
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [tile, setTile] = useState(TILE);
 
   // Obstacles pour le pathfinding : les bâtiments + la case caravane + les PNJ
   // (on marche jusqu'à côté, pas dessus).
@@ -106,6 +112,28 @@ export default function City({ hub, onBack, world, state, gameLogs, actions }: P
       setLog((l) => [...l, ...gameLogs].slice(-60));
     }
   }, [gameLogs]);
+
+  // Calcule la taille de tuile pour que la grille tienne dans la largeur du
+  // conteneur (mobile). Desktop : la largeur est large → on reste à 34px.
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el || !layout) return;
+    const compute = () => {
+      // Largeur/hauteur utiles du conteneur, moins le padding (4px) et le
+      // border (2px) de la grille, moins les gaps entre tuiles.
+      const chrome = PADDING * 2 + 4; // padding grille + border grille
+      const w = el.clientWidth - chrome;
+      const h = el.clientHeight - chrome;
+      const byW = (w - (layout.size.cols - 1) * GAP) / layout.size.cols;
+      const byH = (h - (layout.size.rows - 1) * GAP) / layout.size.rows;
+      const t = Math.floor(Math.min(byW, byH, TILE));
+      setTile(Math.max(10, t));
+    };
+    compute();
+    const ro = new ResizeObserver(compute);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [layout]);
 
   // Avance le personnage le long du chemin, case par case.
   useEffect(() => {
@@ -191,8 +219,10 @@ export default function City({ hub, onBack, world, state, gameLogs, actions }: P
 
   // Position pixel du personnage (centre de la case). L'origine du
   // positionnement absolu est le bord du padding box → on ajoute le padding.
-  const charLeft = PADDING + pos.col * (TILE + GAP) + (TILE - 26) / 2;
-  const charTop = PADDING + pos.row * (TILE + GAP) + (TILE - 26) / 2;
+  // La taille du sprite suit la tuile (26px à 34px, proportionnel en dessous).
+  const charSize = Math.round(tile * (26 / TILE));
+  const charLeft = PADDING + pos.col * (tile + GAP) + (tile - charSize) / 2;
+  const charTop = PADDING + pos.row * (tile + GAP) + (tile - charSize) / 2;
 
   const pathSet = new Set(path.map((p) => `${p.row},${p.col}`));
 
@@ -216,11 +246,19 @@ export default function City({ hub, onBack, world, state, gameLogs, actions }: P
 
   return (
     <div className="city">
+      {/* Retour mappemonde (mobile) : flottant, car le panneau latéral est
+          un overlay masqué par défaut sur téléphone. */}
+      <button className="city-back-mobile" onClick={onBack} title="Mappemonde">
+        ← Mappemonde
+      </button>
       <div className="city-main">
-      <div className="city-canvas-wrap">
+      <div className="city-canvas-wrap" ref={wrapRef}>
         <div
           className="city-grid"
-          style={{ gridTemplateColumns: `repeat(${cols}, ${TILE}px)` }}
+          style={{
+            gridTemplateColumns: `repeat(${cols}, ${tile}px)`,
+            ['--tile' as string]: `${tile}px`,
+          }}
         >
           {Array.from({ length: rows }).map((_, row) =>
             Array.from({ length: cols }).map((_, col) => {
@@ -260,11 +298,14 @@ export default function City({ hub, onBack, world, state, gameLogs, actions }: P
             }),
           )}
           {/* Personnage (superposé, positionné en pixels) */}
-          <div className="character" style={{ left: charLeft, top: charTop }} />
+          <div
+            className="character"
+            style={{ left: charLeft, top: charTop, width: charSize, height: charSize }}
+          />
         </div>
       </div>
 
-      <aside className={`city-side${sideCollapsed ? ' collapsed' : ''}`}>
+      <aside className={`city-side${sideCollapsed ? ' collapsed' : ''}${activeBuilding ? ' has-active' : ''}`}>
         {sideCollapsed ? (
           <button className="city-side-toggle" onClick={() => setSideCollapsed(false)} title="Ouvrir le panneau">
             ◀
@@ -273,6 +314,14 @@ export default function City({ hub, onBack, world, state, gameLogs, actions }: P
           <>
             <div className="city-side-head">
               <button onClick={onBack}>← Mappemonde</button>
+              {/* Fermeture de l'overlay (mobile) : referme le panneau du bâtiment. */}
+              <button
+                className="city-side-close"
+                onClick={() => setActiveBuilding(null)}
+                title="Fermer"
+              >
+                ✕
+              </button>
               <button
                 className="city-side-toggle"
                 onClick={() => setSideCollapsed(true)}
@@ -319,6 +368,9 @@ export default function City({ hub, onBack, world, state, gameLogs, actions }: P
           ))}
         </div>
       </div>
+
+      {/* Journal repliable (mobile) : bouton 📜 + feuille. */}
+      <CollapsibleLog entries={log} />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import type { ExplorationState } from '../types/game';
 import type { ExplorationDirection } from '../api/socket';
+import CollapsibleLog from './CollapsibleLog';
 
 type Props = {
   exploration: ExplorationState;
@@ -223,6 +224,9 @@ export default function DungeonView({ exploration, logs, onMove, onRest, onUseWo
           </div>
         </div>
       </div>
+
+      {/* Journal repliable (mobile) : bouton 📜 + feuille. */}
+      <CollapsibleLog entries={logs} />
     </div>
   );
 }

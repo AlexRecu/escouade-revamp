@@ -33,6 +33,10 @@ body,
 #root {
   margin: 0;
   height: 100%;
+  /* dvh = hauteur de la **vue** (exclut la barre d'URL du navigateur mobile).
+     Sans ça, `100%` inclut la barre d'URL → le bas de l'écran est coupé et
+     l'app force le scroll sur téléphone. */
+  height: 100dvh;
 }
 
 body {
@@ -316,8 +320,10 @@ button:disabled {
   user-select: none;
 }
 .tile {
-  width: 34px;
-  height: 34px;
+  /* Taille pilotée par la variable --tile (calculée en JS pour tenir sur
+     mobile). Défaut 34px = rendu desktop inchangé. */
+  width: var(--tile, 34px);
+  height: var(--tile, 34px);
   border-radius: 3px;
   position: relative;
 }
@@ -376,6 +382,10 @@ button:disabled {
 .tile.path {
   box-shadow: inset 0 0 0 2px var(--accent-2);
 }
+
+/* Bouton retour mappemonde : masqué sur desktop (le retour est dans le
+   panneau latéral), affiché en flottant sur mobile (media query ci-dessous). */
+.city-back-mobile { display: none; }
 
 /* ---- Personnage ---- */
 .character {
@@ -783,12 +793,54 @@ button:disabled {
 }
 @media (max-width: 820px) {
   .app-body { flex-direction: column; }
+  /* **Bande équipe compacte** : une fine barre horizontale en haut (tokens +
+     barres PV/MP), défilable horizontalement. Toujours visible, sans scroll
+     vertical. Remplace la colonne latérale de 300px. */
   .party-sidebar {
     width: 100%;
     border-right: none;
     border-bottom: 1px solid var(--border);
-    max-height: 200px;
+    padding: 5px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow: hidden;
   }
+  .party-sidebar-head { margin-bottom: 0; }
+  .party-sidebar-head h3 { font-size: 12px; }
+  .party-level-row { margin: 0; padding: 3px 8px; font-size: 11px; }
+  .party-gold-inline { font-size: 11px; }
+  .party-gold-inline b { font-size: 12px; }
+  .party-list {
+    display: flex;
+    flex-direction: row;
+    gap: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 2px;
+    scrollbar-width: thin;
+  }
+  .party-list li {
+    flex: 0 0 auto;
+    width: 138px;
+    margin-bottom: 0;
+    padding: 6px;
+  }
+  .party-head { margin-bottom: 3px; font-size: 11px; gap: 5px; }
+  .party-head > span:nth-child(2) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+  .party-token { width: 30px; height: 30px; border-radius: 5px; }
+  .party-token-defeated { width: 58px; height: 15px; }
+  .party-job { display: none; } /* trop dense pour la bande ; le détail l'affiche */
+  .bar-row { margin: 1px 0; }
+  .bar { height: 4px; }
+  .bar-label { width: 14px; font-size: 9px; }
+  .bar-value { font-size: 9px; }
+  .party-weapons { display: none; }
 }
 
 /* ── Mappemonde : carte + panneau de sélection ─────────────────────────── */
@@ -3257,6 +3309,320 @@ button:disabled {
 .gameover-log ul {
   margin: 0;
   padding-left: 18px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MOBILE (téléphone, portrait) — refonte pour tenir sur un écran sans scroll
+   ═══════════════════════════════════════════════════════════════════════ */
+@media (max-width: 600px) {
+  /* Header compact : titre + badge, sous-titre masqué. */
+  .app-header {
+    padding: 6px 10px;
+    gap: 8px;
+  }
+  .app-header h1 { font-size: 14px; letter-spacing: 0.5px; }
+  .app-header .subtitle { display: none; }
+  .app-header .room-badge { font-size: 11px; padding: 2px 8px; }
+  .user-menu { font-size: 11px; }
+  .user-menu button { padding: 3px 8px; font-size: 11px; }
+
+  /* Le corps occupe tout le reste (dvh géré sur html/body/#root). */
+  .app-body { min-height: 0; }
+  .app-main { min-height: 0; }
+}
+
+/* ── Mappemonde mobile : carte en haut, panneau en bas (bottom-sheet) ──── */
+@media (max-width: 600px) {
+  .worldtree { padding: 8px; gap: 8px; }
+  .worldtree-legend { font-size: 10px; gap: 8px; }
+  .worldtree-body {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .worldtree-map {
+    flex: 1;
+    min-height: 0;
+  }
+  .worldtree-panel {
+    width: 100%;
+    flex: 0 0 auto;
+    max-height: 42dvh;
+    padding: 10px;
+    border-radius: 10px 10px 0 0;
+  }
+}
+
+/* ── Ville mobile : grille pleine largeur, panneaux en overlay ─────────── */
+@media (max-width: 600px) {
+  .city { padding: 6px; gap: 6px; min-width: 0; }
+  .city-main {
+    flex-direction: column;
+    gap: 6px;
+    min-height: 0;
+    min-width: 0;
+  }
+  .city-canvas-wrap {
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+    width: 100%;
+    padding: 0;
+    overflow: hidden;
+  }
+  /* La grille est dimensionnée en JS (TILE calculé) pour tenir dans la
+     largeur. On laisse le conteneur centrer. */
+  .city-canvas {
+    justify-content: center;
+    align-items: center;
+  }
+  /* Panneaux (marchand, quêtes, auberge…) en **overlay plein écran** par-
+     dessus la carte, au lieu de la colonne latérale de 440px. Masqué par
+     défaut ; affiché seulement quand un bâtiment est actif (.has-active). */
+  .city-side {
+    display: none;
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    z-index: 50;
+    background: var(--bg);
+    border-left: none;
+    border-radius: 0;
+    padding: 10px;
+    overflow-y: auto;
+  }
+  .city-side.has-active {
+    display: flex;
+    flex-direction: column;
+  }
+  /* Le contenu du panneau doit pouvoir rétrécir (pas de débordement
+     horizontal des listes d'items sur 360px). */
+  .city-side .panel-section { min-width: 0; }
+  .city-side .shop-item { min-width: 0; }
+  .city-side-head {
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 1;
+    gap: 8px;
+  }
+  .city-side-head h3 { font-size: 15px; }
+  .city-side-toggle { font-size: 18px; }
+  .city-side-close {
+    margin-left: auto;
+    font-size: 16px;
+    padding: 4px 10px;
+  }
+  .city-log {
+    height: 0;
+    min-height: 0;
+    padding: 0;
+    border: none;
+    overflow: hidden;
+  }
+  .city-log .log { display: none; }
+  /* Bouton retour mappemonde flottant (mobile). */
+  .city-back-mobile {
+    display: block;
+    position: fixed;
+    top: 8px;
+    left: 8px;
+    z-index: 55;
+    padding: 6px 12px;
+    font-size: 12px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* ── Donjon mobile : grille + dpad + journal repliable ─────────────────── */
+@media (max-width: 600px) {
+  .dungeon-view { padding: 6px; gap: 6px; }
+  .dungeon-header {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 6px 10px;
+  }
+  .dungeon-header h2 { font-size: 14px; }
+  .dungeon-header .dungeon-meta { font-size: 11px; }
+  .dungeon-body {
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+  }
+  .dungeon-grid-wrap {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .dungeon-grid {
+    width: min(92vw, 52dvh);
+    max-width: 100%;
+  }
+  .dungeon-legend { font-size: 10px; gap: 8px; }
+  .dungeon-log {
+    height: 0;
+    min-height: 0;
+    padding: 0;
+    border: none;
+    overflow: hidden;
+  }
+  .dungeon-log .log { display: none; }
+  /* Contrôles : boutons (repos/coffre/bois) au-dessus, dpad en dessous,
+     le tout centré et compact (pas de min-height 100% qui ferait déborder). */
+  .dungeon-controls {
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 0;
+    gap: 8px;
+    padding: 4px;
+  }
+  .dungeon-controls .dungeon-rest-btn {
+    width: 100%;
+    max-width: 260px;
+    font-size: 12px;
+    padding: 8px;
+  }
+  .dungeon-dpad {
+    margin-top: 0;
+    gap: 3px;
+  }
+  .dpad-mid { gap: 3px; }
+  .dpad-btn {
+    width: 44px;
+    height: 36px;
+    font-size: 15px;
+  }
+}
+
+/* ── Combat mobile : plateau en haut, actions en bas, journal repliable ── */
+@media (max-width: 600px) {
+  .combat-view { padding: 6px; gap: 6px; }
+  .combat-header {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 6px 10px;
+  }
+  .combat-header h2 { font-size: 14px; }
+  .combat-header .combat-meta { font-size: 11px; }
+  .combat-body {
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+    flex-wrap: nowrap; /* empile plateau + actions (pas de 2e colonne à droite) */
+    gap: 8px;
+    overflow-y: auto;
+  }
+  .combat-board-wrap {
+    flex: 0 0 auto;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .combat-order {
+    width: 100%;
+    max-width: min(92vw, 52dvh);
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .combat-board {
+    width: min(92vw, 52dvh);
+    max-width: 100%;
+  }
+  .combat-legend { font-size: 10px; gap: 8px; }
+  .combat-side {
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    gap: 8px;
+  }
+  .combat-actions {
+    padding: 8px;
+    gap: 6px;
+  }
+  .action-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .action-grid button {
+    padding: 8px 4px;
+    font-size: 11px;
+  }
+  .submenu-list {
+    max-height: 160px;
+    font-size: 11px;
+  }
+  .combat-log {
+    height: 0;
+    min-height: 0;
+    padding: 0;
+    border: none;
+    overflow: hidden;
+  }
+  .combat-log .log { display: none; }
+}
+
+/* ── Journal repliable (bouton 📜) — mobile uniquement ────────────────────
+   Caché par défaut (desktop : le journal reste intégré au layout). Affiché
+   seulement sous 600px (voir le media query mobile ci-dessus). */
+.log-toggle {
+  display: none;
+  position: fixed;
+  right: 10px;
+  bottom: 10px;
+  z-index: 60;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-panel);
+  color: var(--text);
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  align-items: center;
+  justify-content: center;
+}
+.log-toggle[data-open='true'] {
+  background: var(--accent-2);
+  color: #fff;
+}
+.log-sheet {
+  display: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 59;
+  max-height: 55dvh;
+  background: var(--bg-panel);
+  border-top: 1px solid var(--border);
+  border-radius: 12px 12px 0 0;
+  padding: 10px;
+  transform: translateY(100%);
+  transition: transform 0.2s ease;
+  box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.5);
+}
+.log-sheet[data-open='true'] {
+  transform: translateY(0);
+}
+.log-sheet .log {
+  height: 40dvh;
+  max-height: 40dvh;
+}
+@media (max-width: 600px) {
+  .log-toggle { display: flex; }
+  .log-sheet { display: block; }
+}
   font-size: 12px;
   color: var(--text-dim);
   max-height: 180px;
