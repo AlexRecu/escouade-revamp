@@ -235,6 +235,8 @@ button:disabled {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  /* position: relative → le 📜 (position: absolute) s'ancre à la zone visible. */
+  position: relative;
 }
 /* Rangée principale : carte + panneau latéral (le journal est en dessous). */
 .city-main {
@@ -794,7 +796,7 @@ button:disabled {
   color: #f5c518;
   cursor: help;
 }
-@media (max-width: 820px) {
+@media (max-width: 900px) {
   .app-body { flex-direction: column; }
   /* **Bande équipe compacte** : une fine barre horizontale en haut (tokens +
      barres PV/MP), défilable horizontalement. Toujours visible, sans scroll
@@ -1096,6 +1098,15 @@ button:disabled {
   height: 100%;
   padding: 16px 20px;
   overflow: auto;
+  /* position: relative → le 📜 (position: absolute) s'ancre à la zone visible. */
+  position: relative;
+}
+/* Mobile/tablette : le .log-sheet fermé (translateY 100%) déborde du bas et,
+   avec overflow:auto, créait un ascenseur parasite. Le contenu du donjon est
+   dimensionné pour tenir (grille min(92vw, 52dvh)) → on coupe le débordement. */
+@media (max-width: 900px) {
+  .dungeon-view { overflow: hidden; }
+  .city { overflow: hidden; }
 }
 .dungeon-header {
   display: flex;
@@ -3545,9 +3556,18 @@ button:disabled {
   }
 }
 
-/* ── Combat mobile : plateau en haut, actions en bas, journal repliable ── */
-@media (max-width: 600px) {
-  .combat-view { padding: 6px; gap: 6px; flex: 1; min-width: 0; }
+/* ── Combat mobile/tablette : plateau en haut, actions en bas, journal repliable ──
+   S'applique jusqu'à 900px (même seuil que la bande équipe compacte) : la
+   tablette a la même UX que le smartphone (plateau carré, bottom-sheet,
+   journal 📜) mais le plateau est plus grand (formule en vw/dvh). */
+@media (max-width: 900px) {
+  /* position: relative → le 📜 et la bottom-sheet (position: absolute)
+     s'ancrent à la zone visible (100dvh), pas au layout viewport plein écran
+     que la barre URL de Safari iOS recouvre.
+     overflow: hidden → le .log-sheet / .combat-menu-sheet fermés (translateY
+     100%, hors du bas) ne créent plus de zone de scroll parasite. Le contenu
+     tient sur une page ; .combat-body gère son propre overflow interne. */
+  .combat-view { padding: 6px; gap: 6px; flex: 1; min-width: 0; position: relative; overflow: hidden; }
   .combat-header {
     flex-wrap: wrap;
     gap: 6px;
@@ -3579,11 +3599,23 @@ button:disabled {
   .combat-board {
     /* Plateau **carré** 8×8 (tuiles carrées). Dimensionné pour que tout tienne
        sur une page : limité par la largeur (94vw) ET par la hauteur restante
-       (100dvh - le reste de l'écran). */
-    width: min(94vw, calc(100dvh - 292px));
+       (100dvh - le reste de l'écran). Le "reste" (header + bande équipe +
+       combat-header + ordre + légende + Fin de tour + gaps) ≈ 302px ; on
+       prend 310px pour une marge de sécurité (évite le débordement de
+       .combat-body sur les tablettes, ex. iPad mini 768×1024). */
+    width: min(94vw, calc(100dvh - 310px));
     max-width: 100%;
     aspect-ratio: 1 / 1;
   }
+  /* Fin de combat (victoire / défaite / fuite) : le plateau n'est plus
+     interactif, on le réduit pour que l'écran de relecture (message +
+     bouton « Valider », plus haut que le menu d'actions) tienne sur une
+     page sans ascenseur. L'ordre des tours n'a plus de sens (plus de tours
+     à jouer) → masqué pour libérer de la hauteur. */
+  .combat-view.combat-over .combat-board {
+    width: min(94vw, calc(100dvh - 390px));
+  }
+  .combat-view.combat-over .combat-order { display: none; }
   .combat-legend { font-size: 10px; gap: 8px; }
   .combat-side {
     flex: 0 0 auto;
@@ -3629,7 +3661,9 @@ button:disabled {
    seulement sous 600px (voir le media query mobile ci-dessus). */
 .log-toggle {
   display: none;
-  position: fixed;
+  /* absolute (pas fixed) : ancré à .combat-view (zone visible 100dvh),
+     sinon la barre URL de Safari iOS le masque. */
+  position: absolute;
   right: 10px;
   bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   z-index: 60;
@@ -3651,7 +3685,8 @@ button:disabled {
 }
 .log-sheet {
   display: none;
-  position: fixed;
+  /* absolute (pas fixed) : ancré à .combat-view (zone visible 100dvh). */
+  position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
@@ -3672,7 +3707,7 @@ button:disabled {
   height: 40dvh;
   max-height: 40dvh;
 }
-@media (max-width: 600px) {
+@media (max-width: 900px) {
   .log-toggle { display: flex; }
   .log-sheet { display: block; }
 }
@@ -3686,7 +3721,7 @@ button:disabled {
 .combat-menu-sheet {
   display: none;
 }
-@media (max-width: 600px) {
+@media (max-width: 900px) {
   .combat-menu-backdrop {
     display: block;
     position: fixed;
@@ -3704,7 +3739,9 @@ button:disabled {
   .combat-menu-sheet {
     display: flex;
     flex-direction: column;
-    position: fixed;
+    /* absolute (pas fixed) : ancré à .combat-view (zone visible 100dvh),
+       sinon la barre URL de Safari iOS masque la rangée d'actions du bas. */
+    position: absolute;
     left: 0;
     right: 0;
     bottom: 0;

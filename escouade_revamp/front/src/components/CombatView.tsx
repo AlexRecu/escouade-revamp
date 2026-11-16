@@ -548,7 +548,7 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
     u.type === 'Hero' ? classTokenUrl(u.jobName ?? '') : monsterTokenUrl(u.name);
 
   return (
-    <div className="combat-view">
+    <div className={`combat-view${isOver ? ' combat-over' : ''}`}>
       <div className="combat-header">
         <h2 className="combat-title">⚔️ Combat</h2>
         <p className="combat-meta">
