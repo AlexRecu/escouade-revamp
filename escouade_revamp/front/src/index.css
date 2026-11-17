@@ -3492,9 +3492,16 @@ button:disabled {
   }
 }
 
-/* ── Donjon mobile : grille + dpad + journal repliable ─────────────────── */
-@media (max-width: 600px) {
-  .dungeon-view { padding: 6px; gap: 6px; }
+/* ── Donjon mobile/tablette : carte en haut (maximale), dpad en dessous ──
+   S'applique jusqu'à 900px : la tablette a la même UX que le smartphone
+   (dpad sous la carte) mais la carte est bien plus grande (formule en
+   vw/dvh). Sur desktop (>900px) le dpad reste à droite de la carte. */
+@media (max-width: 900px) {
+  /* flex:1 → le donjon s'étire sur toute la largeur de .app-main (flex row).
+     Sans ça il reste à sa largeur de contenu (≈ la carte) et laisse un bandeau
+     vide à droite : la carte était limitée par la hauteur (52dvh) alors que la
+     largeur disponible était bien plus grande. */
+  .dungeon-view { padding: 6px; gap: 6px; flex: 1; min-width: 0; }
   .dungeon-header {
     flex-wrap: wrap;
     gap: 6px;
@@ -3503,6 +3510,7 @@ button:disabled {
   .dungeon-header h2 { font-size: 14px; }
   .dungeon-header .dungeon-meta { font-size: 11px; }
   .dungeon-body {
+    flex: 1;
     flex-direction: column;
     gap: 8px;
     min-height: 0;
@@ -3514,10 +3522,20 @@ button:disabled {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    /* Conteneur de taille (size) : sa hauteur est fixée par le flex (flex:1),
+       pas par son contenu → pas de dépendance circulaire. La carte se
+       dimensionne sur l'espace RÉELLEMENT disponible (cqw/cqh) au lieu d'une
+       constante dvh calibrée : elle grossit au maximum sans déborder. */
+    container-type: size;
+    container-name: dungeonwrap;
   }
   .dungeon-grid {
-    width: min(92vw, 52dvh);
+    /* Plus grand carré qui tient dans le wrap : limité par sa largeur (100cqw)
+       et sa hauteur (100cqh, moins la légende). Vraiment responsive : la carte
+       remplit tout l'espace disponible sur chaque appareil. */
+    width: min(100cqw, calc(100cqh - 26px));
     max-width: 100%;
+    aspect-ratio: 1 / 1;
   }
   .dungeon-legend { font-size: 10px; gap: 8px; }
   .dungeon-log {
