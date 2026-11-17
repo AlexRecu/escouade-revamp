@@ -3443,15 +3443,34 @@ button:disabled {
     border-left: none;
     border-radius: 0;
     padding: 10px;
-    overflow-y: auto;
+    /* overflow: hidden (pas auto) : le bloc marchand ne scrolle PAS. Seule la
+       liste d'items (.panel-scroll) scrolle, en remplissant la hauteur restante.
+       Avant, .city-side ET .panel-scroll scrolaient → double scrollbar qui
+       réduisait la largeur et coupait les fins de lignes des items. */
+    overflow: hidden;
   }
   .city-side.has-active {
     display: flex;
     flex-direction: column;
   }
   /* Le contenu du panneau doit pouvoir rétrécir (pas de débordement
-     horizontal des listes d'items sur 360px). */
-  .city-side .panel-section { min-width: 0; }
+     horizontal des listes d'items sur 360px). Le .panel-section s'étire sur
+     toute la hauteur restante (flex:1) pour que .panel-scroll puisse scroller
+     à l'intérieur au lieu de faire déborder le bloc. */
+  .city-side .panel-section {
+    min-width: 0;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  /* La liste d'items remplit la hauteur restante et scrolle seule. */
+  .city-side .panel-scroll {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+  }
   .city-side .shop-item { min-width: 0; }
   .city-side-head {
     position: sticky;
