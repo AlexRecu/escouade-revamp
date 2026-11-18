@@ -196,3 +196,73 @@ describe("Invocation d'Eon (Invocateur, mode coopératif)", () => {
     expect(eon.currentTransePoint).toBeLessThan(tpBefore);
   });
 });
+
+describe("Invocation d'Eon — ciblage joueur, id unique, gardes", () => {
+  test("L'Eon a un id unique, distinct de celui de l'invocateur", () => {
+    const invoker = makeInvoker("u1");
+    const enemy = makeEnemy();
+    const battle = new BattleManager([invoker, enemy]);
+    battle.summonEon(invoker, "Phoenix");
+    const eon = battle.combatState.units.find((u) => u instanceof Eon) as Eon;
+    // L'id de l'Eon est distinct (sinon le front retrouverait l'invocateur
+    // masqué au lieu de l'Eon, et les clés React se chevaucheraient).
+    expect(eon.id).not.toBe(invoker.id);
+    expect(eon.id).toContain("Phoenix");
+    // Les deux sont sur le plateau avec des ids distincts.
+    const ids = battle.combatState.units.map((u) => u.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  test("Ciblage joueur : preferredTarget prime sur la cible la plus proche (mono-cible)", () => {
+    const invoker = makeInvoker("u2");
+    // L'Eon est à la position de l'invocateur (row 6, col 0). "Onde
+    // incendiaire" a une portée de 4 → les ennemis doivent être à row ≥ 2.
+    // Deux ennemis à portée : un proche (col 0), un lointain (col 3).
+    const near = new Monster("Frelon", { row: 2, col: 0 }, "Enemy", 1);
+    const far = new Monster("Frelon", { row: 2, col: 3 }, "Enemy", 1);
+    const battle = new BattleManager([invoker, near, far]);
+    battle.summonEon(invoker, "Phoenix");
+    const eon = battle.combatState.units.find((u) => u instanceof Eon) as Eon;
+
+    // "Onde incendiaire" est mono-cible (range 4). Sans ciblage, l'Eon vise
+    // la cible la plus proche (near). Avec preferredTarget = far, il vise far.
+    const farHpBefore = far.currentHp;
+    const nearHpBefore = near.currentHp;
+    eon.useAbilityByName("Onde incendiaire", battle.combatState.units, far);
+
+    // La cible choisie (far) a pris des dégâts ; la proche (near) non.
+    expect(far.currentHp).toBeLessThan(farHpBefore);
+    expect(near.currentHp).toBe(nearHpBefore);
+  });
+
+  test("Garde TP : une compétence trop coûteuse est refusée (pas de déduction)", () => {
+    const invoker = makeInvoker("u3");
+    const enemy = makeEnemy();
+    const battle = new BattleManager([invoker, enemy]);
+    battle.summonEon(invoker, "Phoenix");
+    const eon = battle.combatState.units.find((u) => u instanceof Eon) as Eon;
+
+    // On laisse seulement 1 PT : "Feu résurrecteur" coûte 10 PT.
+    eon.currentTransePoint = 1;
+    const logs = eon.useAbilityByName("Feu résurrecteur", battle.combatState.units);
+
+    // Refusé : les PT ne sont pas déduits, l'invocation ne se termine pas.
+    expect(logs.some((l) => l.includes("pas assez de points de transe"))).toBe(true);
+    expect(eon.currentTransePoint).toBe(1);
+    expect(eon.invocationEnded).toBe(false);
+  });
+
+  test("Compétence introuvable : message dédié, aucun effet", () => {
+    const invoker = makeInvoker("u4");
+    const enemy = makeEnemy();
+    const battle = new BattleManager([invoker, enemy]);
+    battle.summonEon(invoker, "Phoenix");
+    const eon = battle.combatState.units.find((u) => u instanceof Eon) as Eon;
+
+    const tpBefore = eon.currentTransePoint;
+    const logs = eon.useAbilityByName("Zorglub", battle.combatState.units);
+
+    expect(logs).toEqual(["Compétence introuvable !"]);
+    expect(eon.currentTransePoint).toBe(tpBefore);
+  });
+});

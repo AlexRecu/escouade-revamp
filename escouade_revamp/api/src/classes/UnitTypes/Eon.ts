@@ -28,7 +28,11 @@ export class Eon extends Unit {
     healAppliedThisUse: boolean = false;
 
     constructor(initialCharacter: Character, eonName: string) {
-        super(initialCharacter.id, initialCharacter.name+"/"+eonName, initialCharacter.type, initialCharacter.position, initialCharacter.maxHp, initialCharacter.maxHp, [], initialCharacter.bag);
+        // Id **unique** (distinct de celui de l'Invocateur) : l'Eon et son
+        // invocateur sont tous deux sur le plateau (l'invocateur est masqué).
+        // Un id partagé casserait le front (`units.find(u => u.id === currentUnitId)`
+        // retrouverait l'invocateur masqué au lieu de l'Eon) et les clés React.
+        super(initialCharacter.id + "__eon__" + eonName, initialCharacter.name+"/"+eonName, initialCharacter.type, initialCharacter.position, initialCharacter.maxHp, initialCharacter.maxHp, [], initialCharacter.bag);
         const eon = eonData.find(eon => eon.name === eonName);
         if (eon) {
             this.initialCharacter = initialCharacter;
@@ -50,13 +54,28 @@ export class Eon extends Unit {
         throw new Error("Method not implemented.");
     }
 
-    useAbilityByName(skillName: string, allUnits: Unit[]): string[] {
+    useAbilityByName(skillName: string, allUnits: Unit[], preferredTarget?: Unit): string[] {
         let resultArray: string[] = [];
         let damage = 0;
         this.healAppliedThisUse = false;
         const skill: EonSkill = this.skills.find(skill => skill.name === skillName) as EonSkill;
+        if (!skill) {
+            return ["Compétence introuvable !"];
+        }
+        // Garde-fou : l'Eon doit pouvoir payer la compétence en points de transe.
+        if (this.currentTransePoint < skill.tp) {
+            return [`${this.name} n'a pas assez de points de transe pour ${skill.name} (${skill.tp} PT).`];
+        }
 
-        const targets = getValidTargets(this, skill, allUnits);
+        let targets = getValidTargets(this, skill, allUnits);
+        // Ciblage joueur : pour une compétence mono-cible, la cible choisie
+        // (validée) prime sur la cible la plus proche.
+        if (preferredTarget && skill.type === "single") {
+            const allValid = getValidTargets(this, skill, allUnits, true);
+            if (allValid.some((t) => t === preferredTarget)) {
+                targets = [preferredTarget];
+            }
+        }
         for(let target of targets){  
             const damageMultiplier = calculateDamageMultiplier(this,this.element,target)
   

@@ -100,9 +100,9 @@ export type GameActions = {
   combatMove: (unitId: string, position: { row: number; col: number }) => void;
   combatAct: (
     unitId: string,
-    action: 'attack' | 'spell' | 'skill' | 'item' | 'combo',
+    action: 'attack' | 'spell' | 'skill' | 'item' | 'combo' | 'summonEon',
     targetId: string | null,
-    extra?: { spell?: { name: string }; skill?: { name: string }; item?: any; combo?: string[] }
+    extra?: { spell?: { name: string }; skill?: { name: string }; item?: any; combo?: string[]; eon?: { name: string } }
   ) => void;
   combatEndTurn: (unitId: string) => void;
   combatAiStep: () => void;

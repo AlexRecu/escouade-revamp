@@ -14,9 +14,9 @@ type Props = {
   onMove: (unitId: string, position: { row: number; col: number }) => void;
   onAct: (
     unitId: string,
-    action: 'attack' | 'spell' | 'skill' | 'item' | 'combo',
+    action: 'attack' | 'spell' | 'skill' | 'item' | 'combo' | 'summonEon',
     targetId: string | null,
-    extra?: { spell?: { name: string }; skill?: { name: string }; item?: any; combo?: string[] }
+    extra?: { spell?: { name: string }; skill?: { name: string }; item?: any; combo?: string[]; eon?: { name: string } }
   ) => void;
   onEndTurn: (unitId: string) => void;
   /** Un tour IA à la fois (animation des ennemis un par un). */
@@ -30,8 +30,8 @@ type Props = {
   onConfirmEnd?: () => void;
 };
 
-/** Catégorie de sous-menu (les 3 qui ont une liste). */
-type Submenu = 'none' | 'items' | 'skills' | 'spells';
+/** Catégorie de sous-menu (les qui ont une liste). */
+type Submenu = 'none' | 'items' | 'skills' | 'spells' | 'eon' | 'summon';
 
 /**
  * Vue de combat interactif (temps réel, tour par tour).
@@ -408,7 +408,9 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
     if (!currentUnit || !actions) return null;
     return (
       <>
-        {/* Grille 3x2 de catégories (style Pokémon). */}
+        {/* Grille de catégories (style Pokémon). L'**Eon** a un menu réduit
+            (Déplacer / Eon / Fuir) : il ne peut que lancer ses compétences
+            (coût en PT). L'**Invocateur** a un bouton « Invoquer » en plus. */}
         <div className="action-grid">
           <button
             className={`action-cat ${mode === 'move' ? 'active' : ''}`}
@@ -417,40 +419,63 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
           >
             🚶 Déplacer
           </button>
-          <button
-            className={`action-cat ${pendingAction?.action === 'attack' ? 'active' : ''}`}
-            disabled={!actions.canAct || actions.attack.validTargets.length === 0}
-            onClick={() => { setSubmenu('none'); launchAction('attack', undefined, undefined, actions.attack.validTargets); }}
-          >
-            ⚔️ Attaquer
-          </button>
-          <button
-            className={`action-cat ${submenu === 'items' ? 'active' : ''}`}
-            disabled={!actions.canAct || actions.items.length === 0}
-            onClick={() => toggleSubmenu('items')}
-          >
-            🎒 Objets
-          </button>
-          <button
-            className={`action-cat ${submenu === 'skills' ? 'active' : ''}`}
-            disabled={!actions.canAct || actions.skills.length === 0}
-            onClick={() => toggleSubmenu('skills')}
-          >
-            {isSamurai ? '🌀 Combo' : '✨ Compétences'}
-          </button>
-          <button
-            className={`action-cat ${submenu === 'spells' ? 'active' : ''}`}
-            disabled={!actions.canAct || actions.spells.length === 0}
-            onClick={() => toggleSubmenu('spells')}
-          >
-            🔮 Sorts
-          </button>
-          <button
-            className="action-cat action-flee"
-            onClick={onFlee}
-          >
-            🏃 Fuir
-          </button>
+          {currentUnit.isEon ? (
+            <>
+              <button
+                className={`action-cat ${submenu === 'eon' ? 'active' : ''}`}
+                disabled={actions.eonSkills.length === 0}
+                onClick={() => toggleSubmenu('eon')}
+              >
+                🌀 Eon
+              </button>
+              <button className="action-cat action-flee" onClick={onFlee}>
+                🏃 Fuir
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                className={`action-cat ${pendingAction?.action === 'attack' ? 'active' : ''}`}
+                disabled={!actions.canAct || actions.attack.validTargets.length === 0}
+                onClick={() => { setSubmenu('none'); launchAction('attack', undefined, undefined, actions.attack.validTargets); }}
+              >
+                ⚔️ Attaquer
+              </button>
+              <button
+                className={`action-cat ${submenu === 'items' ? 'active' : ''}`}
+                disabled={!actions.canAct || actions.items.length === 0}
+                onClick={() => toggleSubmenu('items')}
+              >
+                🎒 Objets
+              </button>
+              <button
+                className={`action-cat ${submenu === 'skills' ? 'active' : ''}`}
+                disabled={!actions.canAct || actions.skills.length === 0}
+                onClick={() => toggleSubmenu('skills')}
+              >
+                {isSamurai ? '🌀 Combo' : '✨ Compétences'}
+              </button>
+              <button
+                className={`action-cat ${submenu === 'spells' ? 'active' : ''}`}
+                disabled={!actions.canAct || actions.spells.length === 0}
+                onClick={() => toggleSubmenu('spells')}
+              >
+                🔮 Sorts
+              </button>
+              {actions.canSummonEon && (
+                <button
+                  className={`action-cat action-summon ${submenu === 'summon' ? 'active' : ''}`}
+                  disabled={!actions.canAct}
+                  onClick={() => toggleSubmenu('summon')}
+                >
+                  ✨ Invoquer
+                </button>
+              )}
+              <button className="action-cat action-flee" onClick={onFlee}>
+                🏃 Fuir
+              </button>
+            </>
+          )}
         </div>
 
         {/* Sous-menu : liste de la catégorie sélectionnée. */}
@@ -533,6 +558,65 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
           </div>
         )}
 
+        {/* Sous-menu : compétences de l'Eon (coût en PT). L'Eon peut en
+            enchaîner plusieurs par tour (limitées par les PT restants). */}
+        {submenu === 'eon' && (
+          <div className="submenu">
+            <div className="submenu-header">
+              <span>Eon · {currentUnit.currentTransePoint ?? 0} PT</span>
+              <button className="submenu-close" onClick={() => setSubmenu('none')}>✕</button>
+            </div>
+            <div className="submenu-list">
+              {actions.eonSkills.map((sk) => {
+                const notEnoughTp = (currentUnit.currentTransePoint ?? 0) < sk.tp;
+                const noTarget = sk.validTargets.length === 0;
+                const disabledReason = notEnoughTp
+                  ? `PT insuffisants (${sk.tp} requis, ${currentUnit.currentTransePoint ?? 0} dispo)`
+                  : noTarget
+                    ? 'Aucune cible à portée'
+                    : null;
+                return (
+                  <button
+                    key={sk.name}
+                    className={`submenu-item ${pendingAction?.name === sk.name ? 'active' : ''}`}
+                    disabled={notEnoughTp || noTarget}
+                    title={disabledReason ? `${sk.description}\n⚠️ ${disabledReason}` : sk.description}
+                    onClick={() => launchAction('skill', sk.name, { skill: { name: sk.name } }, sk.validTargets)}
+                  >
+                    {sk.name} <span className="action-cost">({sk.tp} PT)</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Sous-menu : choix de l'Eon à invoquer (Invocateur). L'invocation
+            consomme le tour ; l'Eon agit au tour suivant. */}
+        {submenu === 'summon' && (
+          <div className="submenu">
+            <div className="submenu-header">
+              <span>Invoquer un Eon</span>
+              <button className="submenu-close" onClick={() => setSubmenu('none')}>✕</button>
+            </div>
+            <div className="submenu-list">
+              {actions.summonableEons.map((name) => (
+                <button
+                  key={name}
+                  className="submenu-item"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setSubmenu('none');
+                    onAct(currentUnit.id, 'summonEon', null, { eon: { name } });
+                  }}
+                >
+                  ✨ {name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {mode === 'target' && (
           <p className="combat-hint">Cliquez sur une cible clignotante pour valider.</p>
         )}
@@ -544,8 +628,12 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
   };
 
   // Token (image) d'une unité : classe pour les héros, nom du monstre sinon.
-  const unitTokenUrl = (u: CombatUnit): string =>
-    u.type === 'Hero' ? classTokenUrl(u.jobName ?? '') : monsterTokenUrl(u.name);
+  // L'**Eon** est « possédé » par son Invocateur → token de la classe du
+  // lanceur (l'Eon n'a pas de classe propre).
+  const unitTokenUrl = (u: CombatUnit): string => {
+    if (u.isEon) return classTokenUrl(u.summonerJob ?? '');
+    return u.type === 'Hero' ? classTokenUrl(u.jobName ?? '') : monsterTokenUrl(u.name);
+  };
 
   return (
     <div className={`combat-view${isOver ? ' combat-over' : ''}`}>
@@ -705,6 +793,16 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
                                 style={{ width: `${(unit.currentAp! / unit.maxAp) * 100}%` }}
                               />
                               <span className="unit-barval unit-apval">{unit.currentAp}/{unit.maxAp}</span>
+                            </div>
+                          ) : null}
+                          {/* Barre de PT (violet) — visible pour l'Eon invoqué. */}
+                          {unit.isEon && unit.maxTransePoint ? (
+                            <div className="unit-tpbar">
+                              <div
+                                className="unit-tpfill"
+                                style={{ width: `${((unit.currentTransePoint ?? 0) / unit.maxTransePoint) * 100}%` }}
+                              />
+                              <span className="unit-barval unit-tpval">{unit.currentTransePoint}/{unit.maxTransePoint}</span>
                             </div>
                           ) : null}
                         </div>

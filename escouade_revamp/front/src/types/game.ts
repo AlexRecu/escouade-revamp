@@ -411,6 +411,18 @@ export type CombatUnit = {
   rank?: number;
   /** Ennemi : nature de l'attaque ("Physique" / "Magique"). */
   attackType?: 'Physique' | 'Magique';
+  /** Eon invoqué : true si l'unité est un Eon (contrôlé par le joueur). */
+  isEon?: boolean;
+  /** Eon : points de transe restants (remplacent AP/MP). */
+  currentTransePoint?: number;
+  /** Eon : points de transe max (10). */
+  maxTransePoint?: number;
+  /** Eon : id de l'Invocateur. */
+  summonerId?: string;
+  /** Eon : nom de l'Invocateur (affichage). */
+  summonerName?: string;
+  /** Eon : classe de l'Invocateur (pour le token). */
+  summonerJob?: string;
 };
 
 /** Cibles valides d'une action (ids d'unités). */
@@ -451,6 +463,18 @@ export type CombatItem = {
   validTargets: string[];
 };
 
+/** Compétence d'Eon utilisable par l'unité courante (coût en PT). */
+export type CombatEonSkill = {
+  name: string;
+  /** Coût en points de transe. */
+  tp: number;
+  type: 'single' | 'multi';
+  /** Portée de base (0 = illimitée). */
+  range: number;
+  description: string;
+  validTargets: string[];
+};
+
 /** Ensemble des actions disponibles pour l'unité courante. */
 export type CombatActions = {
   canMove: boolean;
@@ -464,6 +488,12 @@ export type CombatActions = {
   skills: CombatSkill[];
   items: CombatItem[];
   canFlee: boolean;
+  /** Compétences de l'Eon courant (coût en PT). Vide si l'unité n'est pas un Eon. */
+  eonSkills: CombatEonSkill[];
+  /** L'unité est un Invocateur qui peut invoquer un Eon (choix du joueur). */
+  canSummonEon: boolean;
+  /** Noms des Eons invocables (si `canSummonEon`). */
+  summonableEons: string[];
 };
 
 /** Entrée de la file d'ordre des actions (affichée au-dessus du plateau). */

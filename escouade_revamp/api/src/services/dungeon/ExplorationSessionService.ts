@@ -302,15 +302,62 @@ export class ExplorationSessionService {
     const isSafe = (p: Position) =>
       key(p) !== startKey && key(p) !== endKey && !chestKeys.has(key(p)) && !this.blocksExit(zone, p);
     const deadEnd = zone.deadEnds.find(isSafe);
-    const position = deadEnd ?? walkable.find(isSafe);
-    if (!position) return; // aucune case sûre → pas de démon (combat optionnel).
+    let position = deadEnd ?? walkable.find(isSafe);
+    let isDeadEnd = !!deadEnd;
+    if (!position) {
+      // Aucune case sûre (grille linéaire sans cul-de-sac) : on **crée** une
+      // impasse reliée à une case qui n'est pas la sortie. Une impasse (feuille
+      // du graphe) ne bloque jamais la sortie → le combat reste optionnel.
+      // Le démon de zone est ainsi **toujours présent** (défi de fin de donjon).
+      const created = this.createSafeDeadEnd(zone);
+      if (!created) return; // grille dégénérée (impossible en pratique).
+      position = created;
+      isDeadEnd = true;
+    }
 
     zone.specialEncounters.push({
       demonName: spec.demonName,
       position,
-      deadEnd: !!deadEnd,
+      deadEnd: isDeadEnd,
       requiresQuest: spec.requiresQuest,
     });
+  }
+
+  /**
+   * Crée une **impasse sûre** quand aucune case existante ne convient (grille
+   * linéaire sans cul-de-sac). On ajoute une case libre adjacente à une case
+   * praticable qui n'est pas la sortie : la nouvelle case est une feuille du
+   * graphe, elle ne bloque donc jamais la sortie (le combat reste optionnel).
+   *
+   * @returns la position de la nouvelle impasse, ou `null` si impossible.
+   */
+  private static createSafeDeadEnd(zone: Zone): Position | null {
+    const key = (p: Position) => `${p.row},${p.col}`;
+    const endKey = key(zone.endTile);
+    const rows = zone.tileMap.length;
+    const cols = zone.tileMap[0].length;
+    const dirs = [
+      { row: -1, col: 0 }, { row: 1, col: 0 },
+      { row: 0, col: -1 }, { row: 0, col: 1 },
+    ];
+    // On cherche une case praticable (≠ sortie) ayant un voisin libre.
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        if (!zone.tileMap[r][c]) continue;
+        if (key({ row: r, col: c }) === endKey) continue; // pas la sortie
+        for (const d of dirs) {
+          const nr = r + d.row;
+          const nc = c + d.col;
+          if (nr < 0 || nc < 0 || nr >= rows || nc >= cols) continue;
+          if (zone.tileMap[nr][nc]) continue; // déjà occupée
+          // On crée l'impasse ici (feuille → ne bloque pas la sortie).
+          zone.tileMap[nr][nc] = true;
+          zone.deadEnds.push({ row: nr, col: nc });
+          return { row: nr, col: nc };
+        }
+      }
+    }
+    return null;
   }
 
   /**

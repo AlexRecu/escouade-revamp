@@ -489,7 +489,7 @@ export const initializeSocket = (io: Server) => {
     socket.on('combat:move', (data: { unitId: string; position: { row: number; col: number } }) =>
       replyCombat(() => CombatSessionService.move(explorationKey(), data.unitId, data.position), currentRoomId() !== null)
     );
-    socket.on('combat:act', (data: { unitId: string; action: 'attack' | 'spell' | 'skill' | 'item' | 'combo'; targetId: string | null; extra?: any }) =>
+    socket.on('combat:act', (data: { unitId: string; action: 'attack' | 'spell' | 'skill' | 'item' | 'combo' | 'summonEon'; targetId: string | null; extra?: any }) =>
       replyCombat(() => CombatSessionService.act(explorationKey(), data.unitId, data.action, data.targetId, data.extra ?? {}), currentRoomId() !== null)
     );
     socket.on('combat:endTurn', (data: { unitId: string }) =>

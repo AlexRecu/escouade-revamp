@@ -1980,6 +1980,25 @@ button:disabled {
   background: #f5c518;
   transition: width 0.2s;
 }
+/* Barre de PT (violet) — sous la barre de PV, pour l'Eon invoqué. */
+.unit-tpbar {
+  position: relative;
+  width: 100%;
+  height: 7px;
+  background: #0a0810;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 1px;
+}
+.unit-tpfill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: #a855f7;
+  transition: width 0.2s;
+}
+.unit-tpval { color: #fff; }
 /* ── Effets visuels de combat ─────────────────────────────────────────── */
 /* Flash de dégâts : le token clignote en rouge + secousse. */
 .combat-unit.fx-damage .unit-token {
@@ -2190,6 +2209,8 @@ button:disabled {
 }
 .action-cat.action-flee { border-color: var(--exit); }
 .action-cat.action-flee:hover:not(:disabled) { border-color: var(--exit); }
+.action-cat.action-summon { border-color: #a855f7; color: #d8b4fe; }
+.action-cat.action-summon:hover:not(:disabled) { border-color: #a855f7; background: rgba(168, 85, 247, 0.15); }
 
 /* Sous-menu : liste de la catégorie sélectionnée. */
 .submenu {

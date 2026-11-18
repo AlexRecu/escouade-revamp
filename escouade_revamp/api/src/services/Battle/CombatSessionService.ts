@@ -8,7 +8,8 @@ import { Demon } from "../../classes/UnitTypes/Demon";
 import { Eon } from "../../classes/UnitTypes/Eon";
 import { Encounter } from "../../classes/Exploration/Encounter";
 import { Party } from "../../classes/Exploration/Party";
-import { Position } from "../../classes/Types";
+import { Position, EonSkill } from "../../classes/Types";
+import { getValidTargets } from "../../utils/DamageUtils";
 import { LootEngine } from "../../classes/Progression/LootEngine";
 import { QuestService } from "../Progression/QuestService";
 import { HuntQuestService } from "../Progression/HuntQuestService";
@@ -47,6 +48,18 @@ export interface CombatUnitView {
   rank?: number;
   /** Ennemi : nature de l'attaque ("Physique" corps-à-corps / "Magique" à distance). */
   attackType?: "Physique" | "Magique";
+  /** Eon invoqué : true si l'unité est un Eon (contrôlé par le joueur). */
+  isEon?: boolean;
+  /** Eon : points de transe restants (remplacent AP/MP). */
+  currentTransePoint?: number;
+  /** Eon : points de transe max (10). */
+  maxTransePoint?: number;
+  /** Eon : id de l'Invocateur (pour retrouver le lanceur à la restauration). */
+  summonerId?: string;
+  /** Eon : nom de l'Invocateur (affichage). */
+  summonerName?: string;
+  /** Eon : classe de l'Invocateur (pour le token — l'Eon est « possédé » par lui). */
+  summonerJob?: string;
 }
 
 /**
@@ -116,6 +129,18 @@ export interface ItemView {
   validTargets: string[];
 }
 
+/** Compétence d'Eon utilisable par l'unité courante (coût en PT). */
+export interface EonSkillView {
+  name: string;
+  /** Coût en points de transe. */
+  tp: number;
+  type: "single" | "multi";
+  /** Portée de base (0 = illimitée). */
+  range: number;
+  description: string;
+  validTargets: string[];
+}
+
 /** Ensemble des actions disponibles pour l'unité courante. */
 export interface ActionsView {
   canMove: boolean;
@@ -129,6 +154,12 @@ export interface ActionsView {
   skills: SkillView[];
   items: ItemView[];
   canFlee: boolean;
+  /** Compétences de l'Eon courant (coût en PT). Vide si l'unité n'est pas un Eon. */
+  eonSkills: EonSkillView[];
+  /** L'unité est un Invocateur qui peut invoquer un Eon (choix du joueur). */
+  canSummonEon: boolean;
+  /** Noms des Eons invocables (si `canSummonEon`). */
+  summonableEons: string[];
 }
 
 /** Entrée de la file d'ordre des actions (pour l'affichage au-dessus du plateau). */
@@ -448,14 +479,35 @@ export class CombatSessionService {
   static act(
     sessionKey: string,
     unitId: string,
-    action: "attack" | "spell" | "skill" | "item" | "combo",
+    action: "attack" | "spell" | "skill" | "item" | "combo" | "summonEon",
     targetId: string | null,
-    extra: { spell?: { name: string }; skill?: { name: string }; item?: any; combo?: string[] } = {}
+    extra: { spell?: { name: string }; skill?: { name: string }; item?: any; combo?: string[]; eon?: { name: string } } = {}
   ): CombatStateView {
     const session = this.requireStarted(sessionKey);
     this.syncTurnState(session);
     const { battle } = session;
-    if (session.hasActed) throw new Error("Vous avez déjà agi ce tour.");
+    const unit = battle.combatState.units.find((u) => u.id === unitId);
+
+    // **Eon** : plusieurs compétences par tour (limitées par les PT) → pas de
+    // blocage `hasActed` (l'Eon enchaîne tant qu'il a des PT). Les autres
+    // unités restent limitées à 1 action/tour.
+    const isEon = unit instanceof Eon;
+    if (!isEon && session.hasActed) throw new Error("Vous avez déjà agi ce tour.");
+
+    // **Invocation d'Eon** (choix du joueur) : l'Invocateur invoque l'Eon
+    // choisi à sa place. Consomme le tour de l'Invocateur ; l'Eon agit ensuite
+    // à son propre tour (l'ordre d'action est reconstruit au tour suivant).
+    if (action === "summonEon") {
+      if (!extra.eon?.name) throw new Error("Aucun Eon spécifié.");
+      const logs = battle.summonEon(unit as Character, extra.eon.name);
+      battle.combatState.pushLogMany(logs);
+      // L'invocation **consomme le tour** de l'Invocateur : on termine son
+      // tour (avance le combat). L'Eon, ajouté au plateau, n'est pas dans
+      // l'ordre d'action du tour courant → il agira au **tour suivant**.
+      battle.playerEndTurn(unitId);
+      this.syncTurnState(session);
+      return this.serialize(battle, session);
+    }
 
     // Résout l'objet en **instance** depuis le **sac commun**. Le front envoie
     // `extra.item` comme objet sérialisé `{ id, name }` (pas une instance) :
@@ -473,13 +525,21 @@ export class CombatSessionService {
     // peut encore se déplacer). La fin de combat est quand même détectée
     // (`performAction` appelle `checkEnd`).
     battle.playerActNoEnd(unitId, action, targetId, extra);
-    session.hasActed = true;
+    if (!isEon) session.hasActed = true;
     // L'objet consommé est retiré du **sac commun** : `Character.consumeItem`
     // opère sur le sac individuel (vide ici). Le front ne permet de cibler que
     // des cibles valides → l'objet est bien consommé.
     if (action === "item" && extra.item?.id) {
       const idx = session.exploration.party.bag.findIndex((it) => it.id === extra.item.id);
       if (idx !== -1) session.exploration.party.bag.splice(idx, 1);
+    }
+    // **Eon** : si l'invocation s'est terminée (PT épuisés), on termine le tour
+    // de l'Eon → `cleanupFinishedInvocations` renvoie l'Eon et démasque
+    // l'Invocateur. Sinon, l'Eon peut enchaîner (fin de tour manuelle).
+    if (isEon && unit.isDead()) {
+      battle.playerEndTurn(unitId);
+      this.syncTurnState(session);
+      return this.serialize(battle, session);
     }
     // Fin de tour auto si le héros a agi ET épuisé son déplacement.
     this.maybeAutoEndTurn(session);
@@ -868,6 +928,9 @@ export class CombatSessionService {
         currentTransePoint: u instanceof Eon ? u.currentTransePoint : undefined,
         invocationEnded: u instanceof Eon ? u.invocationEnded : undefined,
         hpAtTurnStart: u instanceof Eon ? u.hpAtTurnStart : undefined,
+        // L'id de l'Eon est désormais unique (≠ id de l'invocateur) : on
+        // stocke l'id de l'invocateur pour le retrouver à la restauration.
+        summonerId: u instanceof Eon ? u.summoner?.id : undefined,
       })),
     };
   }
@@ -941,10 +1004,16 @@ export class CombatSessionService {
           d.canAct = su.canAct ?? true;
           units.push(d);
         } else if (su.kind === "eon") {
-          // L'Eon est invoqué à la place de son invocateur (même id).
-          const invoker = exploration.party.members.find((m) => m.id === su.id);
+          // L'Eon est invoqué à la place de son invocateur. L'id de l'Eon est
+          // désormais **unique** (≠ id de l'invocateur) : on retrouve
+          // l'invocateur via `summonerId` (fallback `su.id` pour les anciens
+          // snapshots où l'Eon partageait l'id de l'invocateur).
+          const invoker = exploration.party.members.find(
+            (m) => m.id === (su.summonerId ?? su.id)
+          );
           if (!invoker) continue;
           const eon = new Eon(invoker, su.eonName ?? "");
+          eon.id = su.id;
           eon.position = { ...su.position };
           eon.currentHp = su.currentHp;
           eon.maxHp = su.maxHp;
@@ -1182,6 +1251,14 @@ export class CombatSessionService {
       view.rank = u.rank;
       view.attackType = u.attackType;
     }
+    if (u instanceof Eon) {
+      view.isEon = true;
+      view.currentTransePoint = u.currentTransePoint;
+      view.maxTransePoint = 10;
+      view.summonerId = u.summoner?.id;
+      view.summonerName = u.summoner?.name;
+      view.summonerJob = u.summoner?.job.name;
+    }
     return view;
   }
 
@@ -1194,22 +1271,28 @@ export class CombatSessionService {
     const alive = allUnits.filter((u) => !u.isDead() && !u.isReplaced);
 
     // Attaque : ennemis à portée de l'arme équipée (portée 1 par défaut,
-    // lance = 2, arc = 3).
+    // lance = 2, arc = 3). L'Eon ne peut pas attaquer (seulement ses
+    // compétences) → pas de cibles d'attaque.
     const attackRange = unit.getAttackRange();
-    const attackTargets = alive
-      .filter(
-        (u) =>
-          u.type === "Enemy" &&
-          Math.max(
-            Math.abs(u.position.row - unit.position.row),
-            Math.abs(u.position.col - unit.position.col)
-          ) <= attackRange
-      )
-      .map((u) => u.id);
+    const attackTargets = unit instanceof Eon
+      ? []
+      : alive
+          .filter(
+            (u) =>
+              u.type === "Enemy" &&
+              Math.max(
+                Math.abs(u.position.row - unit.position.row),
+                Math.abs(u.position.col - unit.position.col)
+              ) <= attackRange
+          )
+          .map((u) => u.id);
 
     let spells: SpellView[] = [];
     let skills: SkillView[] = [];
     let items: ItemView[] = [];
+    let eonSkills: EonSkillView[] = [];
+    let canSummonEon = false;
+    let summonableEons: string[] = [];
 
     if (unit instanceof Character) {
       // Sorts : portée illimitée (le type Spell ne porte pas de range).
@@ -1258,6 +1341,26 @@ export class CombatSessionService {
           target: "ally" as const,
           validTargets: this.targetsByType(unit, "ally", alive),
         }));
+
+      // **Invocateur** (Mage bleu évolué) : peut invoquer un Eon à sa place
+      // (choix du joueur). L'invocation consomme le tour ; l'Eon agit ensuite
+      // à son propre tour. Masqué s'il a déjà invoqué (l'Eon est sur le plateau).
+      if (unit.job.name === "Invocateur" && !unit.isReplaced) {
+        canSummonEon = true;
+        summonableEons = (unit.job as BlueMage).listEon();
+      }
+    } else if (unit instanceof Eon) {
+      // **Eon** : le menu est remplacé par ses compétences (coût en PT). On
+      // perd Attaque/Compétences/Sorts/Objets, on gagne l'option « Eon ».
+      // Plusieurs compétences par tour sont possibles (limitées par les PT).
+      eonSkills = unit.skills.map((sk) => ({
+        name: sk.name,
+        tp: sk.tp,
+        type: sk.type as "single" | "multi",
+        range: sk.range,
+        description: sk.description,
+        validTargets: getValidTargets(unit, sk, allUnits, true).map((u) => u.id),
+      }));
     }
 
     return {
@@ -1274,6 +1377,9 @@ export class CombatSessionService {
       skills,
       items,
       canFlee: true,
+      eonSkills,
+      canSummonEon,
+      summonableEons,
     };
   }
 
