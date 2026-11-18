@@ -10,6 +10,7 @@ type Props = {
   onRest: () => void;
   onUseWood: () => void;
   onOpenChest: () => void;
+  onBloodRitual: () => void;
 };
 
 /**
@@ -20,8 +21,20 @@ type Props = {
  * déplacement se fait aux flèches (clavier ou boutons). Le combat n'est pas
  * encore branché.
  */
-export default function DungeonView({ exploration, logs, onMove, onRest, onUseWood, onOpenChest }: Props) {
-  const { tileMap, position, startTile, endTile, exitType, campfires, chests, activeChest, visited, activeCampfire, completed, demon } = exploration;
+export default function DungeonView({ exploration, logs, onMove, onRest, onUseWood, onOpenChest, onBloodRitual }: Props) {
+  const { tileMap, position, startTile, endTile, exitType, campfires, chests, activeChest, visited, activeCampfire, completed, demon, bloodDoor } = exploration;
+
+  // Porte de sang (Phase D) : l'équipe peut faire le rituel quand elle est
+  // **adjacente** à la porte (la case est bloquée, on ne peut pas y marcher).
+  const adjacentToBloodDoor = useMemo(
+    () =>
+      !!bloodDoor &&
+      Math.max(
+        Math.abs(position.row - bloodDoor.row),
+        Math.abs(position.col - bloodDoor.col)
+      ) === 1,
+    [bloodDoor, position]
+  );
 
   // Nombre d'objets « Bois » dans le sac partagé de l'équipe.
   const woodCount = useMemo(
@@ -111,11 +124,14 @@ export default function DungeonView({ exploration, logs, onMove, onRest, onUseWo
                 if (isPos) cls += ' party';
 
                 const isDemon = demon && demon.row === r && demon.col === c;
+                const isBloodDoor = bloodDoor && bloodDoor.row === r && bloodDoor.col === c;
+                if (isBloodDoor) cls += ' blood-door';
                 let icon = '';
                 if (isPos) icon = '👥';
                 else if (campfireSet.has(`${r},${c}`)) icon = campUsed ? '🪵' : '🔥';
                 else if (chest) icon = chest.opened ? '📭' : chest.type === 'rare' ? '💎' : '📦';
                 else if (isDemon) icon = '👹';
+                else if (isBloodDoor) icon = '🩸';
                 else if (isEnd) icon = exitIcon;
                 else if (isStart) icon = '📍';
 
@@ -133,6 +149,7 @@ export default function DungeonView({ exploration, logs, onMove, onRest, onUseWo
             <span>📦 Coffre</span>
             <span>💎 Coffre rare</span>
             {demon && <span title={demon.name}>👹 Démon</span>}
+            {bloodDoor && <span title="Porte de sang (Zeromus derrière)">🩸 Porte de sang</span>}
             <span>{exitIcon} {exitLabel}</span>
             <span>📍 Départ</span>
           </div>
@@ -181,6 +198,17 @@ export default function DungeonView({ exploration, logs, onMove, onRest, onUseWo
               title="Allume un feu de camp sur la case courante (qui doit être vide) et s'y repose (+50% PV/MP)."
             >
               🪵 Allumer un feu de bois ({woodCount})
+            </button>
+          )}
+
+          {adjacentToBloodDoor && (
+            <button
+              className="dungeon-rest-btn dungeon-blood-ritual-btn"
+              onClick={onBloodRitual}
+              disabled={completed}
+              title="Consomme le « Cœur de sang » pour ouvrir la porte de sang et révéler Zeromus."
+            >
+              🩸 Faire le rituel de la porte de sang
             </button>
           )}
 

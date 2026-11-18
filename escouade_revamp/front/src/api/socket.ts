@@ -71,6 +71,8 @@ export const explorationRest = (): void => { socket?.emit('exploration:rest', {}
 /** Utilise l'objet « Bois » : allume un feu de camp sur la case courante (vide). */
 export const explorationUseWood = (): void => { socket?.emit('exploration:useWood', {}); };
 export const explorationChest = (): void => { socket?.emit('exploration:chest', {}); };
+/** Rituel de la porte de sang (Phase D) : consomme le « Cœur de sang » et débloque la porte adjacente. */
+export const explorationBloodRitual = (): void => { socket?.emit('exploration:bloodRitual', {}); };
 export const explorationExit = (): void => { socket?.emit('exploration:exit', {}); };
 /** Équipe une arme du sac en main droite/gauche pendant le donjon. */
 export const explorationEquip = (memberId: string, itemId: string, hand: 'right' | 'left'): void => {

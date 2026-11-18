@@ -62,6 +62,28 @@
         "text": "Ultima, le Grand Séraphin, rejoint l'équipe."
       },
       "availability": { "requiresDemons": ["Mateus, le Corrompu", "Bélias, le Titan", "Adrammelech, le Grand Courroux", "Hashmal, le Grand Ordonnateur"] }
+    },
+    {
+      "id": "quest_porte_sang",
+      "name": "La porte de sang",
+      "giver": {
+        "npc": "Quartemino",
+        "hub": "Qual-Mastrech",
+        "dialogue": "Il existe une porte de sang dans la Grotte de l'Écho. Derrière elle se tient Zeromus, le Condamnateur. Voici le Cœur de sang qu'il faut pour ouvrir la porte."
+      },
+      "steps": [
+        { "id": "s1", "type": "talk", "target": "Quartemino", "text": "Parler à Quartemino à Qual-Mastrech sur la porte de sang" },
+        { "id": "s2", "type": "retrieve", "target": "Cœur de sang", "text": "Récupérer le Cœur de sang de Quartemino" },
+        { "id": "s3", "type": "goTo", "target": "Grotte de l'Écho", "text": "Se rendre dans la Grotte de l'Écho" },
+        { "id": "s4", "type": "defeat", "target": "Zeromus, le Condamnateur", "text": "Ouvrir la porte de sang et affronter Zeromus" }
+      ],
+      "reward": {
+        "demon": "Zeromus, le Condamnateur",
+        "gold": 0,
+        "xp": 0,
+        "text": "Zeromus, le Condamnateur, rejoint l'équipe."
+      },
+      "availability": { "requiresJob": "Démoniste" }
     }
   ]
 }

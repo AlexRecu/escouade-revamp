@@ -430,6 +430,11 @@ export const initializeSocket = (io: Server) => {
     socket.on('exploration:chest', () =>
       replyExploration(() => ExplorationSessionService.openChest(explorationKey()), currentRoomId() !== null)
     );
+    // Rituel de la porte de sang (Phase D) : consomme le « Cœur de sang » et
+    // débloque la porte adjacente (révèle Zeromus).
+    socket.on('exploration:bloodRitual', () =>
+      replyExploration(() => ExplorationSessionService.performBloodRitual(explorationKey()), currentRoomId() !== null)
+    );
     // Équipement / utilisation d'objet **pendant** le donjon : opère sur
     // l'équipe en mémoire de la session (pas sur la partie DB, stale ici).
     socket.on('exploration:equip', (data: { memberId: string; itemId: string; hand: 'right' | 'left' }) =>

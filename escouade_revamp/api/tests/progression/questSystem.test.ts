@@ -19,13 +19,14 @@ function makeWarrior(id: string): Character {
 describe("QuestSystem (squelette Phase 2)", () => {
 
   describe("createDefaultQuests", () => {
-    test("Retourne les 3 quêtes du livret", () => {
+    test("Retourne les 4 quêtes du livret", () => {
       const quests = createDefaultQuests();
-      expect(quests.length).toBe(3);
+      expect(quests.length).toBe(4);
       const names = quests.map((q) => q.name);
       expect(names).toContain("Une pêche miraculeuse");
       expect(names).toContain("Trouvez le kidnappeur");
       expect(names).toContain("Les voies du seigneur sont impénétrables");
+      expect(names).toContain("La porte de sang");
     });
   });
 

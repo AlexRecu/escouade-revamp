@@ -57,7 +57,8 @@
       ],
       "residents": [
         { "name": "Franny", "row": 0, "col": 3, "dialogue": "Ma sœur a disparu dans les bois... S'il vous plaît, trouvez le coupable. C'est dans la Forêt des soupirs." },
-        { "name": "Voyante", "row": 13, "col": 3, "dialogue": "Les voies du seigneur sont impénétrables. La salle de voyance du château détient la réponse. Voici la clef.", "questItem": "Clef de voyance" }
+        { "name": "Voyante", "row": 13, "col": 3, "dialogue": "Les voies du seigneur sont impénétrables. La salle de voyance du château détient la réponse. Voici la clef.", "questItem": "Clef de voyance" },
+        { "name": "Quartemino", "row": 0, "col": 10, "dialogue": "Il existe une porte de sang dans la Grotte de l'Écho. Derrière elle se tient Zeromus, le Condamnateur. Voici le Cœur de sang qu'il faut pour ouvrir la porte.", "questItem": "Cœur de sang" }
       ],
       "exit": { "row": 7, "col": 0, "label": "Sortie vers les donjons" },
       "caravan": { "row": 8, "col": 1 }

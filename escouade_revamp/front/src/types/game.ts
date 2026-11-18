@@ -366,6 +366,11 @@ export type ExplorationState = {
   } | null;
   /** Démon de zone ancré sur cet étage (pour afficher 👹 sur sa case). */
   demon: { name: string; row: number; col: number } | null;
+  /** Porte de sang (Phase D) : case bloquée avec Zeromus derrière. `null` si
+   *  absente ou déjà ouverte (le rituel l'a débloquée → le démon est alors
+   *  visible via `demon`). Le front affiche l'icône porte + le bouton
+   *  « Faire le rituel » quand l'équipe est adjacente. */
+  bloodDoor: { row: number; col: number } | null;
   visited: { row: number; col: number }[];
   activeCampfire: {
     location: string;

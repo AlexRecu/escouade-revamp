@@ -199,6 +199,11 @@ export class ExplorationSessionService {
     // (le défi se joue en fin de donjon, pas à l'entrée).
     this.anchorZoneDemons(levels[levels.length - 1]);
 
+    // Porte de sang (Phase D) : une case **bloquante** sur le dernier étage de
+    // la caverne, avec Zeromus ancré derrière. Le rituel (« Cœur de sang ») la
+    // débloque. Défi optionnel (la porte ne bloque jamais la sortie).
+    this.anchorBloodDoor(levels[levels.length - 1]);
+
     // Quêtes : entrer dans la zone complète les étapes `goTo` dont la cible est
     // le nom du donjon (ex. « Aller pêcher au Lac de Qual-Chen »). Idempotent :
     // à la restauration, les étapes sont déjà faites → rien ne se passe. La
@@ -305,6 +310,55 @@ export class ExplorationSessionService {
       position,
       deadEnd: !!deadEnd,
       requiresQuest: spec.requiresQuest,
+    });
+  }
+
+  /**
+   * Ancre la **porte de sang** (Phase D) sur l'étage donné : une case
+   * **bloquante** sur laquelle est ancré Zeromus.
+   *
+   * La porte n'est présente que dans la **caverne** (biome `Cave`). Tant que
+   * la case est bloquée, on ne peut pas y marcher ; le rituel
+   * (`performBloodRitual`, objet « Cœur de sang ») la débloque et révèle
+   * Zeromus — un défi **optionnel** (la porte ne bloque jamais la sortie,
+   * comme le démon de zone : on la place sur une case qui ne coupe pas le
+   * chemin vers la sortie).
+   *
+   * @param zone l'étage du donjon qui porte la porte (le **dernier** étage).
+   */
+  private static anchorBloodDoor(zone: Zone): void {
+    if (zone.biome !== "Cave") return;
+
+    const key = (p: Position) => `${p.row},${p.col}`;
+    const startKey = key(zone.startTile);
+    const endKey = key(zone.endTile);
+    const walkable: Position[] = [];
+    zone.tileMap.forEach((row, r) =>
+      row.forEach((walkableTile, c) => {
+        if (walkableTile) walkable.push({ row: r, col: c });
+      })
+    );
+    // Exclut le départ, la sortie, les coffres, les démons déjà ancrés, et
+    // toute case qui **bloque la sortie** (le rituel + le combat doivent
+    // rester optionnels).
+    const used = new Set(zone.specialEncounters.map((se) => key(se.position)));
+    const chestKeys = new Set(zone.chests.map((c) => key(c.position)));
+    const isSafe = (p: Position) =>
+      key(p) !== startKey &&
+      key(p) !== endKey &&
+      !used.has(key(p)) &&
+      !chestKeys.has(key(p)) &&
+      !this.blocksExit(zone, p);
+    const deadEnd = zone.deadEnds.find(isSafe);
+    const position = deadEnd ?? walkable.find(isSafe);
+    if (!position) return; // aucune case sûre → pas de porte (défi optionnel).
+
+    // La porte est une case **bloquante** ; Zeromus est ancré dessus.
+    zone.blockedTiles.push(position);
+    zone.specialEncounters.push({
+      demonName: "Zeromus, le Condamnateur",
+      position,
+      deadEnd: !!deadEnd,
     });
   }
 
@@ -609,6 +663,56 @@ export class ExplorationSessionService {
   }
 
   /**
+   * Rituel de la **porte de sang** (Phase D) : débloque la case bloquée
+   * **adjacente** en consommant l'objet « Cœur de sang » du sac commun.
+   *
+   * L'équipe doit être **adjacente** à la porte (la case est bloquante, on ne
+   * peut pas y marcher). Conditions :
+   *  - une case bloquée (porte de sang) est adjacente à la position courante ;
+   *  - le sac commun contient le « Cœur de sang ».
+   *
+   * Succès : l'objet est consommé, la case est débloquée, et Zeromus (ancré
+   * dessus) est révélé — un défi **optionnel** (l'équipe choisit d'y marcher
+   * pour le combattre).
+   */
+  static async performBloodRitual(sessionKey: string): Promise<any> {
+    const session = this.require(sessionKey);
+    const zone = session.dungeon.levels[session.currentFloor];
+    const pos = session.party.position;
+
+    // Trouve la porte de sang adjacente (case bloquée à 1 pas).
+    const neighbors: Position[] = [
+      { row: pos.row - 1, col: pos.col },
+      { row: pos.row + 1, col: pos.col },
+      { row: pos.row, col: pos.col - 1 },
+      { row: pos.row, col: pos.col + 1 },
+    ];
+    const door = neighbors.find((n) => zone.isBlocked(n));
+    if (!door) {
+      return { logs: ["Il n'y a pas de porte de sang à proximité."], state: this.serialize(session) };
+    }
+
+    // Consomme le « Cœur de sang » du sac commun.
+    const idx = session.party.bag.findIndex((i) => i.name === "Cœur de sang");
+    if (idx === -1) {
+      return { logs: ["Le rituel échoue : il faut le Cœur de sang."], state: this.serialize(session) };
+    }
+    session.party.bag.splice(idx, 1);
+
+    // Débloque la porte.
+    zone.unblockTile(door);
+
+    // Le démon ancré sur la case (Zeromus) est révélé.
+    const revealed = zone.getSpecialEncounterAt(door);
+    const logs: string[] = ["Le Cœur de sang pulse... La porte de sang s'ouvre dans un craquement de chair."];
+    if (revealed) {
+      logs.push(`${revealed.demonName} se dresse au-delà. (Défi optionnel : avancez pour l'affronter.)`);
+    }
+    await this.persistAll(session);
+    return { logs, state: this.serialize(session) };
+  }
+
+  /**
    * Équipe une arme du sac en main droite/gauche **pendant** le donjon.
    *
    * Opère directement sur `session.party` (l'équipe en mémoire du donjon) —
@@ -782,12 +886,25 @@ export class ExplorationSessionService {
   static serializeSnapshot(session: DungeonSession): any {
     const openedChests: { row: number; col: number; floor: number }[] = [];
     const usedCampfires: { row: number; col: number; floor: number }[] = [];
+    // Portes de sang **ouvertes** (Phase D) : la grille est régénérée depuis le
+    // seed (la porte est re-ancrée bloquée), donc on persiste les cases
+    // débloquées par le rituel pour les restaurer à la reconnexion.
+    const openedBloodDoors: { row: number; col: number; floor: number }[] = [];
     session.dungeon.levels.forEach((zone, floor) => {
       for (const c of zone.chests) {
         if (c.opened) openedChests.push({ row: c.position.row, col: c.position.col, floor });
       }
       for (const c of zone.checkpoints) {
         if (c.isUsed && c.position) usedCampfires.push({ row: c.position.row, col: c.position.col, floor });
+      }
+      // Une porte ouverte = la case de Zeromus (le seul démon de porte) qui
+      // n'est PLUS bloquée (le rituel a retiré la case de `blockedTiles`).
+      // On filtre sur le nom pour ne pas confondre avec les démons de zone
+      // normaux (jamais bloqués).
+      for (const se of zone.specialEncounters) {
+        if (se.demonName === "Zeromus, le Condamnateur" && !zone.isBlocked(se.position)) {
+          openedBloodDoors.push({ row: se.position.row, col: se.position.col, floor });
+        }
       }
     });
     return {
@@ -804,6 +921,8 @@ export class ExplorationSessionService {
       defeatedDemonsThisZone: session.defeatedDemonsThisZone ?? [],
       // Pas restants de l'effet Repousse (annule les rencontres).
       repousseTurnsLeft: session.repousseTurnsLeft ?? 0,
+      // Portes de sang ouvertes (Phase D).
+      openedBloodDoors,
     };
   }
 
@@ -854,6 +973,14 @@ export class ExplorationSessionService {
           created.isUsed = true;
           created.createdByWood = true;
         }
+      }
+      // Réapplique les portes de sang ouvertes (Phase D) : la grille est
+      // régénérée depuis le seed (la porte est re-ancrée bloquée), donc on
+      // débloque à nouveau les cases qui avaient été ouvertes par le rituel.
+      for (const ob of snapshot.openedBloodDoors ?? []) {
+        const z = session.dungeon.levels[ob.floor];
+        if (!z) continue;
+        z.unblockTile({ row: ob.row, col: ob.col });
       }
       // Re-dérive le coffre/feu de camp actif depuis la position courante.
       const pos = session.party.position;
@@ -951,7 +1078,11 @@ export class ExplorationSessionService {
     if (!map || pos.row < 0 || pos.row >= map.length) return false;
     const row = map[pos.row];
     if (!row || pos.col < 0 || pos.col >= row.length) return false;
-    return row[pos.col] === true;
+    if (row[pos.col] !== true) return false;
+    // Porte de sang (Phase D) : la case est **bloquante** tant que le rituel
+    // (« Cœur de sang ») ne l'a pas débloquée. On ne peut pas y marcher.
+    if (zone.isBlocked(pos)) return false;
+    return true;
   }
 
   /**
@@ -1041,12 +1172,15 @@ export class ExplorationSessionService {
         : null,
       // Démon de zone ancré sur **cet étage** (pour afficher 👹 sur sa case).
       // Null si l'étage n'en porte pas, s'il a déjà été vaincu cette session,
-      // ou si son combat est conditionnel à une quête non encore acceptée
-      // (ex. Adrammelech tant que la quête « kidnappeur » n'est pas acceptée :
-      // le démon reste invisible pour éviter l'incohérence UI).
+      // s'il est derrière une **porte de sang fermée** (case bloquée — le
+      // rituel le révèle), ou si son combat est conditionnel à une quête non
+      // encore acceptée (ex. Adrammelech tant que la quête « kidnappeur » n'est
+      // pas acceptée : le démon reste invisible pour éviter l'incohérence UI).
       demon: (() => {
         const se = zone.specialEncounters.find(
-          (s) => !session.defeatedDemonsThisZone.includes(s.demonName)
+          (s) =>
+            !session.defeatedDemonsThisZone.includes(s.demonName) &&
+            !zone.isBlocked(s.position)
         );
         if (!se) return null;
         if (se.requiresQuest) {
@@ -1054,6 +1188,15 @@ export class ExplorationSessionService {
           if (!accepted) return null;
         }
         return { name: se.demonName, row: se.position.row, col: se.position.col };
+      })(),
+      // Porte de sang (Phase D) : la case **bloquée** qui a un démon ancré
+      // dessus (Zeromus). Null si la porte est absente ou déjà ouverte (le
+      // rituel a débloqué la case → le démon est alors visible via `demon`).
+      // Le front affiche l'icône porte + le bouton « Faire le rituel » quand
+      // l'équipe est adjacente.
+      bloodDoor: (() => {
+        const door = zone.blockedTiles.find((b) => zone.getSpecialEncounterAt(b));
+        return door ? { row: door.row, col: door.col } : null;
       })(),
       visited: Array.from(session.party.visitedTiles).map((key) => {
         const [row, col] = key.split(",").map(Number);

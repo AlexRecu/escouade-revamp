@@ -26,6 +26,7 @@ import {
   explorationRest,
   explorationUseWood,
   explorationChest,
+  explorationBloodRitual,
   explorationExit,
   explorationEquip,
   explorationUseItem,
@@ -91,6 +92,7 @@ export type GameActions = {
   explorationRest: () => void;
   explorationUseWood: () => void;
   explorationChest: () => void;
+  explorationBloodRitual: () => void;
   explorationExit: () => void;
   // Combat interactif.
   combatPlace: (unitId: string, position: { row: number; col: number }) => void;
@@ -433,6 +435,7 @@ export function useGame(token: string | null, confirmCombatEnd = false): UseGame
     explorationRest,
     explorationUseWood,
     explorationChest,
+    explorationBloodRitual,
     explorationExit,
     combatPlace,
     combatConfirmPlacement,

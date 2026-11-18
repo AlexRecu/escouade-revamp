@@ -3,14 +3,15 @@ import { QuestFactory } from "../../src/services/factory/QuestFactory";
 import { createDefaultQuests } from "../../src/classes/Progression/QuestSystem";
 
 describe("QuestFactory — interprétation de quests_data.json", () => {
-  test("createAll retourne les 3 quêtes du livret", () => {
+  test("createAll retourne les 4 quêtes du livret", () => {
     const quests = QuestFactory.createAll();
-    expect(quests).toHaveLength(3);
+    expect(quests).toHaveLength(4);
     const ids = quests.map((q) => q.id);
     expect(ids).toEqual([
       "quest_peche_miraculeuse",
       "quest_kidnappeur",
       "quest_voies_seigneur",
+      "quest_porte_sang",
     ]);
   });
 

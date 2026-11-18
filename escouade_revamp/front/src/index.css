@@ -1177,6 +1177,11 @@ button:disabled {
   box-shadow: 0 0 8px rgba(124, 92, 255, 0.7);
   z-index: 1;
 }
+/* Porte de sang (Phase D) : case bloquée, fond sombre rougeâtre + halo. */
+.tile.blood-door {
+  background: #3a0d12;
+  box-shadow: inset 0 0 0 1px #7a1a24, 0 0 10px rgba(180, 30, 45, 0.55);
+}
 .tile-icon {
   line-height: 1;
   pointer-events: none;
@@ -1221,6 +1226,15 @@ button:disabled {
 }
 .dungeon-rest-btn {
   width: 200px;
+}
+/* Bouton du rituel de la porte de sang (Phase D) : accent rouge pour le distinguer. */
+.dungeon-blood-ritual-btn {
+  background: #5a141c;
+  border-color: #7a1a24;
+  color: #ffd7db;
+}
+.dungeon-blood-ritual-btn:hover:not(:disabled) {
+  background: #6e1a24;
 }
 /* Journal : sous la légende, dans la colonne de la grille. */
 .dungeon-log {

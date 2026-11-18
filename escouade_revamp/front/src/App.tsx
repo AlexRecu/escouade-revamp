@@ -496,6 +496,7 @@ function App() {
                 onRest={() => actions.explorationRest()}
                 onUseWood={() => actions.explorationUseWood()}
                 onOpenChest={() => actions.explorationChest()}
+                onBloodRitual={() => actions.explorationBloodRitual()}
               />
             ) : (
               <div className="worldmap">Entrée dans le donjon…</div>
