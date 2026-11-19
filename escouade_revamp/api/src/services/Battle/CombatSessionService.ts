@@ -60,6 +60,12 @@ export interface CombatUnitView {
   summonerName?: string;
   /** Eon : classe de l'Invocateur (pour le token — l'Eon est « possédé » par lui). */
   summonerJob?: string;
+  /**
+   * Clé du sprite sheet `eon_demon_sprites.png` (nom court, ex. "Phoenix",
+   * "Bélias"). Présente pour les Eons invoqués et les démons (zone/pacte).
+   * Le front y lit le token ; à défaut, il retombe sur le token par défaut.
+   */
+  spriteKey?: string;
 }
 
 /**
@@ -1258,6 +1264,13 @@ export class CombatSessionService {
       view.summonerId = u.summoner?.id;
       view.summonerName = u.summoner?.name;
       view.summonerJob = u.summoner?.job.name;
+      // Token : sprite sheet des Eons (nom court, ex. "Phoenix").
+      view.spriteKey = u.eonName;
+    }
+    if (u instanceof Demon) {
+      // Token : sprite sheet des démons (nom court, ex. "Bélias" depuis
+      // "Bélias, le Titan").
+      view.spriteKey = u.name.split(",")[0].trim();
     }
     return view;
   }

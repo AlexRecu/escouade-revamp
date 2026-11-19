@@ -9,6 +9,8 @@ import { applyStatus } from "../../utils/StatusUtils";
 export class Eon extends Unit {
     initialCharacter: Character;
     element: string;
+    /** Nom propre de l'Eon (ex. "Phoenix") — pour le token (sprite sheet). */
+    eonName: string = "";
     skills: EonSkill[];
     currentTransePoint: number = 10;
     /** L'Invocateur qui a invoqué cet Eon (null pour un Eon de zone). */
@@ -36,6 +38,7 @@ export class Eon extends Unit {
         const eon = eonData.find(eon => eon.name === eonName);
         if (eon) {
             this.initialCharacter = initialCharacter;
+            this.eonName = eonName;
             this.stats = initialCharacter.stats;
             this.element = eon.element;
             this.skills = eon.skills;

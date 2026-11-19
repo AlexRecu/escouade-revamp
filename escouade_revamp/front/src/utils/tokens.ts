@@ -107,3 +107,51 @@ export function defeatedTokenStyle(jobName: string): Record<string, string> | nu
     backgroundRepeat: 'no-repeat',
   };
 }
+
+/**
+ * Sprite sheet des **Eons et démons** (`eon_demon_sprites.png`) : grille
+ * **2 lignes × 6 colonnes** (cellules 256×512, portrait). Chaque Eon / démon
+ * y a une cellule ; on sélectionne la bonne via `background-position`.
+ *
+ * Ordre (ligne, colonne) :
+ *   ligne 0 (Eons)   : Phoenix, Garuda, Ramuh, Shiva, Titan, Odin
+ *   ligne 1 (Démons) : Bélias, Adrammelech, Mateus, Hashmal, Zeromus, Ultima
+ */
+const EON_DEMON_SPRITE: Record<string, { row: number; col: number }> = {
+  // Eons (ligne 0)
+  'phoenix': { row: 0, col: 0 },
+  'garuda': { row: 0, col: 1 },
+  'ramuh': { row: 0, col: 2 },
+  'shiva': { row: 0, col: 3 },
+  'titan': { row: 0, col: 4 },
+  'odin': { row: 0, col: 5 },
+  // Démons (ligne 1)
+  'bélias': { row: 1, col: 0 },
+  'adrammelech': { row: 1, col: 1 },
+  'mateus': { row: 1, col: 2 },
+  'hashmal': { row: 1, col: 3 },
+  'zeromus': { row: 1, col: 4 },
+  'ultima': { row: 1, col: 5 },
+};
+
+/**
+ * Style inline pour afficher le token d'un **Eon ou d'un démon** (cellule du
+ * sprite sheet `eon_demon_sprites.png`). `null` si la clé n'a pas de sprite
+ * → l'appelant retombe sur le token normal.
+ *
+ * ⚠️ La cellule est en **portrait** (ratio 1:2) : le token doit être un
+ * rectangle portrait (`.unit-token-sprite` = 50% largeur × 100% hauteur de la
+ * case carrée) pour ne pas déformer le sprite.
+ */
+export function eonDemonTokenStyle(spriteKey: string): Record<string, string> | null {
+  const cell = EON_DEMON_SPRITE[spriteKey.toLowerCase()];
+  if (!cell) return null;
+  return {
+    backgroundImage: `url(${TOKEN_BASE}/eon_demon_sprites.png)`,
+    // 6 colonnes → 600% de largeur ; 2 lignes → 200% de hauteur.
+    backgroundSize: '600% 200%',
+    // 6 colonnes : pas de 20% (100/5) ; 2 lignes : pas de 100% (100/1).
+    backgroundPosition: `${cell.col * 20}% ${cell.row * 100}%`,
+    backgroundRepeat: 'no-repeat',
+  };
+}

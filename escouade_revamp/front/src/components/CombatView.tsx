@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CombatState, CombatUnit } from '../types/game';
-import { classTokenUrl, monsterTokenUrl, DEFAULT_TOKEN_URL, defeatedTokenStyle } from '../utils/tokens';
+import { classTokenUrl, monsterTokenUrl, DEFAULT_TOKEN_URL, defeatedTokenStyle, eonDemonTokenStyle } from '../utils/tokens';
 import { skillRangeLabel } from '../utils/weapons';
 import CollapsibleLog from './CollapsibleLog';
 
@@ -726,6 +726,11 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
                       ? defeatedTokenStyle(unit.jobName ?? '')
                       : null
                     : null;
+                  // Token Eon / Démon : cellule du sprite sheet `eon_demon_sprites.png`
+                  // (l'Eon invoqué et le démon de zone n'ont pas de token dédié).
+                  const spriteStyle = unit.spriteKey
+                    ? eonDemonTokenStyle(unit.spriteKey)
+                    : null;
                   // L'unité courante (tour du joueur) est **cliquable** : elle
                   // ouvre le menu d'actions (bottom-sheet sur mobile).
                   const isPlayerTurn =
@@ -749,9 +754,12 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
                       <div
                         className={`combat-unit ${unit.type === 'Hero' ? 'unit-hero' : 'unit-enemy'} ${isCurrent ? 'unit-active' : ''} ${isPlacingHero ? 'unit-placing' : ''} ${unit.isDead ? 'unit-dead' : ''}${fxCls}`}
                       >
-                        {/* Token en image de fond (remplit la case). Mort → sprite vaincu. */}
+                        {/* Token : vaincu (sprite sheet héros) > Eon/Démon (sprite
+                            sheet) > image classique. */}
                         {defeatedStyle ? (
                           <div className="unit-token unit-token-defeated" style={defeatedStyle} />
+                        ) : spriteStyle ? (
+                          <div className="unit-token unit-token-sprite" style={spriteStyle} />
                         ) : (
                           <img
                             className="unit-token"

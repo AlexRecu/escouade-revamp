@@ -1897,6 +1897,20 @@ button:disabled {
   border-radius: 4px;
   background-color: transparent;
 }
+/* Token Eon / Démon : cellule du sprite sheet `eon_demon_sprites.png`
+   (style inline). La cellule est en **portrait** (256×512, ratio 1:2) → le
+   token est un rectangle portrait centré dans la case carrée (50% largeur ×
+   100% hauteur = ratio 1:2 exact, pas de déformation). */
+.unit-token-sprite {
+  inset: auto;
+  top: 0;
+  left: 50%;
+  width: 50%;
+  height: 100%;
+  transform: translateX(-50%);
+  border-radius: 4px;
+  background-color: transparent;
+}
 /* Unité morte : le token (monstre, sans sprite vaincu) est grisé + estompé
    pour qu'on lise bien qu'il est KO. */
 .combat-unit.unit-dead .unit-token {

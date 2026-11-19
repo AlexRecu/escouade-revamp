@@ -423,6 +423,12 @@ export type CombatUnit = {
   summonerName?: string;
   /** Eon : classe de l'Invocateur (pour le token). */
   summonerJob?: string;
+  /**
+   * Clé du sprite sheet `eon_demon_sprites.png` (nom court, ex. "Phoenix",
+   * "Bélias"). Présente pour les Eons invoqués et les démons de zone → le
+   * token est une cellule du sprite sheet (pas un fichier token dédié).
+   */
+  spriteKey?: string;
 };
 
 /** Cibles valides d'une action (ids d'unités). */
