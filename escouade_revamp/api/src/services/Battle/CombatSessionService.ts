@@ -112,6 +112,10 @@ export interface SpellView {
 export interface SkillView {
   name: string;
   apCost: number;
+  /** Coût en MP (0 = aucun). Affiché en évidence si > 0. */
+  mpCost: number;
+  /** Coût en PV (0 = aucun). Affiché en évidence si > 0. */
+  hpCost: number;
   target: "ally" | "self" | "enemy";
   type: "single" | "multi";
   /** Portée de base (0 = illimitée). La portée de ciblage effective est
@@ -1332,6 +1336,8 @@ export class CombatSessionService {
         return {
           name: sk.name,
           apCost: sk.apCost,
+          mpCost: sk.mpCost,
+          hpCost: sk.hpCost,
           target: sk.target,
           type: sk.type,
           range: sk.range,

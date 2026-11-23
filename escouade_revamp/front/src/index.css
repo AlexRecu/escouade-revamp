@@ -2308,6 +2308,10 @@ button:disabled {
   background: rgba(201, 162, 39, 0.15);
 }
 .action-cost { color: var(--text-dim); font-size: 11px; }
+/* Coûts MP / PV d'une compétence : mis en évidence (couleur + gras) pour
+   ne pas tromper l'utilisateur (ex. "Pas de l'ombre" = 0 AP mais 1 MP). */
+.action-cost-mp { color: var(--mp); font-weight: 700; }
+.action-cost-hp { color: var(--hp); font-weight: 700; }
 .action-range { color: var(--text-dim); font-size: 11px; opacity: 0.85; }
 
 /* Fin de tour (en dessous du menu). */

@@ -509,26 +509,39 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
             <div className="submenu-list">
               {actions.skills.map((sk) => {
                 const notEnoughAp = currentUnit.currentAp! < sk.apCost;
+                const notEnoughMp = (currentUnit.currentMp ?? 0) < (sk.mpCost ?? 0);
+                const notEnoughHp = currentUnit.currentHp <= (sk.hpCost ?? 0);
                 const noTarget = sk.validTargets.length === 0;
-                // Explication de la grisaille : AP insuffisante, hors
+                // Explication de la grisaille : AP/MP/PV insuffisants, hors
                 // de portée, ou compétence intrinsèquement désactivée
                 // (ex. "Apprendre" sans slot). Affichée en tooltip.
                 const disabledReason = sk.disabled
                   ? sk.disabledReason ?? 'Indisponible'
                   : notEnoughAp
                     ? `AP insuffisante (${sk.apCost} requis, ${currentUnit.currentAp} dispo)`
-                    : noTarget
-                      ? 'Hors de portée — rapprochez-vous de la cible'
-                      : null;
+                    : notEnoughMp
+                      ? `MP insuffisants (${sk.mpCost} requis, ${currentUnit.currentMp ?? 0} dispo)`
+                      : notEnoughHp
+                        ? `PV insuffisants (${sk.hpCost} requis, ${currentUnit.currentHp} dispo)`
+                        : noTarget
+                          ? 'Hors de portée — rapprochez-vous de la cible'
+                          : null;
                 return (
                   <button
                     key={sk.name}
                     className={`submenu-item ${pendingAction?.name === sk.name ? 'active' : ''}`}
-                    disabled={sk.disabled || notEnoughAp || noTarget}
+                    disabled={sk.disabled || notEnoughAp || notEnoughMp || notEnoughHp || noTarget}
                     title={disabledReason ? `${sk.description}\n⚠️ ${disabledReason}` : sk.description}
                     onClick={() => launchAction('skill', sk.name, { skill: { name: sk.name } }, sk.validTargets)}
                   >
-                    {sk.name} <span className="action-cost">({sk.apCost} AP)</span>{' '}
+                    {sk.name}{' '}
+                    <span className="action-cost">({sk.apCost} AP)</span>
+                    {(sk.mpCost ?? 0) > 0 && (
+                      <span className="action-cost action-cost-mp">({sk.mpCost} MP)</span>
+                    )}
+                    {(sk.hpCost ?? 0) > 0 && (
+                      <span className="action-cost action-cost-hp">({sk.hpCost} PV)</span>
+                    )}{' '}
                     <span className="action-range" title="Portée de ciblage">{skillRangeLabel(sk)}</span>
                   </button>
                 );

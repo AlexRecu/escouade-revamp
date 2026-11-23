@@ -460,6 +460,10 @@ export type CombatSpell = {
 export type CombatSkill = {
   name: string;
   apCost: number;
+  /** Coût en MP (0 = aucun). Affiché en évidence si > 0. */
+  mpCost: number;
+  /** Coût en PV (0 = aucun). Affiché en évidence si > 0. */
+  hpCost: number;
   target: 'ally' | 'self' | 'enemy';
   type: 'single' | 'multi';
   /** Portée de base (0 = illimitée). Portée de ciblage effective = range + move. */
