@@ -435,6 +435,28 @@ export const initializeSocket = (io: Server) => {
     socket.on('exploration:bloodRitual', () =>
       replyExploration(() => ExplorationSessionService.performBloodRitual(explorationKey()), currentRoomId() !== null)
     );
+    // Pêche (Lac de Qual-Chen) : le serveur fait le roll et renvoie le résultat
+    // (poisson / Mateus / rien + atSecond) via un événement dédié. Le front
+    // anime la phase de pêche (emoji 🎣/🚣‍♂️ + ligne qui grossit) puis révèle
+    // le résultat à la bonne seconde. L'état (sac) est aussi diffusé.
+    socket.on('exploration:fish', () => {
+      ExplorationSessionService.fish(explorationKey())
+        .then((result) => {
+          const target = currentRoomId() !== null ? io.to(currentRoomId()!) : socket;
+          if (result.state) target.emit('exploration:state', { state: result.state });
+          target.emit('exploration:fishResult', {
+            outcome: result.outcome,
+            atSecond: result.atSecond,
+            onMateusTile: result.onMateusTile,
+          });
+        })
+        .catch((err) => socket.emit('error', { message: err?.message ?? 'Erreur inconnue' }));
+    });
+    // Combat contre Mateus (appelé par le front à la fin de l'animation de
+    // pêche quand la prise est Mateus).
+    socket.on('exploration:fishMateus', () =>
+      replyExploration(() => ExplorationSessionService.fishMateus(explorationKey()), currentRoomId() !== null)
+    );
     // Équipement / utilisation d'objet **pendant** le donjon : opère sur
     // l'équipe en mémoire de la session (pas sur la partie DB, stale ici).
     socket.on('exploration:equip', (data: { memberId: string; itemId: string; hand: 'right' | 'left' }) =>

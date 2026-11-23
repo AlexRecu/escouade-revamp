@@ -73,6 +73,10 @@ export const explorationUseWood = (): void => { socket?.emit('exploration:useWoo
 export const explorationChest = (): void => { socket?.emit('exploration:chest', {}); };
 /** Rituel de la porte de sang (Phase D) : consomme le « Cœur de sang » et débloque la porte adjacente. */
 export const explorationBloodRitual = (): void => { socket?.emit('exploration:bloodRitual', {}); };
+/** Pêche (Lac de Qual-Chen) : le serveur fait le roll et renvoie le résultat. */
+export const explorationFish = (): void => { socket?.emit('exploration:fish', {}); };
+/** Combat contre Mateus (appelé à la fin de l'animation de pêche). */
+export const explorationFishMateus = (): void => { socket?.emit('exploration:fishMateus', {}); };
 export const explorationExit = (): void => { socket?.emit('exploration:exit', {}); };
 /** Équipe une arme du sac en main droite/gauche pendant le donjon. */
 export const explorationEquip = (memberId: string, itemId: string, hand: 'right' | 'left'): void => {
@@ -168,6 +172,14 @@ export function onExplorationExited(cb: () => void): void {
  *  (stat à choisir par le joueur) pour l'écran de choix. */
 export function onExplorationLevelUps(cb: (levelUps: { characterId: string; name: string; level: number }[]) => void): void {
   socket?.on('exploration:levelUps', ({ levelUps }: { levelUps: { characterId: string; name: string; level: number }[] }) => cb(levelUps));
+}
+
+/** Résultat d'une pêche (Lac de Qual-Chen) : le front anime la phase de pêche
+ *  puis révèle le résultat à la seconde `atSecond`. */
+export function onExplorationFishResult(
+  cb: (r: { outcome: 'fish' | 'mateus' | 'nothing'; atSecond: number; onMateusTile: boolean }) => void
+): void {
+  socket?.on('exploration:fishResult', (r: { outcome: 'fish' | 'mateus' | 'nothing'; atSecond: number; onMateusTile: boolean }) => cb(r));
 }
 
 /** Émis à chaque action de combat (état du plateau + actions disponibles). */

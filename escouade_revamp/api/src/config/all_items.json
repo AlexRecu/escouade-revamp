@@ -944,6 +944,14 @@
         "zoneThreshold": 0
     },
     {
+        "name": "Poisson",
+        "type": "Consommable",
+        "effect": "Restitue 5 points de vie.",
+        "purchasePrice": 0,
+        "resaleBase": 10,
+        "zoneThreshold": 0
+    },
+    {
         "name": "Potion+",
         "type": "Consommable",
         "effect": "Restitue la moitié des points de vie maximum.",

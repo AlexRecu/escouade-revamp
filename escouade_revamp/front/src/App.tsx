@@ -45,7 +45,7 @@ function App() {
   // sur la mappemonde ET en ville (colonne latérale permanente). Le token est
   // passé en paramètre : quand il devient disponible (premier login), le
   // socket est re-connecté avec le JWT (sinon il serait refusé par le back).
-  const { state, logs: gameLogs, connected, actions, rooms, roomsLoading, error: gameError, inRoom, exploration, combat, combatEndPending, combatEndLogs, pendingLevelUps, gameOver, dismissGameOver, setExplorationExitedHandler, setAuthErrorHandler, toasts } = useGame(getToken(), settings.confirmCombatEnd);
+  const { state, logs: gameLogs, connected, actions, rooms, roomsLoading, error: gameError, inRoom, exploration, combat, fishResult, combatEndPending, combatEndLogs, pendingLevelUps, gameOver, dismissGameOver, setExplorationExitedHandler, setAuthErrorHandler, toasts } = useGame(getToken(), settings.confirmCombatEnd);
 
   // Animation de transition à l'entrée en combat (bandes noires, façon
   // Pokémon) : se déclenche quand `combat` passe de null à un état (entrée
@@ -492,11 +492,15 @@ function App() {
               <DungeonView
                 exploration={exploration}
                 logs={gameLogs}
+                fishResult={fishResult}
                 onMove={(dir) => actions.explorationMove(dir)}
                 onRest={() => actions.explorationRest()}
                 onUseWood={() => actions.explorationUseWood()}
                 onOpenChest={() => actions.explorationChest()}
                 onBloodRitual={() => actions.explorationBloodRitual()}
+                onFish={() => actions.explorationFish()}
+                onFishMateus={() => actions.explorationFishMateus()}
+                onClearFishResult={() => actions.clearFishResult()}
               />
             ) : (
               <div className="worldmap">Entrée dans le donjon…</div>

@@ -1236,6 +1236,25 @@ button:disabled {
 .dungeon-blood-ritual-btn:hover:not(:disabled) {
   background: #6e1a24;
 }
+/* Barque 🚣‍♂️ (Lac de Qual-Chen) : rotation fluide selon la direction. */
+.boat-icon {
+  display: inline-block;
+  transition: transform 0.25s ease;
+}
+/* Bouton Pêcher (Lac de Qual-Chen) : accent bleu « eau » pour le distinguer. */
+.dungeon-fish-btn {
+  background: #123a5a;
+  border-color: #1a4d75;
+  color: #cfe8ff;
+}
+.dungeon-fish-btn:hover:not(:disabled) {
+  background: #174a72;
+}
+/* Ligne de pêche dans le journal : accent pour la distinguer des autres logs. */
+.fishing-line {
+  border-left-color: #3a8fd6;
+  color: #cfe8ff;
+}
 /* Journal : sous la légende, dans la colonne de la grille. */
 .dungeon-log {
   max-width: 460px;

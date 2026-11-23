@@ -1,7 +1,7 @@
 // Hook de partie : gère la connexion Socket.IO et l'état de session (temps réel).
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { GameState, ExplorationState, RoomSummary, CombatState, GameOverRecap } from '../types/game';
+import type { GameState, ExplorationState, RoomSummary, CombatState, GameOverRecap, FishResult } from '../types/game';
 import {
   connectSocket,
   disconnectSocket,
@@ -27,6 +27,8 @@ import {
   explorationUseWood,
   explorationChest,
   explorationBloodRitual,
+  explorationFish,
+  explorationFishMateus,
   explorationExit,
   explorationEquip,
   explorationUseItem,
@@ -58,6 +60,7 @@ import {
   onExplorationLog,
   onExplorationExited,
   onExplorationLevelUps,
+  onExplorationFishResult,
   onCombatState,
   onPartyList,
   onPartyUpdated,
@@ -93,6 +96,10 @@ export type GameActions = {
   explorationUseWood: () => void;
   explorationChest: () => void;
   explorationBloodRitual: () => void;
+  explorationFish: () => void;
+  explorationFishMateus: () => void;
+  /** Réinitialise le résultat de pêche (après révélation). */
+  clearFishResult: () => void;
   explorationExit: () => void;
   // Combat interactif.
   combatPlace: (unitId: string, position: { row: number; col: number }) => void;
@@ -155,6 +162,8 @@ export type UseGame = {
   exploration: ExplorationState | null;
   /** État de combat courant (null si pas de combat en cours). */
   combat: CombatState | null;
+  /** Résultat de pêche en cours (Lac de Qual-Chen) — null si pas de pêche. */
+  fishResult: FishResult | null;
   /** true si on est en phase de **validation de fin de combat** (relecture du
    *  journal : dégâts + butin/XP + montée de niveau) avant de passer à la suite. */
   combatEndPending: boolean;
@@ -201,6 +210,9 @@ export function useGame(token: string | null, confirmCombatEnd = false): UseGame
   // `combatEndLogs` = logs de butin/XP capturés pendant la relecture.
   const [combatEndPending, setCombatEndPending] = useState(false);
   const [combatEndLogs, setCombatEndLogs] = useState<string[]>([]);
+  // Résultat de pêche en cours (Lac de Qual-Chen) : le front anime la phase
+  // de pêche puis révèle le résultat à la seconde `atSecond`.
+  const [fishResult, setFishResult] = useState<FishResult | null>(null);
   const [pendingLevelUps, setPendingLevelUps] = useState<{ characterId: string; name: string; level: number }[]>([]);
   const [gameOver, setGameOver] = useState<GameOverRecap | null>(null);
   // Refs miroir (lues par les handlers socket, qui sont dans une closure aux
@@ -334,6 +346,10 @@ export function useGame(token: string | null, confirmCombatEnd = false): UseGame
     onExplorationLevelUps((levelUps) => {
       setPendingLevelUps(levelUps);
     });
+    // Résultat de pêche (Lac de Qual-Chen) : le front anime puis révèle.
+    onExplorationFishResult((r) => {
+      setFishResult(r);
+    });
     // Combat : on met à jour l'état du plateau. Quand le combat est terminé
     // (result !== "ongoing"), on demande au serveur d'appliquer le résultat
     // (butin / défaite) → il renvoie l'état d'exploration et on quitte le combat.
@@ -436,6 +452,9 @@ export function useGame(token: string | null, confirmCombatEnd = false): UseGame
     explorationUseWood,
     explorationChest,
     explorationBloodRitual,
+    explorationFish,
+    explorationFishMateus,
+    clearFishResult: () => setFishResult(null),
     explorationExit,
     combatPlace,
     combatConfirmPlacement,
@@ -481,5 +500,5 @@ export function useGame(token: string | null, confirmCombatEnd = false): UseGame
     partyCreateCharacter,
   };
 
-  return { state, logs, connected, actions, rooms, roomsLoading, error, inRoom, exploration, combat, combatEndPending, combatEndLogs, pendingLevelUps, gameOver, dismissGameOver, setExplorationExitedHandler, setAuthErrorHandler, toasts };
+  return { state, logs, connected, actions, rooms, roomsLoading, error, inRoom, exploration, combat, fishResult, combatEndPending, combatEndLogs, pendingLevelUps, gameOver, dismissGameOver, setExplorationExitedHandler, setAuthErrorHandler, toasts };
 }

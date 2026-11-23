@@ -22,6 +22,8 @@ export class HubSerializer {
    * la création du personnage).
    */
   private static readonly CLASS_ITEMS = new Set(["Monstronomicon", "Pièce marquée"]);
+  /** Objets non achetables (butin de pêche) : présents dans le sac mais pas en boutique. */
+  private static readonly NON_PURCHASABLE = new Set(["Poisson"]);
 
   /**
    * Inventaire du marchand (consommables + armes) **filtré par `zoneThreshold`**
@@ -60,6 +62,7 @@ export class HubSerializer {
     }[] = [];
     for (const data of ItemFactory.DATA) {
       if (this.CLASS_ITEMS.has(data.name)) continue; // objet de classe, pas en vente
+      if (this.NON_PURCHASABLE.has(data.name)) continue; // butin (pêche), pas en vente
       const threshold = data.zoneThreshold ?? 0;
       if (threshold > worldLevel) continue; // trop puissant pour le niveau actuel
       if (data.type === "Consommable") {

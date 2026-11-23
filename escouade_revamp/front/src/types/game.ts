@@ -336,6 +336,15 @@ export type DungeonChest = {
   opened: boolean;
 };
 
+/** Résultat d'une pêche (Lac de Qual-Chen). */
+export type FishResult = {
+  outcome: 'fish' | 'mateus' | 'nothing';
+  /** Seconde (1..10) à laquelle le résultat se révèle. */
+  atSecond: number;
+  /** Les joueurs étaient sur l'une des 5 cases de la croix (Mateus). */
+  onMateusTile: boolean;
+};
+
 /** État d'exploration renvoyé par le serveur après chaque action de donjon. */
 export type ExplorationState = {
   dungeonId: string;
@@ -354,6 +363,8 @@ export type ExplorationState = {
   endTile: { row: number; col: number };
   /** Type de la tuile d'arrivée : "door" (porte de sortie) ou "stairs" (escalier). */
   exitType: 'door' | 'stairs';
+  /** Tuiles de pêche (lac) : les 5 cases de la croix où l'on peut pêcher Mateus. */
+  fishingTiles: { row: number; col: number }[];
   campfires: DungeonCampfire[];
   /** Coffres de l'étage (position + type commun/rare + état d'ouverture). */
   chests: DungeonChest[];

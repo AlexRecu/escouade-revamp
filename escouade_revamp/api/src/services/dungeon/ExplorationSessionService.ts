@@ -20,6 +20,7 @@ import { Weapon } from "../../classes/Items/Weapon";
 import { Consumable } from "../../classes/Items/Consumable";
 import { BlueMage } from "../../classes/Jobs/BlueMage";
 import { QuestService } from "../Progression/QuestService";
+import { ItemFactory } from "../factory/ItemFactory";
 
 /** Direction de déplacement (4 directions, pas de diagonale). */
 export type Direction = "north" | "south" | "east" | "west";
@@ -760,6 +761,86 @@ export class ExplorationSessionService {
   }
 
   /**
+   * **Pêche** (Lac de Qual-Chen) : l'équipe jette la ligne. Le serveur fait le
+   * roll (10 s max, ~25 %/s de chance de prise) et renvoie le résultat.
+   *
+   * - **Prise** : un Poisson est ajouté au sac commun.
+   * - **Mateus** : si l'équipe est sur l'une des 5 tuiles de la croix
+   *   (`zone.fishingTiles`) et que Mateus n'est pas encore vaincu, la prise est
+   *   **Mateus, le Corrompu** — le front joue l'animation puis appelle
+   *   `fishMateus` pour démarrer le combat.
+   * - **Rien** : « ça ne mord pas » (ou « quelque chose bloque la ligne » sur
+   *   une tuile de Mateus).
+   *
+   * Le résultat porte `atSecond` (la seconde où la prise se fait, 10 si rien)
+   * pour que le front anime la phase de pêche (emoji 🎣/🚣‍♂️ + ligne qui
+   * grossit) avant de révéler le résultat. Le log de pêche est géré par le
+   * front (animation) ; le back ne renvoie que le résultat + l'état (sac).
+   */
+  static async fish(sessionKey: string): Promise<any> {
+    const session = this.require(sessionKey);
+    const zone = session.dungeon.levels[session.currentFloor];
+    if (zone.biome !== "Lake") {
+      return { logs: ["On ne peut pêcher que sur le lac."], state: this.serialize(session) };
+    }
+    const pos = session.party.position;
+    const onMateusTile = zone.fishingTiles.some(
+      (t) => t.row === pos.row && t.col === pos.col
+    );
+    const MATEUS = "Mateus, le Corrompu";
+    const mateusAvailable = onMateusTile && !session.defeatedDemonsThisZone.includes(MATEUS);
+
+    // Roll : 10 s max, ~25 %/s de chance de prise.
+    let atSecond = 10;
+    let caught = false;
+    for (let s = 1; s <= 10; s++) {
+      if (Math.random() < 0.25) {
+        atSecond = s;
+        caught = true;
+        break;
+      }
+    }
+
+    if (caught) {
+      if (mateusAvailable) {
+        // Mateus : le front anime puis appelle fishMateus pour le combat.
+        return { outcome: "mateus", atSecond, onMateusTile: true, state: this.serialize(session) };
+      }
+      // Poisson : ajouté au sac commun.
+      const fish = ItemFactory.create("Poisson");
+      if (fish) session.party.bag.push(fish);
+      await this.persist(session);
+      return { outcome: "fish", atSecond, onMateusTile, state: this.serialize(session) };
+    }
+
+    // Aucune prise.
+    return { outcome: "nothing", atSecond: 10, onMateusTile, state: this.serialize(session) };
+  }
+
+  /**
+   * **Combat contre Mateus** (Lac de Qual-Chen) : appelé par le front à la fin
+   * de l'animation de pêche quand la prise est Mateus. Démarre le combat de
+   * démon (comme les autres démons de zone). Une seule fois (defeatedDemons).
+   */
+  static async fishMateus(sessionKey: string): Promise<any> {
+    const session = this.require(sessionKey);
+    const zone = session.dungeon.levels[session.currentFloor];
+    if (zone.biome !== "Lake") {
+      return { logs: ["On ne peut pêcher que sur le lac."], state: this.serialize(session) };
+    }
+    const MATEUS = "Mateus, le Corrompu";
+    if (session.defeatedDemonsThisZone.includes(MATEUS)) {
+      return { logs: ["Mateus a déjà été vaincu."], state: this.serialize(session) };
+    }
+    const combatState = CombatSessionService.startDemonCombat(sessionKey, session, MATEUS);
+    return {
+      logs: ["⚔️ Mateus, le Corrompu, surgit de l'eau !"],
+      state: this.serialize(session),
+      combat: combatState,
+    };
+  }
+
+  /**
    * Équipe une arme du sac en main droite/gauche **pendant** le donjon.
    *
    * Opère directement sur `session.party` (l'équipe en mémoire du donjon) —
@@ -1196,6 +1277,10 @@ export class ExplorationSessionService {
       // Type de la tuile d'arrivée : "door" (porte de sortie) ou "stairs"
       // (escalier vers l'étage suivant). Le front affiche 🚪 ou 🪜.
       exitType: isLastFloor ? "door" : "stairs",
+      // Tuiles de pêche (lac) : les 5 cases de la croix où l'on peut pêcher
+      // Mateus. Vide pour les autres biomes. Le front affiche la barque 🚣‍♂️
+      // et le bouton « Pêcher » sur le lac.
+      fishingTiles: zone.fishingTiles.map((p) => ({ row: p.row, col: p.col })),
       campfires: zone.checkpoints.map((c) => ({
         row: c.position?.row,
         col: c.position?.col,
