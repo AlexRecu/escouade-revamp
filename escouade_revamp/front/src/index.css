@@ -4199,7 +4199,10 @@ button:disabled { opacity: .48; }
 .order-chip { border-radius: 999px; padding: 5px 9px; }
 .order-chip.order-current { background: rgba(232, 193, 90, .14); }
 .combat-board {
-  width: min(100%, 560px, calc(100dvh - 210px));
+  /* Pas de terme `100%` : le plateau est un item flex dont la largeur dépend
+     de son contenu → `100%` du conteneur crée une dépendance circulaire qui
+     fait s'effondrer le plateau. Valeurs fixes (vh/vw) comme la règle base. */
+  width: min(560px, calc(100dvh - 210px));
   border-radius: var(--ui-radius);
   background: #171724;
   border-color: #35334a;
@@ -4259,7 +4262,7 @@ button:disabled { opacity: .48; }
   .party-sidebar { width: 238px; padding: 11px 9px; }
   .combat-view { padding: 12px; }
   .combat-side { min-width: 260px; max-width: 320px; }
-  .combat-board { width: min(100%, 49vw, 520px); }
+  .combat-board { width: min(49vw, 520px); }
   .city-side { width: 330px; }
   .worldtree-panel { width: 290px; }
 }
