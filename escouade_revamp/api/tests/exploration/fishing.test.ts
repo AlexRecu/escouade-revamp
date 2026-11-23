@@ -5,6 +5,7 @@ import { Warrior } from "../../src/classes/Jobs/Warrior";
 import { QuestSystem } from "../../src/classes/Progression/QuestSystem";
 import { ExplorationSessionService } from "../../src/services/dungeon/ExplorationSessionService";
 import { HubSerializer } from "../../src/services/Hub/HubSerializer";
+import { ChestService } from "../../src/services/dungeon/ChestService";
 
 /**
  * Tests de la pêche au Lac de Qual-Chen.
@@ -137,5 +138,23 @@ describe("Pêche au Lac de Qual-Chen", () => {
   test("Le Poisson est exclu de l'inventaire boutique", () => {
     const inventory = HubSerializer.shopInventory(1);
     expect(inventory.some((i: any) => i.name === "Poisson")).toBe(false);
+  });
+
+  test("Le Poisson ne tombe jamais dans les coffres", () => {
+    // Le Poisson (zoneThreshold 0, Consommable) serait normalement éligible
+    // aux coffres communs/rare — il doit être exclu (butin de pêche uniquement).
+    // On balaye `rand` sur un maillage fin pour couvrir TOUT le pool
+    // (pickFromPool choisit pool[floor(rand * len)]).
+    for (const chestType of ["common", "rare"] as const) {
+      for (let zoneLevel = 1; zoneLevel <= 6; zoneLevel++) {
+        for (let k = 0; k < 200; k++) {
+          const v = k / 200;
+          const items = ChestService.rollChestContents(chestType, zoneLevel, () => v);
+          for (const item of items) {
+            expect(item.name).not.toBe("Poisson");
+          }
+        }
+      }
+    }
   });
 });

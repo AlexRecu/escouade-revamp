@@ -21,9 +21,9 @@ import { ItemFactory } from "../factory/ItemFactory";
  */
 export class ChestService {
   /**
-   * Objets de **classe** (liés à un job, pas des butins génériques) : ils ne
-   * doivent **jamais** tomber dans les coffres. Ils sont obtenus par d'autres
-   * moyens (recrutement, quêtes, équipement de départ).
+   * Objets **exclus des coffres** : objets de classe (liés à un job, obtenus
+   * par recrutement/quêtes/équipement de départ) + butins spécifiques (le
+   * Poisson ne se trouve qu'à la pêche, pas dans les coffres).
    */
   private static readonly CLASS_ITEM_NAMES = new Set([
     "Bois",
@@ -31,6 +31,7 @@ export class ChestService {
     "Corde Sortie",
     "Monstronomicon",
     "Pièce marquée",
+    "Poisson",
   ]);
 
   /**
