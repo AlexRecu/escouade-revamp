@@ -862,6 +862,19 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
 
         {/* Panneau latéral : actions + journal */}
         <div className="combat-side">
+          {/* Bouton « Actions » **visible** sur mobile (`.combat-mobile-cta`,
+              display:none sur desktop) : ouvre le bottom-sheet d'actions en
+              plus du tap sur le héros. C'est le point d'entrée principal des
+              commandes sur petit écran. */}
+          {currentUnit && actions && !placement && !isOver && (
+            <button
+              className="combat-mobile-cta"
+              onClick={() => setMobileMenuOpen(true)}
+              aria-haspopup="dialog"
+            >
+              ⚔️ Actions — {currentUnit.name}
+            </button>
+          )}
           {/* action-mode = le menu d'actions est affiché (masqué sur mobile,
               remplacé par le bottom-sheet). Le placement / la fin de combat
               restent visibles (pas de action-mode). */}

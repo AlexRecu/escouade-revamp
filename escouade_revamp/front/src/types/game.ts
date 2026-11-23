@@ -228,6 +228,8 @@ export type RoomSummary = {
   maxPlayers: number;
   playerCount: number;
   memberCount: number;
+  /** Difficulté de la partie (easy/hard). */
+  difficulty?: 'easy' | 'hard';
   members: { username: string; isSpectator: boolean }[];
 };
 

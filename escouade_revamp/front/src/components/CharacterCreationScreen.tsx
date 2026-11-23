@@ -124,6 +124,7 @@ export default function CharacterCreationScreen({ defaultName, onCreate, error }
             <button
               key={j.name}
               className={`creation-job ${selectedJob === j.name ? 'selected' : ''}`}
+              aria-pressed={selectedJob === j.name}
               onClick={() => {
                 setSelectedJob(j.name);
                 setBonus({}); // réinitialise la répartition (stats de base changent)

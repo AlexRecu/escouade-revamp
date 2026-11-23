@@ -46,6 +46,8 @@ export type RoomSummary = {
   maxPlayers: number;
   playerCount: number;
   memberCount: number;
+  /** Difficulté de la partie (easy/hard) — affichée dans le lobby. */
+  difficulty: 'easy' | 'hard';
   members: { username: string; isSpectator: boolean }[];
 };
 
@@ -776,6 +778,7 @@ export class PartyRoomService {
       maxPlayers: room.maxPlayers,
       playerCount: room.members.filter((m) => !m.isSpectator).length,
       memberCount: room.members.length,
+      difficulty: room.difficulty ?? "easy",
       members: room.members.map((m) => ({ username: m.username, isSpectator: m.isSpectator })),
     };
   }

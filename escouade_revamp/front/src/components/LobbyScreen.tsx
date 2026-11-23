@@ -122,6 +122,9 @@ export default function LobbyScreen({ rooms, roomsLoading, connected, myPlayerId
                   {r.members.some((m) => m.isSpectator) &&
                     ` · ${r.members.filter((m) => m.isSpectator).length} spect.`}
                 </span>
+                <span className="ui-pill" data-kind={r.difficulty === 'hard' ? 'danger' : 'success'}>
+                  {r.difficulty === 'hard' ? '☠️ Difficile' : '🌿 Facile'}
+                </span>
               </div>
               <div className="lobby-room-actions">
                 <button

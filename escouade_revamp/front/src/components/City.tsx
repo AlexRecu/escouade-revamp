@@ -106,6 +106,17 @@ export default function City({ hub, onBack, world, state, gameLogs, actions }: P
     setLog((l) => [...l.slice(-40), msg]);
   }, []);
 
+  // Fermeture du panneau de bâtiment par Échap (accessibilité clavier) —
+  // utile surtout sur mobile où le panneau est une bottom-sheet.
+  useEffect(() => {
+    if (!activeBuilding) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setActiveBuilding(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [activeBuilding]);
+
   // Fusionne les logs du jeu (socket) dans le journal local.
   useEffect(() => {
     if (gameLogs.length > 0) {
