@@ -732,9 +732,14 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
                     ? eonDemonTokenStyle(unit.spriteKey)
                     : null;
                   // L'unité courante (tour du joueur) est **cliquable** : elle
-                  // ouvre le menu d'actions (bottom-sheet sur mobile).
+                  // ouvre le menu d'actions (bottom-sheet sur mobile). Mais
+                  // **uniquement en mode neutre** : en ciblage (target) ou en
+                  // déplacement (move), le clic doit passer à la tuile en
+                  // dessous (ex. cibler un objet sur soi-même) et non rouvrir
+                  // le menu — sinon l'overlay intercepte le clic (stopPropagation)
+                  // et rien ne se passe sur desktop.
                   const isPlayerTurn =
-                    !placement && !isOver && unit.id === currentUnitId;
+                    !placement && !isOver && unit.id === currentUnitId && mode === 'idle';
                   return (
                     <div
                       key={unit.id}
