@@ -26,6 +26,18 @@ export class HubSerializer {
   private static readonly NON_PURCHASABLE = new Set(["Poisson"]);
 
   /**
+   * Une compétence est **offensive** si sa formule inflige des dégâts : elle
+   * appelle `this.attack(...)`, retire directement des PV (`currentHp -=`) ou
+   * lance un sort offensif (`useSpellFromName`). Les utilitaires (Scan,
+   * Apprendre, Vol, buffs…) ne le sont pas. Utilisé par la démo animée du
+   * front pour ne pas montrer de dégâts sur une compétence non offensive.
+   */
+  static isOffensiveSkill(formula: string): boolean {
+    if (!formula) return false;
+    return /this\.attack\s*\(|currentHp\s*-=|useSpellFromName\s*\(/.test(formula);
+  }
+
+  /**
    * Inventaire du marchand (consommables + armes) **filtré par `zoneThreshold`**
    * : un objet n'est en vente que si `zoneThreshold <= worldLevel`.
    */
@@ -245,10 +257,14 @@ export class HubSerializer {
             name: s.name,
             apCost: s.apCost,
             mpCost: s.mpCost,
+            hpCost: s.hpCost,
             target: s.target,
             type: s.type,
             range: s.range,
             move: s.move,
+            status: s.status,
+            // Offensive (dégâts) ? — pour la démo animée (pas de dégâts sur les utilitaires).
+            offensive: HubSerializer.isOffensiveSkill(m.job.skills.find((r) => r.skill.name === s.name)?.skill.formula ?? ""),
             description: s.description,
           })),
           // Sorts débloqués (selon le niveau de classe).
@@ -258,6 +274,9 @@ export class HubSerializer {
             hpCost: s.hpCost,
             target: s.target,
             element: s.element,
+            power: s.power,
+            hp: s.hp,
+            status: s.status,
             description: s.description,
           })),
           rightHand: m.rightHandWeapon ? this.serializeWeapon(m.rightHandWeapon) : null,

@@ -37,7 +37,29 @@ type DemoStep = {
   ms?: number;
 };
 
-type Skill = { name: string; target: string; description: string };
+/**
+ * Capacité à démontrer : une **compétence** ou un **sort**, normalisés dans
+ * une même forme. Les champs optionnels distinguent les deux (compétence :
+ * `range`/`move`/`offensive` ; sort : `power`/`hp`/`element`).
+ */
+export type DemoAbility = {
+  name: string;
+  target: string;
+  description: string;
+  /** Portée (0 = illimitée). Les sorts n'ont pas de portée → 0. */
+  range: number;
+  move?: number;
+  hpCost?: number;
+  /** Compétence : inflige des dégâts. */
+  offensive?: boolean;
+  /** Sort : puissance (dégâts). */
+  power?: number | null;
+  /** Sort : soin (PV rendus). */
+  hp?: number | null;
+  /** Statut(s) appliqué(s). */
+  status?: { name: string; statusType?: string; nbTurnEffect?: number | null }[] | { name: string; statusType?: string; nbTurnEffect?: number | null } | null;
+  element?: string;
+};
 
 /** Positions de base sur la grille 4×4 : héros à gauche, ennemis à droite. */
 const BASE = {
@@ -48,20 +70,55 @@ const BASE = {
 
 const ENEMY_NAMES = ['Gobelin', 'Frelon'];
 
-/** Construit l'état initial des 3 unités. */
-function baseUnits(): Record<UnitKey, UnitState> {
+/** Construit l'état initial des 3 unités (PV du héros paramétrable pour les soins). */
+function baseUnits(heroHp = 18): Record<UnitKey, UnitState> {
   return {
-    hero: { ...BASE.hero, hp: 18, maxHp: 18 },
+    hero: { ...BASE.hero, hp: heroHp, maxHp: 18 },
     e1: { ...BASE.e1, hp: 12, maxHp: 12 },
     e2: { ...BASE.e2, hp: 12, maxHp: 12 },
   };
 }
 
+/** Distance de Chebyshev entre deux cases. */
+function chebyshev(a: { col: number; row: number }, b: { col: number; row: number }): number {
+  return Math.max(Math.abs(a.col - b.col), Math.abs(a.row - b.row));
+}
+
+function clamp(v: number, lo: number, hi: number): number {
+  return Math.max(lo, Math.min(hi, v));
+}
+
 /**
- * Renvoie le script de démo (liste d'étapes) pour une compétence.
- * Scripts spécifiques d'abord, sinon fallback générique.
+ * Position du héros au moment de l'action, selon la **portée** de la capacité :
+ * - portée 0 (illimitée) ou héros déjà à portée → reste à sa position de base ;
+ * - sinon, il se rapproche de la cible jusqu'à la distance `range`.
  */
-function getSkillDemoScript(skill: Skill, heroName: string): DemoStep[] {
+function heroActionPos(targetPos: { col: number; row: number }, range: number): { col: number; row: number } {
+  if (range === 0) return BASE.hero;
+  if (chebyshev(BASE.hero, targetPos) <= range) return BASE.hero;
+  const colStep = Math.sign(targetPos.col - BASE.hero.col) || 1;
+  const rowStep = Math.sign(targetPos.row - BASE.hero.row) || 0;
+  return {
+    col: clamp(targetPos.col - colStep * range, 0, 3),
+    row: clamp(targetPos.row - rowStep * range, 0, 3),
+  };
+}
+
+/** Type d'effet principal d'une capacité (pour le fallback data-driven). */
+function classifyEffect(a: DemoAbility): 'damage' | 'heal' | 'status' | 'neutral' {
+  if (a.offensive || a.power != null) return 'damage';
+  if (a.hp != null) return 'heal';
+  const st = a.status;
+  if (st && (Array.isArray(st) ? st.length > 0 : true)) return 'status';
+  return 'neutral';
+}
+
+/**
+ * Renvoie le script de démo (liste d'étapes) pour une capacité (compétence ou
+ * sort). Scripts spécifiques d'abord, sinon fallback générique **data-driven**
+ * (portée, déplacement, type d'effet, coût PV).
+ */
+function getSkillDemoScript(skill: DemoAbility, heroName: string): DemoStep[] {
   const u = baseUnits();
   const e1 = ENEMY_NAMES[0];
   const e2 = ENEMY_NAMES[1];
@@ -113,14 +170,16 @@ function getSkillDemoScript(skill: Skill, heroName: string): DemoStep[] {
     ];
   }
 
-  // ── Frappe empoisonnée (Voleur) : dégâts + poison ────────────────────────
+  // ── Frappe empoisonnée (Voleur) : dégâts + poison (portée 1) ─────────────
   if (skill.name === 'Frappe empoisonnée') {
+    const hp = heroActionPos(u.e1, 1); // range 1 → héros se rapproche de la cible
     return [
       { log: `Le tour de ${heroName} commence.`, units: { ...u, hero: { ...u.hero, active: true } }, ms: 1500 },
-      { log: `${heroName} utilise Frappe empoisonnée sur ${e1}.`, units: { ...u, hero: { ...u.hero, active: true, effect: '🗡️' }, e1: { ...u.e1, active: true } }, ms: 1600 },
-      { log: `${e1} perd des PV et est empoisonné.`, units: { ...u, hero: { ...u.hero, active: true }, e1: { ...u.e1, active: true, effect: '☠️', hp: 6 } }, ms: 1800 },
-      { log: `Le poison ronge ${e1}.`, units: { ...u, hero: { ...u.hero }, e1: { ...u.e1, effect: '☠️', hp: 4 } }, ms: 1700 },
-      { log: `Fin du tour de ${heroName}.`, units: { ...u, e1: { ...u.e1, hp: 4 } }, ms: 1500 },
+      { log: `${heroName} se rapproche de ${e1}.`, units: { ...u, hero: { ...hp, hp: 18, maxHp: 18, active: true, effect: '👣' } }, ms: 1600 },
+      { log: `${heroName} utilise Frappe empoisonnée sur ${e1}.`, units: { ...u, hero: { ...hp, hp: 18, maxHp: 18, active: true, effect: '🗡️' }, e1: { ...u.e1, active: true } }, ms: 1600 },
+      { log: `${e1} perd des PV et est empoisonné.`, units: { ...u, hero: { ...hp, hp: 18, maxHp: 18, active: true }, e1: { ...u.e1, active: true, effect: '☠️', hp: 6 } }, ms: 1800 },
+      { log: `Le poison ronge ${e1}.`, units: { ...u, hero: { ...hp, hp: 18, maxHp: 18 }, e1: { ...u.e1, effect: '☠️', hp: 4 } }, ms: 1700 },
+      { log: `Fin du tour de ${heroName}.`, units: { ...u, hero: { ...hp, hp: 18, maxHp: 18 }, e1: { ...u.e1, hp: 4 } }, ms: 1500 },
     ];
   }
 
@@ -136,7 +195,7 @@ function getSkillDemoScript(skill: Skill, heroName: string): DemoStep[] {
     ];
   }
 
-  // ── Scan / Apprendre (Mage bleu) ─────────────────────────────────────────
+  // ── Scan (Mage bleu) : étude d'un ennemi, sans dégâts ────────────────────
   if (skill.name === 'Scan') {
     return [
       { log: `Le tour de ${heroName} commence.`, units: { ...u, hero: { ...u.hero, active: true } }, ms: 1500 },
@@ -146,26 +205,128 @@ function getSkillDemoScript(skill: Skill, heroName: string): DemoStep[] {
     ];
   }
 
-  // ── Fallback générique : basé sur la cible + la description ──────────────
-  const targetEnemy = skill.target === 'enemy' ? e1 : null;
+  // ── Apprendre (Mage bleu) : étudie les mouvements, sans dégâts ───────────
+  if (skill.name === 'Apprendre') {
+    return [
+      { log: `Le tour de ${heroName} commence.`, units: { ...u, hero: { ...u.hero, active: true } }, ms: 1500 },
+      { log: `${heroName} utilise Apprendre sur ${e1}.`, units: { ...u, hero: { ...u.hero, active: true, effect: '👀' }, e1: { ...u.e1, active: true } }, ms: 1700 },
+      { log: `${heroName} étudie les mouvements de ${e1}…`, units: { ...u, hero: { ...u.hero, active: true, effect: '📖' }, e1: { ...u.e1, active: true, effect: '📖' } }, ms: 1900 },
+      { log: `${heroName} apprend une capacité de ${e1} !`, units: { ...u, hero: { ...u.hero, active: true, effect: '✨' }, e1: { ...u.e1, effect: '✨' } }, ms: 1900 },
+      { log: `Fin du tour de ${heroName}.`, units: u, ms: 1500 },
+    ];
+  }
+
+  // ── Fallback générique : data-driven (portée, déplacement, effet, coût) ──
+  const effect = classifyEffect(skill);
+  const isEnemy = skill.target === 'enemy';
+  const isAlly = skill.target === 'ally';
+  // Cible : un ennemi (e1) ou, pour un soin, le héros lui-même.
+  const targetPos = isEnemy ? u.e1 : u.hero;
+  const targetName = isEnemy ? e1 : heroName;
+  // Position du héros au moment de l'action (respecte la portée).
+  const heroPos = heroActionPos(targetPos, skill.range);
+  const heroMoved = heroPos.col !== u.hero.col || heroPos.row !== u.hero.row;
+  const hpCost = skill.hpCost ?? 0;
+  const heroHpAfterCost = Math.max(1, 18 - hpCost);
+
   const steps: DemoStep[] = [
     { log: `Le tour de ${heroName} commence.`, units: { ...u, hero: { ...u.hero, active: true } }, ms: 1500 },
-    { log: `${heroName} utilise ${skill.name}.`, units: { ...u, hero: { ...u.hero, active: true, effect: '✨' } }, ms: 1500 },
   ];
-  if (skill.description) {
+
+  // Déplacement vers la cible (si la portée l'exige).
+  if (heroMoved) {
+    steps.push({
+      log: `${heroName} se rapproche de ${targetName}.`,
+      units: { ...u, hero: { ...heroPos, hp: 18, maxHp: 18, active: true, effect: '👣' } },
+      ms: 1600,
+    });
+  }
+
+  // Coût en PV (ex. sorts qui sacrifient des PV).
+  if (hpCost > 0) {
+    steps.push({
+      log: `${heroName} paie ${hpCost} PV pour lancer ${skill.name}.`,
+      units: { ...u, hero: { ...heroPos, hp: heroHpAfterCost, maxHp: 18, active: true, effect: '🩸' } },
+      ms: 1700,
+    });
+  }
+
+  // Lancement.
+  steps.push({
+    log: isEnemy || isAlly ? `${heroName} utilise ${skill.name} sur ${targetName}.` : `${heroName} utilise ${skill.name}.`,
+    units: {
+      ...u,
+      hero: { ...heroPos, hp: heroHpAfterCost, maxHp: 18, active: true, effect: '✨' },
+      e1: isEnemy ? { ...u.e1, active: true } : u.e1,
+    },
+    ms: 1600,
+  });
+
+  // Effet principal.
+  const statusName = Array.isArray(skill.status) ? skill.status[0]?.name : (skill.status as { name?: string } | null)?.name;
+  if (effect === 'damage') {
+    steps.push({
+      log: skill.description ? `${skill.description} (${targetName} perd des PV).` : `${targetName} perd des PV.`,
+      units: {
+        ...u,
+        hero: { ...heroPos, hp: heroHpAfterCost, maxHp: 18, active: true },
+        e1: isEnemy ? { ...u.e1, active: true, effect: '💥', hp: 6 } : u.e1,
+      },
+      ms: 2000,
+    });
+    // Statut en plus (ex. poison).
+    if (statusName) {
+      steps.push({
+        log: `${targetName} est affecté : ${statusName}.`,
+        units: {
+          ...u,
+          hero: { ...heroPos, hp: heroHpAfterCost, maxHp: 18 },
+          e1: isEnemy ? { ...u.e1, effect: '☠️', hp: 4 } : u.e1,
+        },
+        ms: 1800,
+      });
+    }
+  } else if (effect === 'heal') {
+    steps.push({
+      log: `${targetName} regagne des PV.`,
+      units: {
+        ...u,
+        hero: { ...heroPos, hp: 18, maxHp: 18, active: true, effect: '💚' },
+        e1: u.e1,
+      },
+      ms: 1900,
+    });
+  } else if (effect === 'status') {
+    steps.push({
+      log: `${targetName} est affecté : ${statusName ?? 'statut'}.`,
+      units: {
+        ...u,
+        hero: { ...heroPos, hp: heroHpAfterCost, maxHp: 18, active: true },
+        e1: isEnemy ? { ...u.e1, active: true, effect: '💫' } : u.e1,
+      },
+      ms: 1900,
+    });
+  } else if (skill.description) {
     steps.push({
       log: skill.description,
       units: {
-        hero: { ...u.hero, active: true, effect: '✨' },
-        e1: targetEnemy ? { ...u.e1, active: true, effect: '💥', hp: 6 } : u.e1,
-        e2: u.e2,
+        ...u,
+        hero: { ...heroPos, hp: heroHpAfterCost, maxHp: 18, active: true, effect: '✨' },
+        e1: isEnemy ? { ...u.e1, active: true } : u.e1,
       },
-      ms: 2100,
+      ms: 2000,
     });
   }
+
+  // Fin du tour (l'ennemi garde ses PV réduits si touché).
+  const finalEnemyHp = effect === 'damage' && isEnemy ? (statusName ? 4 : 6) : 12;
   steps.push({
     log: `Fin du tour de ${heroName}.`,
-    units: { ...u, e1: targetEnemy ? { ...u.e1, hp: 6 } : u.e1 },
+    units: {
+      ...u,
+      hero: { ...heroPos, hp: heroHpAfterCost, maxHp: 18 },
+      e1: isEnemy ? { ...u.e1, hp: finalEnemyHp } : u.e1,
+    },
     ms: 1500,
   });
   return steps;
@@ -173,14 +334,16 @@ function getSkillDemoScript(skill: Skill, heroName: string): DemoStep[] {
 
 type Props = {
   member: PartyMember;
-  skill: Skill;
+  skill: DemoAbility;
+  /** Nature de la capacité : « compétence » ou « sort » (libellé du journal). */
+  kind?: 'skill' | 'spell';
 };
 
 /**
- * Démo animée d'une compétence : scène (personnage + 2 ennemis) + journal
- * synchronisé, rejouée en boucle.
+ * Démo animée d'une capacité (compétence ou sort) : scène (personnage + 2
+ * ennemis) + journal synchronisé, rejouée en boucle.
  */
-export default function SkillDemo({ member, skill }: Props) {
+export default function SkillDemo({ member, skill, kind = 'skill' }: Props) {
   const steps = useMemo(() => getSkillDemoScript(skill, member.name), [skill, member.name]);
   const [stepIndex, setStepIndex] = useState(0);
   const journalRef = useRef<HTMLDivElement>(null);
@@ -230,9 +393,11 @@ export default function SkillDemo({ member, skill }: Props) {
     );
   };
 
+  const kindLabel = kind === 'spell' ? 'sort' : 'compétence';
+  const kindArticle = kind === 'spell' ? 'du' : 'de la';
   return (
     <div className="skill-demo">
-      <div className="skill-demo-scene" aria-label={`Démo de ${skill.name}`}>
+      <div className="skill-demo-scene" aria-label={`Démo ${kindArticle} ${kindLabel} ${skill.name}`}>
         {(['hero', 'e1', 'e2'] as UnitKey[]).map(renderUnit)}
       </div>
       <div className="skill-demo-journal" ref={journalRef}>

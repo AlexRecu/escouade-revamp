@@ -60,6 +60,8 @@ export default function CharacterDetailModal({ member, sharedBag, onClose, actio
   const [mainTab, setMainTab] = useState<'stats' | 'skills' | 'spells' | 'equip' | 'bag'>('stats');
   // Compétence dépliée pour la démo animée (nom, null = aucune).
   const [demoSkill, setDemoSkill] = useState<string | null>(null);
+  // Sort déplié pour la démo animée (nom, null = aucun).
+  const [demoSpell, setDemoSpell] = useState<string | null>(null);
   // Onglet actif du sac : consommables, armes ou spéciaux.
   const [bagTab, setBagTab] = useState<'consumable' | 'weapon' | 'special'>('consumable');
   // Sort de soin en cours de ciblage (nom du sort, null = aucun). Quand non
@@ -295,16 +297,25 @@ export default function CharacterDetailModal({ member, sharedBag, onClose, actio
                   // Un personnage KO (0 PV) ne peut plus lancer de sort de soin.
                   const canCast = !inCombat && !member.isDead && isOutOfCombatHeal(s);
                   const isRevive = s.name.startsWith('Vie');
+                  const open = demoSpell === s.name;
                   return (
-                    <li key={s.name} title={s.description} className="char-detail-spell-row">
-                      <span className="char-detail-item-name">{s.name}</span>
+                    <li
+                      key={s.name}
+                      title={s.description}
+                      className={`char-detail-spell-row char-detail-skill-row${open ? ' open' : ''}`}
+                      onClick={() => setDemoSpell(open ? null : s.name)}
+                    >
+                      <span className="char-detail-item-name">
+                        {s.name}
+                        <span className="char-detail-skill-hint" aria-hidden>{open ? ' ▲' : ' ▶'}</span>
+                      </span>
                       <span className="char-detail-item-meta">
                         {s.mpCost != null ? `${s.mpCost} PM` : '—'} · {targetLabel(s.target)}
                       </span>
                       {canCast && (
                         <button
                           className="char-detail-bag-btn"
-                          onClick={() => setHealSpell(healSpell === s.name ? null : s.name)}
+                          onClick={(e) => { e.stopPropagation(); setHealSpell(healSpell === s.name ? null : s.name); }}
                           title={isRevive ? 'Ranime un allié mort' : 'Soigne un allié (hors combat)'}
                         >
                           {healSpell === s.name ? 'Annuler' : 'Lancer'}
@@ -313,11 +324,28 @@ export default function CharacterDetailModal({ member, sharedBag, onClose, actio
                       {isBlueMage && (
                         <button
                           className="char-detail-bag-btn char-detail-forget-btn"
-                          onClick={() => actions.forgetAbility(member.id, s.name)}
+                          onClick={(e) => { e.stopPropagation(); actions.forgetAbility(member.id, s.name); }}
                           title="Oublier ce sort appris (libère un emplacement)"
                         >
                           Oublier
                         </button>
+                      )}
+                      {open && (
+                        <SkillDemo
+                          member={member}
+                          kind="spell"
+                          skill={{
+                            name: s.name,
+                            target: s.target,
+                            description: s.description,
+                            range: 0,
+                            power: s.power ?? null,
+                            hp: s.hp ?? null,
+                            hpCost: s.hpCost ?? 0,
+                            status: s.status ?? null,
+                            element: s.element,
+                          }}
+                        />
                       )}
                     </li>
                   );

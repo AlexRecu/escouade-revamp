@@ -95,9 +95,9 @@ export type PartyMember = {
   /** Statistiques détaillées (7 stats) — pour le panneau de détail. */
   stats?: Statistics;
   /** Compétences de classe débloquées — pour le panneau de détail. */
-  skills?: { name: string; apCost: number; mpCost: number; target: string; type: string; range: number; move?: number; description: string }[];
+  skills?: { name: string; apCost: number; mpCost: number; hpCost?: number; target: string; type: string; range: number; move?: number; status?: { name: string; statusType?: string; nbTurnEffect?: number | null }[]; offensive?: boolean; description: string }[];
   /** Sorts débloqués — pour le panneau de détail. */
-  spells?: { name: string; mpCost: number | null; hpCost: number | null; target: string; element: string; description: string }[];
+  spells?: { name: string; mpCost: number | null; hpCost: number | null; target: string; element: string; power?: number | null; hp?: number | null; status?: { name: string; statusType?: string; nbTurnEffect?: number | null } | null; description: string }[];
   rightHand: EquippedWeapon | null;
   leftHand: EquippedWeapon | null;
   bag: BagItem[];
@@ -316,8 +316,8 @@ export type DungeonMember = {
   /** Slots d'apprentissage (Mage bleu) : `{ learned, slots }`. `null` sinon. */
   learnSlots?: { learned: number; slots: number } | null;
   stats?: Statistics;
-  skills?: { name: string; apCost: number; mpCost: number; target: string; type: string; range: number; move?: number; description: string }[];
-  spells?: { name: string; mpCost: number | null; hpCost: number | null; target: string; element: string; description: string }[];
+  skills?: { name: string; apCost: number; mpCost: number; hpCost?: number; target: string; type: string; range: number; move?: number; status?: { name: string; statusType?: string; nbTurnEffect?: number | null }[]; offensive?: boolean; description: string }[];
+  spells?: { name: string; mpCost: number | null; hpCost: number | null; target: string; element: string; power?: number | null; hp?: number | null; status?: { name: string; statusType?: string; nbTurnEffect?: number | null } | null; description: string }[];
   rightHand?: EquippedWeapon | null;
   leftHand?: EquippedWeapon | null;
   bag?: BagItem[];
