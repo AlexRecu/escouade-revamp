@@ -4,6 +4,7 @@ import type { GameActions } from '../game/useGame';
 import { classTokenUrl, tokenUrl, defeatedTokenStyle } from '../utils/tokens';
 import { weaponEmoji, weaponLabel, weaponStatLabel, weaponRangeLabel, skillRangeLabel } from '../utils/weapons';
 import MonstronomiconView from './MonstronomiconView';
+import SkillDemo from './SkillDemo';
 
 type Props = {
   /** Membre à afficher (null = modal fermé). */
@@ -57,6 +58,8 @@ export default function CharacterDetailModal({ member, sharedBag, onClose, actio
   // Onglet principal du menu (esthétique menu RPG) : stats / compétences /
   // sorts / équipement / sac. Remplace l'ancienne pile de sections (scroll).
   const [mainTab, setMainTab] = useState<'stats' | 'skills' | 'spells' | 'equip' | 'bag'>('stats');
+  // Compétence dépliée pour la démo animée (nom, null = aucune).
+  const [demoSkill, setDemoSkill] = useState<string | null>(null);
   // Onglet actif du sac : consommables, armes ou spéciaux.
   const [bagTab, setBagTab] = useState<'consumable' | 'weapon' | 'special'>('consumable');
   // Sort de soin en cours de ciblage (nom du sort, null = aucun). Quand non
@@ -246,23 +249,35 @@ export default function CharacterDetailModal({ member, sharedBag, onClose, actio
             </h4>
             {member.skills && member.skills.length > 0 ? (
               <ul className="char-detail-list">
-                {member.skills.map((s) => (
-                  <li key={s.name} title={s.description}>
-                    <span className="char-detail-item-name">{s.name}</span>
-                    <span className="char-detail-item-meta">
-                      {s.apCost} AP{s.mpCost ? ` · ${s.mpCost} PM` : ''} · {targetLabel(s.target)} · {skillRangeLabel(s)}
-                    </span>
-                    {isBlueMage && s.name !== 'Scan' && s.name !== 'Apprendre' && (
-                      <button
-                        className="char-detail-bag-btn char-detail-forget-btn"
-                        onClick={() => actions.forgetAbility(member.id, s.name)}
-                        title="Oublier cette compétence apprise (libère un emplacement)"
-                      >
-                        Oublier
-                      </button>
-                    )}
-                  </li>
-                ))}
+                {member.skills.map((s) => {
+                  const open = demoSkill === s.name;
+                  return (
+                    <li
+                      key={s.name}
+                      className={`char-detail-skill-row${open ? ' open' : ''}`}
+                      title={s.description}
+                      onClick={() => setDemoSkill(open ? null : s.name)}
+                    >
+                      <span className="char-detail-item-name">
+                        {s.name}
+                        <span className="char-detail-skill-hint" aria-hidden>{open ? ' ▲' : ' ▶'}</span>
+                      </span>
+                      <span className="char-detail-item-meta">
+                        {s.apCost} AP{s.mpCost ? ` · ${s.mpCost} PM` : ''} · {targetLabel(s.target)} · {skillRangeLabel(s)}
+                      </span>
+                      {isBlueMage && s.name !== 'Scan' && s.name !== 'Apprendre' && (
+                        <button
+                          className="char-detail-bag-btn char-detail-forget-btn"
+                          onClick={(e) => { e.stopPropagation(); actions.forgetAbility(member.id, s.name); }}
+                          title="Oublier cette compétence apprise (libère un emplacement)"
+                        >
+                          Oublier
+                        </button>
+                      )}
+                      {open && <SkillDemo member={member} skill={s} />}
+                    </li>
+                  );
+                })}
               </ul>
             ) : (
               <p className="char-detail-empty">Aucune compétence débloquée.</p>

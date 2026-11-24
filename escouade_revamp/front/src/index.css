@@ -3396,6 +3396,153 @@ button:disabled {
   font-style: italic;
   white-space: nowrap;
 }
+/* ── Démo animée de compétence (SkillDemo) ────────────────────────────── */
+/* Ligne de compétence cliquable (déplie la démo). La démo prend toute la
+   largeur en dessous du nom/méta (flex-wrap). */
+.char-detail-skill-row {
+  cursor: pointer;
+  border-radius: 9px;
+  flex-wrap: wrap;
+  align-items: baseline;
+  transition: background-color .15s ease;
+}
+.char-detail-skill-row:hover {
+  background: var(--ui-surface-hover);
+}
+.char-detail-skill-row.open {
+  background: rgba(232, 193, 90, .07);
+}
+.char-detail-skill-hint {
+  font-size: 10px;
+  color: var(--text-dim);
+  opacity: .7;
+}
+.skill-demo {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 10px;
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  /* Prend toute la largeur de la ligne (en dessous du nom/méta). */
+  flex: 1 1 100%;
+}
+/* Scène : plateau sombre où les unités se déplacent (positions en %). */
+.skill-demo-scene {
+  position: relative;
+  height: 168px;
+  border-radius: 10px;
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(149, 120, 252, .10), transparent 60%),
+    linear-gradient(180deg, #14151f, #0e0f18);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.skill-demo-scene::after {
+  /* Grille discrète façon plateau. */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+  pointer-events: none;
+}
+.skill-demo-unit {
+  position: absolute;
+  width: 56px;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  transition: left .7s ease, top .7s ease;
+  z-index: 2;
+}
+.skill-demo-token {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  object-position: center;
+  border-radius: 50%;
+  background: rgba(0,0,0,.35);
+  border: 2px solid var(--border);
+  transition: border-color .3s ease, box-shadow .3s ease, filter .3s ease;
+}
+.skill-demo-unit.hero .skill-demo-token { border-color: var(--accent); }
+.skill-demo-unit.enemy .skill-demo-token { border-color: var(--hp); }
+.skill-demo-unit.active .skill-demo-token {
+  box-shadow: 0 0 0 2px rgba(232, 193, 90, .55), 0 0 14px rgba(232, 193, 90, .4);
+}
+.skill-demo-unit.dead .skill-demo-token { filter: grayscale(1) brightness(.5); opacity: .6; }
+.skill-demo-name {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-dim);
+  max-width: 60px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.skill-demo-hpbar {
+  width: 44px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(0,0,0,.5);
+  overflow: hidden;
+}
+.skill-demo-hpfill { height: 100%; border-radius: 999px; transition: width .5s ease; }
+.skill-demo-hpfill.hp { background: var(--hp); }
+.skill-demo-hpfill.enemy { background: #e8a85a; }
+/* Emoji d'effet superposé (téléportation, attaque, …). */
+.skill-demo-fx {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 20px;
+  z-index: 3;
+  animation: skill-demo-fx-pop 1.4s ease-in-out infinite;
+  filter: drop-shadow(0 0 6px rgba(232, 193, 90, .6));
+}
+@keyframes skill-demo-fx-pop {
+  0%, 100% { transform: translateX(-50%) scale(.85); opacity: .8; }
+  50% { transform: translateX(-50%) scale(1.25); opacity: 1; }
+}
+/* Journal synchronisé : chaque étape, l'étape courante est mise en focus. */
+.skill-demo-journal {
+  max-height: 132px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  background: rgba(0,0,0,.25);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.skill-demo-log {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-dim);
+  padding: 3px 8px;
+  border-left: 2px solid transparent;
+  border-radius: 4px;
+  opacity: .55;
+  transition: opacity .3s ease, background-color .3s ease, border-color .3s ease;
+}
+.skill-demo-log-past { opacity: .4; }
+.skill-demo-log-current {
+  opacity: 1;
+  color: var(--text);
+  background: rgba(232, 193, 90, .1);
+  border-left-color: var(--accent);
+  font-weight: 600;
+}
 /* ── Fiche du Monstronomicon ───────────────────────────────────────────── */
 .mono-view {
   margin-top: 10px;
