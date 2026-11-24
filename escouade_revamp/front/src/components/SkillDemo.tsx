@@ -393,11 +393,10 @@ export default function SkillDemo({ member, skill, kind = 'skill' }: Props) {
     );
   };
 
-  const kindLabel = kind === 'spell' ? 'sort' : 'compétence';
-  const kindArticle = kind === 'spell' ? 'du' : 'de la';
+  const kindLabel = kind === 'spell' ? 'du sort' : 'de la compétence';
   return (
     <div className="skill-demo">
-      <div className="skill-demo-scene" aria-label={`Démo ${kindArticle} ${kindLabel} ${skill.name}`}>
+      <div className="skill-demo-scene" aria-label={`Démo ${kindLabel} ${skill.name}`}>
         {(['hero', 'e1', 'e2'] as UnitKey[]).map(renderUnit)}
       </div>
       <div className="skill-demo-journal" ref={journalRef}>

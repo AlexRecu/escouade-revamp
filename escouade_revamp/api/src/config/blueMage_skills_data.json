@@ -232,7 +232,7 @@
   {
     "name": "Souffle putride",
     "element": "",
-    "description": "Une attaque dont les dégât sont doublés si la cible est empoisonnée. Peut empoisonner la cible.",
+    "description": "Une attaque dont les dégâts sont doublés si la cible est empoisonnée. Peut empoisonner la cible.",
     "formula": "let poison = 1; if(target.status.some(status => status.name === 'Poison'){poison = 2;} let damage = target.maxHp * 0.18 * poison; target.currentHp -= damage; resultArray.push(`${target.name} perd ${damage}PV`);",
     "target": "enemy",
     "range": 1,
