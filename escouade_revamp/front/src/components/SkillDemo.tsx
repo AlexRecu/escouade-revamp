@@ -14,11 +14,12 @@ import { classTokenUrl, monsterTokenUrl } from '../utils/tokens';
 
 type UnitKey = 'hero' | 'e1' | 'e2';
 
-/** État visuel d'une unité à un instant donné. */
+/** État visuel d'une unité à un instant donné (positions en cases 4×4). */
 type UnitState = {
-  /** Position en % dans la scène (0-100). */
-  x: number;
-  y: number;
+  /** Colonne de la grille (0-3). */
+  col: number;
+  /** Ligne de la grille (0-3). */
+  row: number;
   hp: number;
   maxHp: number;
   /** Unité « active » (halo). */
@@ -38,11 +39,11 @@ type DemoStep = {
 
 type Skill = { name: string; target: string; description: string };
 
-/** Positions de base de la scène. */
+/** Positions de base sur la grille 4×4 : héros à gauche, ennemis à droite. */
 const BASE = {
-  hero: { x: 10, y: 42 },
-  e1: { x: 66, y: 14 },
-  e2: { x: 66, y: 60 },
+  hero: { col: 0, row: 1 },
+  e1: { col: 3, row: 0 },
+  e2: { col: 3, row: 3 },
 };
 
 const ENEMY_NAMES = ['Gobelin', 'Frelon'];
@@ -73,7 +74,7 @@ function getSkillDemoScript(skill: Skill, heroName: string): DemoStep[] {
       {
         log: `${heroName} est téléporté derrière la cible la plus éloignée.`,
         units: {
-          hero: { x: 42, y: 60, hp: 18, maxHp: 18, active: true, effect: '🌀' },
+          hero: { col: 2, row: 3, hp: 18, maxHp: 18, active: true, effect: '🌀' },
           e1: u.e1,
           e2: { ...u.e2, active: true },
         },
@@ -82,7 +83,7 @@ function getSkillDemoScript(skill: Skill, heroName: string): DemoStep[] {
       {
         log: `Son taux de coup critique augmente.`,
         units: {
-          hero: { x: 42, y: 60, hp: 18, maxHp: 18, active: true, effect: '⚔️' },
+          hero: { col: 2, row: 3, hp: 18, maxHp: 18, active: true, effect: '⚔️' },
           e1: u.e1,
           e2: u.e2,
         },
@@ -91,13 +92,13 @@ function getSkillDemoScript(skill: Skill, heroName: string): DemoStep[] {
       {
         log: `${heroName} attaque ${e2}.`,
         units: {
-          hero: { x: 42, y: 60, hp: 18, maxHp: 18, active: true, effect: '⚔️' },
+          hero: { col: 2, row: 3, hp: 18, maxHp: 18, active: true, effect: '⚔️' },
           e1: u.e1,
           e2: { ...u.e2, active: true, effect: '💥', hp: 5 },
         },
         ms: 1900,
       },
-      { log: `Fin du tour de ${heroName}.`, units: { ...u, hero: { x: 42, y: 60, hp: 18, maxHp: 18 }, e2: { ...u.e2, hp: 5 } }, ms: 1500 },
+      { log: `Fin du tour de ${heroName}.`, units: { ...u, hero: { col: 2, row: 3, hp: 18, maxHp: 18 }, e2: { ...u.e2, hp: 5 } }, ms: 1500 },
     ];
   }
 
@@ -217,7 +218,7 @@ export default function SkillDemo({ member, skill }: Props) {
       <div
         key={key}
         className={`skill-demo-unit ${isHero ? 'hero' : 'enemy'}${s.active ? ' active' : ''}${s.dead ? ' dead' : ''}`}
-        style={{ left: `${s.x}%`, top: `${s.y}%` }}
+        style={{ left: `${(s.col + 0.5) * 25}%`, top: `${(s.row + 0.5) * 25}%` }}
       >
         {s.effect && <span className="skill-demo-fx" aria-hidden>{s.effect}</span>}
         <img className="skill-demo-token" src={token} alt={name} />

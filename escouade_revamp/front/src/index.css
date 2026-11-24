@@ -3421,7 +3421,7 @@ button:disabled {
 }
 .skill-demo {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 10px;
   margin-top: 10px;
   padding: 10px;
@@ -3430,11 +3430,14 @@ button:disabled {
   border-radius: 12px;
   /* Prend toute la largeur de la ligne (en dessous du nom/méta). */
   flex: 1 1 100%;
+  align-items: stretch;
 }
-/* Scène : plateau sombre où les unités se déplacent (positions en %). */
+/* Scène : plateau carré 4×4 (à gauche) où les unités se déplacent. */
 .skill-demo-scene {
   position: relative;
-  height: 168px;
+  flex: 0 0 auto;
+  width: 232px;
+  aspect-ratio: 1 / 1;
   border-radius: 10px;
   background:
     radial-gradient(120% 90% at 50% 0%, rgba(149, 120, 252, .10), transparent 60%),
@@ -3443,19 +3446,19 @@ button:disabled {
   overflow: hidden;
 }
 .skill-demo-scene::after {
-  /* Grille discrète façon plateau. */
+  /* Grille 4×4 discrète façon plateau (cases = 25% de la scène). */
   content: "";
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
-  background-size: 24px 24px;
+    linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+  background-size: 25% 25%;
   pointer-events: none;
 }
 .skill-demo-unit {
   position: absolute;
-  width: 56px;
+  width: 52px;
   transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
@@ -3465,8 +3468,8 @@ button:disabled {
   z-index: 2;
 }
 .skill-demo-token {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   object-fit: contain;
   object-position: center;
   border-radius: 50%;
@@ -3515,9 +3518,11 @@ button:disabled {
   0%, 100% { transform: translateX(-50%) scale(.85); opacity: .8; }
   50% { transform: translateX(-50%) scale(1.25); opacity: 1; }
 }
-/* Journal synchronisé : chaque étape, l'étape courante est mise en focus. */
+/* Journal synchronisé (à droite) : chaque étape, l'étape courante est mise
+   en focus. Prend la largeur restante, pleine hauteur de la scène. */
 .skill-demo-journal {
-  max-height: 132px;
+  flex: 1;
+  min-width: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -3544,6 +3549,12 @@ button:disabled {
   background: rgba(232, 193, 90, .1);
   border-left-color: var(--accent);
   font-weight: 600;
+}
+/* Mobile : scène + journal en colonne (pas assez de largeur pour le row). */
+@media (max-width: 600px) {
+  .skill-demo { flex-direction: column; }
+  .skill-demo-scene { width: 100%; }
+  .skill-demo-journal { max-height: 140px; }
 }
 /* ── Fiche du Monstronomicon ───────────────────────────────────────────── */
 .mono-view {
