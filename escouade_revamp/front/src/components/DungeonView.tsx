@@ -156,6 +156,20 @@ export default function DungeonView({ exploration, logs, fishResult, onMove, onR
   const exitIcon = exitType === 'door' ? '🚪' : '🪜';
   const exitLabel = exitType === 'door' ? 'Sortie' : 'Escalier';
 
+  // Thème visuel du donjon selon le biome (data-biome → variables CSS).
+  // Le rendu des tiles (mortes / praticables / explorées / sortie) suit le
+  // biome : forêt, caverne, tour, château, canyon, neige, lac.
+  const BIOME_THEME: Record<string, { key: string; label: string; icon: string }> = {
+    Forest: { key: 'forest', label: 'Forêt', icon: '🌲' },
+    Cave: { key: 'cave', label: 'Caverne', icon: '🪨' },
+    Tower: { key: 'tower', label: 'Tour', icon: '🗼' },
+    Castle: { key: 'castle', label: 'Château', icon: '🏰' },
+    Canyon: { key: 'canyon', label: 'Canyon', icon: '🏜️' },
+    FrozenLand: { key: 'frozen', label: 'Terres gelées', icon: '❄️' },
+    Lake: { key: 'lake', label: 'Lac', icon: '🌊' },
+  };
+  const biomeTheme = BIOME_THEME[biome] ?? { key: 'forest', label: biome, icon: '🗺️' };
+
   // Rotation de la barque 🚣‍♂️ (l'emoji fait face à l'ouest par défaut).
   const boatRotation = (dir: ExplorationDirection): number => {
     switch (dir) {
@@ -167,9 +181,15 @@ export default function DungeonView({ exploration, logs, fishResult, onMove, onR
   };
 
   return (
-    <div className="dungeon-view">
+    <div className="dungeon-view" data-biome={biomeTheme.key}>
       <div className="dungeon-header">
-        <h2 className="dungeon-title">⚔️ {exploration.dungeonName}</h2>
+        <div className="dungeon-title-wrap">
+          <h2 className="dungeon-title">
+            <span className="dungeon-biome-icon" aria-hidden>{biomeTheme.icon}</span>
+            {exploration.dungeonName}
+          </h2>
+          <span className="dungeon-biome-tag" title="Biome de la zone">{biomeTheme.label}</span>
+        </div>
         <p className="dungeon-meta">
           Étage <b>{exploration.floor}</b> / {exploration.totalFloors} · Niveau {exploration.zoneLevel}
           {completed && <span className="done-tag"> · ✓ terminé</span>}

@@ -54,6 +54,9 @@ const isOutOfCombatHeal = (s: { name: string; target: string }): boolean =>
  * Ouvert en cliquant sur un membre de l'équipe dans la barre latérale.
  */
 export default function CharacterDetailModal({ member, sharedBag, onClose, actions, inCombat, members }: Props) {
+  // Onglet principal du menu (esthétique menu RPG) : stats / compétences /
+  // sorts / équipement / sac. Remplace l'ancienne pile de sections (scroll).
+  const [mainTab, setMainTab] = useState<'stats' | 'skills' | 'spells' | 'equip' | 'bag'>('stats');
   // Onglet actif du sac : consommables, armes ou spéciaux.
   const [bagTab, setBagTab] = useState<'consumable' | 'weapon' | 'special'>('consumable');
   // Sort de soin en cours de ciblage (nom du sort, null = aucun). Quand non
@@ -139,15 +142,40 @@ export default function CharacterDetailModal({ member, sharedBag, onClose, actio
           <div className="char-detail-id">
             <h3>{member.name}</h3>
             <span className="char-detail-job">{member.job} · niveau {member.level}</span>
-            <span className="char-detail-hpmp">
-              PV {member.hp}/{member.maxHp} · PM {member.mp}/{member.maxMp}
-            </span>
+            {/* Barres PV/PM visuelles (menu RPG) + valeurs. */}
+            <div className="char-detail-vitals">
+              <div className="char-detail-vital" title={`Points de vie ${member.hp}/${member.maxHp}`}>
+                <span className="char-detail-vital-label">PV</span>
+                <div className="char-detail-vital-bar">
+                  <div className="char-detail-vital-fill hp" style={{ width: `${(member.hp / member.maxHp) * 100}%` }} />
+                </div>
+                <span className="char-detail-vital-val">{member.hp}/{member.maxHp}</span>
+              </div>
+              <div className="char-detail-vital" title={`Points de magie ${member.mp}/${member.maxMp}`}>
+                <span className="char-detail-vital-label">PM</span>
+                <div className="char-detail-vital-bar">
+                  <div className="char-detail-vital-fill mp" style={{ width: `${(member.mp / member.maxMp) * 100}%` }} />
+                </div>
+                <span className="char-detail-vital-val">{member.mp}/{member.maxMp}</span>
+              </div>
+            </div>
           </div>
           <button className="char-detail-close" onClick={onClose} aria-label="Fermer">✕</button>
         </div>
 
+        {/* Barre d'onglets du menu (esthétique console/JRPG). */}
+        <div className="char-detail-tabs" role="tablist">
+          <button role="tab" aria-selected={mainTab === 'stats'} className={mainTab === 'stats' ? 'char-detail-tab active' : 'char-detail-tab'} onClick={() => setMainTab('stats')}>📊 Stats</button>
+          <button role="tab" aria-selected={mainTab === 'skills'} className={mainTab === 'skills' ? 'char-detail-tab active' : 'char-detail-tab'} onClick={() => setMainTab('skills')}>✨ Compétences</button>
+          <button role="tab" aria-selected={mainTab === 'spells'} className={mainTab === 'spells' ? 'char-detail-tab active' : 'char-detail-tab'} onClick={() => setMainTab('spells')}>🔮 Sorts</button>
+          <button role="tab" aria-selected={mainTab === 'equip'} className={mainTab === 'equip' ? 'char-detail-tab active' : 'char-detail-tab'} onClick={() => setMainTab('equip')}>🗡️ Équipement</button>
+          <button role="tab" aria-selected={mainTab === 'bag'} className={mainTab === 'bag' ? 'char-detail-tab active' : 'char-detail-tab'} onClick={() => setMainTab('bag')}>🎒 Sac</button>
+        </div>
+
         <div className="char-detail-body">
-          {/* XP (cumulée + progression vers le prochain niveau) */}
+          {/* Onglet Stats : XP + statistiques. */}
+          {mainTab === 'stats' && (
+          <>
           <section className="char-detail-section">
             <h4>⭐ Expérience</h4>
             <div className="char-detail-xp">
@@ -199,8 +227,11 @@ export default function CharacterDetailModal({ member, sharedBag, onClose, actio
               </div>
             </section>
           )}
+          </>
+          )}
 
-          {/* Compétences */}
+          {/* Onglet Compétences */}
+          {mainTab === 'skills' && (
           <section className="char-detail-section">
             <h4>
               ✨ Compétences
@@ -237,8 +268,10 @@ export default function CharacterDetailModal({ member, sharedBag, onClose, actio
               <p className="char-detail-empty">Aucune compétence débloquée.</p>
             )}
           </section>
+          )}
 
-          {/* Sorts */}
+          {/* Onglet Sorts */}
+          {mainTab === 'spells' && (
           <section className="char-detail-section">
             <h4>🔮 Sorts</h4>
             {member.spells && member.spells.length > 0 ? (
@@ -322,8 +355,11 @@ export default function CharacterDetailModal({ member, sharedBag, onClose, actio
               </div>
             )}
           </section>
+          )}
 
-          {/* Types d'armes équipables (selon la classe) */}
+          {/* Onglet Équipement : armes équipables + équipement. */}
+          {mainTab === 'equip' && (
+          <>
           <section className="char-detail-section">
             <h4>🛡️ Armes équipables</h4>
             {member.equippableWeapons && member.equippableWeapons.length > 0 ? (
@@ -385,8 +421,11 @@ export default function CharacterDetailModal({ member, sharedBag, onClose, actio
               </div>
             </div>
           </section>
+          </>
+          )}
 
-          {/* Sac commun de l'équipe (onglets Consommables / Armes) */}
+          {/* Onglet Sac */}
+          {mainTab === 'bag' && (
           <section className="char-detail-section">
             <h4>🎒 Sac commun</h4>
             <div className="char-detail-bag-tabs">
@@ -604,6 +643,7 @@ export default function CharacterDetailModal({ member, sharedBag, onClose, actio
               );
             })()}
           </section>
+          )}
         </div>
       </div>
     </div>

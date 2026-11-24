@@ -1142,9 +1142,10 @@ button:disabled {
   width: min(60vh, 460px);
   aspect-ratio: 1 / 1;
   padding: 8px;
-  background: var(--bg-panel);
-  border: 1px solid var(--border);
+  background: var(--biome-grid-bg, var(--bg-panel));
+  border: 1px solid var(--biome-grid-border, var(--border));
   border-radius: 8px;
+  box-shadow: var(--biome-grid-shadow, var(--ui-shadow));
 }
 .tile {
   position: relative;
@@ -1162,19 +1163,23 @@ button:disabled {
   min-width: 0;
   min-height: 0;
 }
+/* Tiles du donjon : pilotées par les **variables de biome** (data-biome sur
+   .dungeon-view). Chaque biome surcharge --biome-wall / --biome-walk /
+   --biome-unvisited / --biome-grid-bg / --biome-accent → la grille change
+   d'ambiance (forêt, caverne, château, neige…) sans toucher au JSX. */
 .tile.wall {
-  background: var(--tile-block);
+  background: var(--biome-wall, var(--tile-block));
 }
 .tile.visited {
-  background: var(--tile-walk);
+  background: var(--biome-walk, var(--tile-walk));
 }
 .tile.unvisited {
-  background: #211b2e;
-  box-shadow: inset 0 0 0 1px #2a2438;
+  background: var(--biome-unvisited, #211b2e);
+  box-shadow: inset 0 0 0 1px var(--biome-unvisited-edge, #2a2438);
 }
 .tile.party {
-  background: var(--accent-2);
-  box-shadow: 0 0 8px rgba(124, 92, 255, 0.7);
+  background: var(--biome-party, var(--accent-2));
+  box-shadow: 0 0 8px var(--biome-party-glow, rgba(124, 92, 255, 0.7));
   z-index: 1;
 }
 /* Porte de sang (Phase D) : case bloquée, fond sombre rougeâtre + halo. */
@@ -1269,6 +1274,223 @@ button:disabled {
   border-left: 2px solid var(--border);
   padding-left: 8px;
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   DONJON — Refonte console RPG + système de thèmes par biome
+   La grille est la star (centrale, thémée). Header compact, dpad console,
+   log compact. Chaque biome surcharge les variables --biome-* ci-dessous.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Header console : titre + badge biome d'un côté, méta de l'autre ─────── */
+.dungeon-header {
+  align-items: center;
+  gap: 10px;
+}
+.dungeon-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+.dungeon-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: .02em;
+  color: var(--biome-accent, var(--accent));
+  text-shadow: 0 1px 0 rgba(0, 0, 0, .5);
+}
+.dungeon-biome-icon { font-size: 20px; line-height: 1; }
+.dungeon-biome-tag {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--biome-accent, var(--accent));
+  background: color-mix(in srgb, var(--biome-accent, var(--accent)) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--biome-accent, var(--accent)) 40%, transparent);
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.dungeon-meta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-dim);
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* ── Dpad console : croix directionnelle rétro ───────────────────────────── */
+.dungeon-dpad {
+  gap: 3px;
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 7px;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, .4);
+}
+.dpad-btn {
+  width: 46px;
+  height: 38px;
+  font-size: 15px;
+  border-radius: 9px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, .35);
+}
+.dpad-btn:hover:not(:disabled) {
+  background: var(--ui-surface-hover);
+  border-color: var(--biome-accent, var(--accent));
+  color: var(--biome-accent, var(--accent));
+}
+.dpad-btn:active:not(:disabled) { transform: translateY(1px); box-shadow: none; }
+.dpad-center {
+  width: 46px;
+  height: 38px;
+  border-radius: 9px;
+  background: radial-gradient(circle at 50% 45%, rgba(255,255,255,.06), transparent 70%);
+}
+
+/* ── Log compact : bandeau fin, jamais envahissant ───────────────────────── */
+.dungeon-log {
+  max-width: 460px;
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 7px 10px;
+  font-size: 12px;
+}
+.dungeon-log-line {
+  border-left: 2px solid var(--biome-accent, var(--border));
+  padding-left: 8px;
+  line-height: 1.5;
+}
+
+/* ── Boutons d'action du donjon (repos, coffre, pêche, rituel) ───────────── */
+.dungeon-rest-btn {
+  width: 200px;
+  min-height: 42px;
+  border-radius: 10px;
+  font-weight: 600;
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.dungeon-rest-btn:hover:not(:disabled) {
+  border-color: var(--biome-accent, var(--accent));
+  color: var(--biome-accent, var(--accent));
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   THÈMES DE BIOME — surcharge des variables --biome-* par data-biome
+   Extensible : ajouter un biome = ajouter un bloc data-biome.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* Forêt : feuillage dense, sentier terreux, lueur verte. */
+.dungeon-view[data-biome='forest'] {
+  --biome-wall: #0c1a10;
+  --biome-walk: #24402a;
+  --biome-unvisited: #16281b;
+  --biome-unvisited-edge: #1f3a26;
+  --biome-grid-bg: #0e1c12;
+  --biome-grid-border: #2c4a34;
+  --biome-grid-shadow: 0 12px 36px rgba(0, 20, 8, .5);
+  --biome-accent: #6fce8a;
+  --biome-party: #8fe0a4;
+  --biome-party-glow: rgba(111, 206, 138, .7);
+}
+
+/* Caverne : roche profonde bleutée, gravats, cristaux. */
+.dungeon-view[data-biome='cave'] {
+  --biome-wall: #0a0e1a;
+  --biome-walk: #2a3148;
+  --biome-unvisited: #171d2e;
+  --biome-unvisited-edge: #232c44;
+  --biome-grid-bg: #0c1120;
+  --biome-grid-border: #33405e;
+  --biome-grid-shadow: 0 12px 36px rgba(2, 6, 20, .55);
+  --biome-accent: #7fa8ff;
+  --biome-party: #9cc0ff;
+  --biome-party-glow: rgba(127, 168, 255, .7);
+}
+
+/* Tour : pierre sombre, dallage, lueur froide. */
+.dungeon-view[data-biome='tower'] {
+  --biome-wall: #101018;
+  --biome-walk: #33334a;
+  --biome-unvisited: #1c1c2a;
+  --biome-unvisited-edge: #2a2a3e;
+  --biome-grid-bg: #12121c;
+  --biome-grid-border: #3a3a52;
+  --biome-grid-shadow: 0 12px 36px rgba(0, 0, 12, .5);
+  --biome-accent: #b9a7ff;
+  --biome-party: #cdbcff;
+  --biome-party-glow: rgba(185, 167, 255, .7);
+}
+
+/* Château : pavés sombres, dallage mis en lumière, or. */
+.dungeon-view[data-biome='castle'] {
+  --biome-wall: #141018;
+  --biome-walk: #3a3040;
+  --biome-unvisited: #221c28;
+  --biome-unvisited-edge: #322a3a;
+  --biome-grid-bg: #16121c;
+  --biome-grid-border: #4a3f52;
+  --biome-grid-shadow: 0 12px 36px rgba(10, 4, 16, .5);
+  --biome-accent: #e8c15a;
+  --biome-party: #f2d17b;
+  --biome-party-glow: rgba(232, 193, 90, .7);
+}
+
+/* Canyon / terres sèches : sable brûlé, dunes, lueur ambrée. */
+.dungeon-view[data-biome='canyon'] {
+  --biome-wall: #1a120a;
+  --biome-walk: #4a3a24;
+  --biome-unvisited: #2a2014;
+  --biome-unvisited-edge: #3a2e1e;
+  --biome-grid-bg: #1c140c;
+  --biome-grid-border: #5a4630;
+  --biome-grid-shadow: 0 12px 36px rgba(20, 10, 2, .5);
+  --biome-accent: #e8a85a;
+  --biome-party: #f2c07b;
+  --biome-party-glow: rgba(232, 168, 90, .7);
+}
+
+/* Neige / glace : bleu nuit, neige brillante, lueur glacée. */
+.dungeon-view[data-biome='frozen'] {
+  --biome-wall: #0a1420;
+  --biome-walk: #2e4a62;
+  --biome-unvisited: #182838;
+  --biome-unvisited-edge: #24384c;
+  --biome-grid-bg: #0c1826;
+  --biome-grid-border: #3a5a78;
+  --biome-grid-shadow: 0 12px 36px rgba(2, 10, 24, .55);
+  --biome-accent: #8fd8ff;
+  --biome-party: #b8e8ff;
+  --biome-party-glow: rgba(143, 216, 255, .7);
+}
+
+/* Lac : eau profonde, reflets, lueur aquatique. */
+.dungeon-view[data-biome='lake'] {
+  --biome-wall: #08141c;
+  --biome-walk: #1c3a4a;
+  --biome-unvisited: #102834;
+  --biome-unvisited-edge: #1a3848;
+  --biome-grid-bg: #0a1a24;
+  --biome-grid-border: #2a5a72;
+  --biome-grid-shadow: 0 12px 36px rgba(2, 12, 20, .55);
+  --biome-accent: #5ac8e8;
+  --biome-party: #8fe0f2;
+  --biome-party-glow: rgba(90, 200, 232, .7);
+}
+
 .shop-chip:hover {
   filter: brightness(1.25);
 }
@@ -2742,6 +2964,82 @@ button:disabled {
 .char-detail-hpmp {
   font-size: 12px;
   color: var(--text-dim);
+}
+/* Barres vitales PV/PM (menu RPG) : label + barre + valeur. */
+.char-detail-vitals {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+.char-detail-vital {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.char-detail-vital-label {
+  font-size: 10px;
+  font-weight: 700;
+  width: 20px;
+  color: var(--text-dim);
+}
+.char-detail-vital-bar {
+  flex: 1;
+  height: 8px;
+  background: rgba(0, 0, 0, .45);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.char-detail-vital-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width .3s ease;
+}
+.char-detail-vital-fill.hp { background: linear-gradient(90deg, #c0392b, var(--hp)); }
+.char-detail-vital-fill.mp { background: linear-gradient(90deg, #2b5fb0, var(--mp)); }
+.char-detail-vital-val {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+  min-width: 46px;
+  text-align: right;
+}
+/* Barre d'onglets du menu (console/JRPG) : sous l'en-tête, au-dessus du corps. */
+.char-detail-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 14px;
+  padding: 4px;
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.char-detail-tabs::-webkit-scrollbar { display: none; }
+.char-detail-tab {
+  flex: 1 0 auto;
+  min-height: 38px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+.char-detail-tab:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--ui-surface-hover);
+}
+.char-detail-tab.active {
+  color: var(--accent);
+  background: rgba(232, 193, 90, .1);
+  border-color: rgba(232, 193, 90, .4);
 }
 .char-detail-close {
   background: transparent;
@@ -4478,6 +4776,164 @@ button:disabled { opacity: .48; }
   .mobile-game-nav { min-height: 44px; padding-block: 2px; }
   .mobile-game-nav .nav-icon { font-size: 16px; }
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   HARMONISATION CONSOLE — combat, ville, mappemonde, lobby, création
+   Unifie l'esthétique « console rétro modernisée » : cadres nets, boutons
+   tactiles, hiérarchie claire. Ne touche ni la logique ni la géométrie du
+   plateau (combat-units-layer / coordonnées % intactes).
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Combat : commandes style console/JRPG ───────────────────────────────── */
+.combat-actions {
+  border-radius: var(--ui-radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--ui-shadow);
+}
+.action-grid { gap: 7px; }
+.action-cat {
+  border-radius: 10px;
+  min-height: 50px;
+  font-size: 13px;
+  background: var(--bg-panel-2);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, .3);
+}
+.action-cat:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, .35);
+}
+.action-cat:active:not(:disabled) { transform: translateY(0); box-shadow: none; }
+.action-cat.active {
+  background: rgba(232, 193, 90, .14);
+  box-shadow: inset 0 0 0 1px var(--accent), 0 0 12px rgba(232, 193, 90, .25);
+}
+.action-endturn {
+  min-height: 48px;
+  border-radius: 11px;
+  background: linear-gradient(180deg, var(--bg-panel-2), var(--bg-panel));
+  box-shadow: 0 2px 0 rgba(0, 0, 0, .3);
+}
+.action-endturn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+/* File d'ordre : chips compactes et lisibles. */
+.combat-order {
+  border-radius: 12px;
+  box-shadow: var(--ui-shadow);
+}
+.order-chip {
+  border-radius: 999px;
+  font-weight: 600;
+}
+.order-chip.order-current {
+  background: rgba(232, 193, 90, .16);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+/* ── Ville : panneau latéral style console ───────────────────────────────── */
+.city-side {
+  border-left: 1px solid var(--border);
+  background: var(--bg-panel);
+}
+.city-side h3 {
+  letter-spacing: .02em;
+}
+.city-side .panel-section {
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+}
+.shop-list li.shop-item {
+  border-radius: 11px;
+  transition: border-color .15s ease, background-color .15s ease;
+}
+.shop-list li.shop-item:hover {
+  border-color: var(--accent);
+  background: rgba(232, 193, 90, .06);
+}
+.shop-tabs { gap: 6px; }
+.shop-tab {
+  min-height: 40px;
+  border-radius: 9px;
+  font-weight: 600;
+}
+.shop-tab.active {
+  background: rgba(232, 193, 90, .14);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ── Mappemonde : panneau de nœud style console ──────────────────────────── */
+.worldtree-panel {
+  border-radius: var(--ui-radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--ui-shadow);
+}
+.node-panel-btn {
+  min-height: 44px;
+  border-radius: 10px;
+  font-weight: 700;
+  background: var(--accent);
+  color: #17131b;
+  border-color: transparent;
+}
+.node-panel-btn:hover:not(:disabled) { background: #f2d17b; }
+
+/* ── Lobby : cartes de partie style console ──────────────────────────────── */
+.lobby-create, .lobby-room {
+  border-radius: var(--ui-radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--ui-shadow);
+}
+.lobby-room { transition: border-color .15s ease, transform .12s ease; }
+.lobby-room:hover {
+  border-color: var(--accent-2);
+  transform: translateY(-2px);
+}
+.lobby-btn {
+  min-height: 40px;
+  border-radius: 9px;
+  font-weight: 600;
+}
+.lobby-btn.primary {
+  background: var(--accent);
+  color: #17131b;
+  border-color: transparent;
+}
+.lobby-btn.primary:hover:not(:disabled) { background: #f2d17b; }
+
+/* ── Création : cartes de classe style console ───────────────────────────── */
+.creation-section {
+  border-radius: var(--ui-radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--ui-shadow);
+}
+.creation-job {
+  border-radius: 13px;
+  transition: transform .14s ease, border-color .14s ease, box-shadow .14s ease;
+}
+.creation-job:hover:not(:disabled) {
+  transform: translateY(-3px);
+  border-color: var(--accent-2);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .3);
+}
+.creation-job.selected {
+  border-color: var(--accent);
+  background: rgba(232, 193, 90, .08);
+  box-shadow: inset 0 0 0 1px rgba(232, 193, 90, .4);
+}
+.creation-submit {
+  min-height: 48px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  background: var(--accent);
+  color: #17131b;
+  border-color: transparent;
+}
+.creation-submit:hover:not(:disabled) { background: #f2d17b; }
 
 /* 13 — Accessibilité, préférences utilisateur, fluidité */
 @media (hover: none) {
