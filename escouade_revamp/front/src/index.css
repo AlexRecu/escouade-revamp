@@ -2898,7 +2898,9 @@ button:disabled {
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(3px);
   display: flex;
-  align-items: center;
+  /* Ancré en haut : le modal grandit vers le BAS au changement d'onglet,
+     le header + onglets restent donc à une position fixe (pas de rebond). */
+  align-items: flex-start;
   justify-content: center;
   z-index: 100;
   padding: 16px;
@@ -2911,7 +2913,10 @@ button:disabled {
   max-width: 520px;
   width: 100%;
   max-height: 90vh;
-  overflow-y: auto;
+  /* Flex column : header + onglets fixes, seul le corps scrolle (le modal
+     ne s'agrandit plus au changement d'onglet). */
+  display: flex;
+  flex-direction: column;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
 }
 .char-detail-head {
@@ -2919,6 +2924,7 @@ button:disabled {
   align-items: center;
   gap: 12px;
   margin-bottom: 14px;
+  flex-shrink: 0;
 }
 .char-detail-token {
   width: 80px;
@@ -3016,6 +3022,15 @@ button:disabled {
   border-radius: 11px;
   overflow-x: auto;
   scrollbar-width: none;
+  flex-shrink: 0;
+}
+/* Corps de la fiche : seul élément qui scrolle (header + onglets fixes). */
+.char-detail-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin-right: -6px;
+  padding-right: 6px;
 }
 .char-detail-tabs::-webkit-scrollbar { display: none; }
 .char-detail-tab {
