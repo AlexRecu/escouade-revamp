@@ -123,6 +123,18 @@ function getSkillDemoScript(skill: Skill, heroName: string): DemoStep[] {
     ];
   }
 
+  // ── Bouclier impénétrable (Guerrier) : protection / interception ─────────
+  if (skill.name === 'Bouclier impénétrable') {
+    return [
+      { log: `Le tour de ${heroName} commence.`, units: { ...u, hero: { ...u.hero, active: true } }, ms: 1500 },
+      { log: `${heroName} utilise Bouclier impénétrable.`, units: { ...u, hero: { ...u.hero, active: true, effect: '🛡️' } }, ms: 1600 },
+      { log: `Un bouclier de lumière l'enveloppe (lui et ses alliés, 4 tours).`, units: { ...u, hero: { ...u.hero, active: true, effect: '🛡️' } }, ms: 1900 },
+      { log: `${e1} attaque ${heroName}.`, units: { ...u, hero: { ...u.hero, active: true, effect: '🛡️' }, e1: { ...u.e1, active: true, effect: '⚔️' } }, ms: 1800 },
+      { log: `Le bouclier intercepte l'attaque !`, units: { ...u, hero: { ...u.hero, active: true, effect: '🛡️' }, e1: { ...u.e1, effect: '💥' } }, ms: 1900 },
+      { log: `Fin du tour de ${heroName}.`, units: u, ms: 1500 },
+    ];
+  }
+
   // ── Scan / Apprendre (Mage bleu) ─────────────────────────────────────────
   if (skill.name === 'Scan') {
     return [
