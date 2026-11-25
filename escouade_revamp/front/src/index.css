@@ -3948,6 +3948,13 @@ button:disabled {
   border: 1px solid var(--border);
   background: var(--bg);
 }
+/* Tueur = démon : cellule du sprite sheet (portrait, ratio 1:2) → rectangle
+   40×80 pour ne pas déformer le sprite. */
+.gameover-killer-token-sprite {
+  width: 40px;
+  height: 80px;
+  background-color: transparent;
+}
 .gameover-log {
   text-align: left;
   background: var(--bg-panel-2);

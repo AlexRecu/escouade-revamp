@@ -1,5 +1,5 @@
 import type { GameOverRecap } from '../types/game';
-import { defeatedTokenStyle, monsterTokenUrl } from '../utils/tokens';
+import { defeatedTokenStyle, eonDemonTokenStyle, monsterTokenUrl } from '../utils/tokens';
 
 type Props = {
   recap: GameOverRecap;
@@ -15,6 +15,9 @@ type Props = {
  */
 export default function GameOverScreen({ recap, onDismiss }: Props) {
   const heroStyle = defeatedTokenStyle(recap.heroJob);
+  // Tueur : un démon (ex. « Mateus, le Corrompu ») a son sprite dans la sheet
+  // eon_demon (clé = nom court avant la virgule) ; sinon token monstre classique.
+  const killerSprite = eonDemonTokenStyle(recap.killerName.split(',')[0].trim());
   return (
     <div className="gameover-overlay">
       <div className="gameover-modal">
@@ -47,14 +50,22 @@ export default function GameOverScreen({ recap, onDismiss }: Props) {
 
           <div className="gameover-side">
             <span className="gameover-side-label">Tueur</span>
-            <img
-              className="gameover-killer-token"
-              src={monsterTokenUrl(recap.killerName)}
-              alt={recap.killerName}
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = '/assets/tokens/default.png';
-              }}
-            />
+            {killerSprite ? (
+              <div
+                className="gameover-killer-token gameover-killer-token-sprite"
+                style={killerSprite}
+                title={recap.killerName}
+              />
+            ) : (
+              <img
+                className="gameover-killer-token"
+                src={monsterTokenUrl(recap.killerName)}
+                alt={recap.killerName}
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = '/assets/tokens/default.png';
+                }}
+              />
+            )}
             <span className="gameover-side-name">{recap.killerName}</span>
           </div>
         </div>
