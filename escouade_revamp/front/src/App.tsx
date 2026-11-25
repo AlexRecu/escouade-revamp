@@ -5,6 +5,7 @@ import type { WorldSummary, Hub } from './types/world';
 import WorldTree from './components/WorldTree';
 import City from './components/City';
 import DungeonView from './components/DungeonView';
+import TilePrototype from './components/TilePrototype';
 import CombatView from './components/CombatView';
 import AuthScreen from './components/AuthScreen';
 import PartySidebar from './components/PartySidebar';
@@ -31,6 +32,8 @@ function App() {
   const [world, setWorld] = useState<WorldSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<View>({ name: 'world' });
+  // Prototype des tuiles générées (Canvas 2D) — écran de validation du look.
+  const [showTilePrototype, setShowTilePrototype] = useState(false);
   // Membre sélectionné pour le panneau de détail (id, null = fermé).
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   // Menu déroulant du bandeau (bouton pseudo → Changer de partie / Déconnexion).
@@ -290,6 +293,13 @@ function App() {
     setView({ name: 'world' });
   };
 
+  // Prototype des tuiles accessible sans connexion (écran purement visuel) :
+  // ouvrir http://localhost:5173/?tiles=1. Utile pour valider le look sans
+  // avoir besoin du backend / d'un compte.
+  if (new URLSearchParams(window.location.search).has('tiles')) {
+    return <TilePrototype onBack={() => window.history.back()} />;
+  }
+
   // Pas connecté → écran d'authentification.
   if (!user) {
     return (
@@ -344,6 +354,13 @@ function App() {
             ⚔️ {exploration.dungeonName} — Étage {exploration.floor}/{exploration.totalFloors}
           </span>
         )}
+        <button
+          className="user-menu-toggle"
+          onClick={() => setShowTilePrototype(true)}
+          title="Prototype des tuiles générées"
+        >
+          🎨
+        </button>
         <div className="user-menu" ref={userMenuRef}>
           <button
             className="user-menu-toggle"
@@ -409,6 +426,12 @@ function App() {
           />
         )}
         <main className="app-main">
+          {/* Prototype des tuiles générées : écran de validation du look,
+              accessible depuis le header (🎨). Remplace le contenu principal. */}
+          {showTilePrototype ? (
+            <TilePrototype onBack={() => setShowTilePrototype(false)} />
+          ) : (
+          <>
           {/* Pas dans une partie → écran de lobby (créer / rejoindre / spectateur). */}
           {!inRoom && (
             <LobbyScreen
@@ -487,6 +510,7 @@ function App() {
                 combatEndPending={combatEndPending}
                 combatEndLogs={combatEndLogs}
                 onConfirmEnd={() => actions.confirmCombatEnd()}
+                biome={exploration?.biome}
               />
             ) : exploration ? (
               <DungeonView
@@ -505,6 +529,8 @@ function App() {
             ) : (
               <div className="worldmap">Entrée dans le donjon…</div>
             )
+          )}
+          </>
           )}
         </main>
       </div>

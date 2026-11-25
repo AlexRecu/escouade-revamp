@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CombatState, CombatUnit } from '../types/game';
 import { classTokenUrl, monsterTokenUrl, DEFAULT_TOKEN_URL, defeatedTokenStyle, eonDemonTokenStyle } from '../utils/tokens';
 import { skillRangeLabel } from '../utils/weapons';
+import { tileFor, type BiomeKey } from '../game/tileArt';
 import CollapsibleLog from './CollapsibleLog';
 
 type Props = {
@@ -28,6 +29,14 @@ type Props = {
   combatEndLogs?: string[];
   /** Valide la fin du combat (quitte l'écran de relecture). */
   onConfirmEnd?: () => void;
+  /** Biome du donjon (pour les textures du plateau). */
+  biome?: string;
+};
+
+/** Biome (nom serveur) → clé de texture tileArt. */
+const BIOME_KEY: Record<string, BiomeKey> = {
+  Forest: 'forest', Cave: 'cave', Tower: 'tower', Castle: 'castle',
+  Canyon: 'canyon', FrozenLand: 'frozen', Lake: 'lake',
 };
 
 /** Catégorie de sous-menu (les qui ont une liste). */
@@ -45,8 +54,11 @@ type Submenu = 'none' | 'items' | 'skills' | 'spells' | 'eon' | 'summon';
  * disponible), puis choisit une action dans le menu. Si l'action a des cibles,
  * les cibles valides clignotent et le joueur clique sur la cible pour valider.
  */
-export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove, onAct, onEndTurn, onAiStep, onFlee, combatEndPending = false, combatEndLogs = [], onConfirmEnd }: Props) {
+export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove, onAct, onEndTurn, onAiStep, onFlee, combatEndPending = false, combatEndLogs = [], onConfirmEnd, biome }: Props) {
   const { units, gridSize, turn, result, currentUnitId, actions, log, actionOrder, placement } = combat;
+
+  // Textures du plateau : toutes les cases sont des sols du biome du donjon.
+  const biomeKey = biome ? BIOME_KEY[biome] : undefined;
 
   // Unité courante (dont c'est le tour, contrôlée par le joueur).
   const currentUnit = useMemo(
@@ -712,10 +724,23 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
               // Case impactée par la dernière action (attaque de zone, soin…).
               if (actionFx && actionZonePositions.has(key)) cls += ' tile-action-zone';
 
+              // Texture du sol du biome (toutes les cases = floor).
+              const tileUrl = biomeKey
+                ? tileFor(biomeKey, 'floor', row, col, 0)
+                : undefined;
+
               return (
                 <div
                   key={key}
                   className={cls}
+                  style={tileUrl
+                    ? {
+                        backgroundImage: `url(${tileUrl})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        imageRendering: 'pixelated',
+                      }
+                    : undefined}
                   onClick={() => handleTileClick(row, col)}
                   title={unit ? `${unit.name} (${unit.currentHp}/${unit.maxHp})` : undefined}
                 />

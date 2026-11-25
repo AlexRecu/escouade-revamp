@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ExplorationState, FishResult } from '../types/game';
 import type { ExplorationDirection } from '../api/socket';
 import CollapsibleLog from './CollapsibleLog';
+import { getBiomeArt, tileFor, LN, LE, LS, LW, type BiomeKey } from '../game/tileArt';
 
 type Props = {
   exploration: ExplorationState;
@@ -65,6 +66,7 @@ export default function DungeonView({ exploration, logs, fishResult, onMove, onR
       if (second >= fishResult.atSecond) {
         if (timerRef.current) clearInterval(timerRef.current);
         timerRef.current = null;
+        setFishing(false);
         setRevealed(true);
         setRevealedOutcome({ outcome: fishResult.outcome, onMateusTile: fishResult.onMateusTile });
         // Révélation : poisson → le sac se met à jour via exploration:state ;
@@ -156,6 +158,28 @@ export default function DungeonView({ exploration, logs, fishResult, onMove, onR
   const exitIcon = exitType === 'door' ? '🚪' : '🪜';
   const exitLabel = exitType === 'door' ? 'Sortie' : 'Escalier';
 
+  // Textures de tuiles (Canvas 2D, pixel-art) : le mur (r,c) est-il adjacent
+  // en **cardinal** à une case praticable ? (décors orientés, ex. château).
+  const isCardinalFacing = (r: number, c: number): boolean => {
+    const at = (rr: number, cc: number) =>
+      rr >= 0 && cc >= 0 && rr < rows && cc < cols && tileMap[rr]?.[cc] === true;
+    return at(r, c - 1) || at(r, c + 1) || at(r - 1, c) || at(r + 1, c);
+  };
+  // Masque d'arête (LN/LE/LS/LW) : un bit est posé si le voisin cardinal est
+  // du type opposé (eau vs berge). Utilisé par le lac pour orienter la
+  // transition eau/terre. Les voisins hors grille comptent comme le même type.
+  const edgeMaskOf = (r: number, c: number): number => {
+    const cur = tileMap[r]?.[c] === true;
+    const at = (rr: number, cc: number) =>
+      rr >= 0 && cc >= 0 && rr < rows && cc < cols ? tileMap[rr]?.[cc] === true : cur;
+    let m = 0;
+    if (at(r - 1, c) !== cur) m |= LN;
+    if (at(r, c + 1) !== cur) m |= LE;
+    if (at(r + 1, c) !== cur) m |= LS;
+    if (at(r, c - 1) !== cur) m |= LW;
+    return m;
+  };
+
   // Thème visuel du donjon selon le biome (data-biome → variables CSS).
   // Le rendu des tiles (mortes / praticables / explorées / sortie) suit le
   // biome : forêt, caverne, tour, château, canyon, neige, lac.
@@ -169,6 +193,13 @@ export default function DungeonView({ exploration, logs, fishResult, onMove, onR
     Lake: { key: 'lake', label: 'Lac', icon: '🌊' },
   };
   const biomeTheme = BIOME_THEME[biome] ?? { key: 'forest', label: biome, icon: '🗺️' };
+
+  // Pré-génère les textures du biome courant (mémorisées dans tileArt) pour
+  // éviter un pic de génération au premier rendu de la grille.
+  const biomeKey = biomeTheme.key as BiomeKey;
+  useMemo(() => {
+    getBiomeArt(biomeKey);
+  }, [biomeKey]);
 
   // Rotation de la barque 🚣‍♂️ (l'emoji fait face à l'ouest par défaut).
   const boatRotation = (dir: ExplorationDirection): number => {
@@ -236,8 +267,28 @@ export default function DungeonView({ exploration, logs, fishResult, onMove, onR
                 else if (isEnd) icon = exitIcon;
                 else if (isStart) icon = '📍';
 
+                // Texture de tuile (Canvas 2D) : toutes les tuiles affichent
+                // leur texture (sol ou mur). La porte de sang garde son fond dédié.
+                const kind = walkable ? 'floor' : 'wall';
+                const facing = !walkable ? isCardinalFacing(r, c) : undefined;
+                const edgeMask = edgeMaskOf(r, c);
+                const tileUrl = !isBloodDoor
+                  ? tileFor(biomeKey, kind, r, c, exploration.floor, facing, edgeMask)
+                  : undefined;
+
                 return (
-                  <div key={`${r}-${c}`} className={cls}>
+                  <div
+                    key={`${r}-${c}`}
+                    className={cls}
+                    style={tileUrl
+                      ? {
+                          backgroundImage: `url(${tileUrl})`,
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                          imageRendering: 'pixelated',
+                        }
+                      : undefined}
+                  >
                     {icon && (
                       <span
                         className={isBoat ? 'tile-icon boat-icon' : 'tile-icon'}

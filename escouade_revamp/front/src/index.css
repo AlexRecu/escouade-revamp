@@ -1199,6 +1199,72 @@ button:disabled {
   color: var(--text-dim);
 }
 
+/* ── Prototype des tuiles générées (Canvas 2D) ─────────────────────────── */
+.tile-prototype {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  /* Rendu en enfant direct de #root (height:100dvh, body overflow:hidden) :
+     on contraint la hauteur au viewport pour que le scroll interne permette
+     de voir tous les biomes (dont le lac). */
+  height: 100dvh;
+  overflow-y: auto;
+}
+.tile-prototype-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.tile-prototype-head h2 { margin: 0; font-size: 20px; }
+.tile-prototype-sub {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.5;
+  max-width: 720px;
+}
+.tile-prototype-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 18px;
+}
+.tile-prototype-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.tile-prototype-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.tile-prototype-map {
+  display: grid;
+  gap: 1px;
+  width: 100%;
+  aspect-ratio: 10 / 8;
+  background: #000;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.tile-prototype-tile {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  background-size: cover;
+  background-position: center;
+  image-rendering: pixelated;
+}
+
 .dungeon-controls {
   display: flex;
   flex-direction: column;
