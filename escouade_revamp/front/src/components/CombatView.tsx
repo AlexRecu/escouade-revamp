@@ -968,8 +968,11 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
           <div className="combat-log">
             <h4>Narrateur</h4>
             <div className="combat-log-entries">
-              {[...(combatEndPending ? combatEndLogs ?? [] : []), ...log].reverse().map((entry, i) => (
-                <p key={i} className={i >= log.length ? 'log-entry log-entry-loot' : 'log-entry'}>{entry}</p>
+              {/* Ordre chronologique : combat d'abord, puis fin de combat
+                  (butin/XP/victoire). Affiché le plus récent en premier →
+                  les logs de fin apparaissent au-dessus du combat. */}
+              {[...log, ...(combatEndPending ? combatEndLogs ?? [] : [])].reverse().map((entry, i) => (
+                <p key={i} className={i < (combatEndPending ? combatEndLogs.length : 0) ? 'log-entry log-entry-loot' : 'log-entry'}>{entry}</p>
               ))}
             </div>
           </div>
