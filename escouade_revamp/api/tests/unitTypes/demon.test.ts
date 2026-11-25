@@ -27,7 +27,7 @@ describe("Demon Class", () => {
     test("should create a Demon with correct stats", () => {
         expect(demon.name).toBe("Mateus, le Corrompu");
         expect(demon.stats.strength).toBe(3);
-        expect(demon.stats.endurance).toBe(4);
+        expect(demon.stats.endurance).toBe(6);
         expect(demon.stats.intelligence).toBe(6);
         expect(demon.actions).toEqual([
             "Congélation",
@@ -60,8 +60,8 @@ describe("Demon Class", () => {
         const isAlive = demon.takeDamage(log);
         
         expect(isAlive).toBe(true);
-        expect(demon.stats.endurance).toBe(3);
-        expect(log).toContain("Mateus, le Corrompu perd 1 point d'endurance ! Endurance restante : 3");
+        expect(demon.stats.endurance).toBe(5);
+        expect(log).toContain("Mateus, le Corrompu perd 1 point d'endurance ! Endurance restante : 5");
     });
 
     test("should disappear when endurance reaches 0", () => {

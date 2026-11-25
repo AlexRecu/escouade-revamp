@@ -3,7 +3,7 @@
         "id": "Demon_Mateus",
         "name":"Mateus, le Corrompu",
         "strength": 3,
-        "endurance": 4,
+        "endurance": 6,
         "intelligence": 6,
         "actions": [
             "Congélation",
@@ -17,7 +17,7 @@
         "id": "Demon_Belias",
         "name":"Bélias, le Titan",
         "strength": 2,
-        "endurance": 3,
+        "endurance": 4,
         "intelligence": 6,
         "actions": [
             "Combustion",
@@ -30,7 +30,7 @@
         "id": "Demon_Adrammelech",
         "name":"Adrammelech, le Grand Courroux",
         "strength": 3,
-        "endurance": 5,
+        "endurance": 6,
         "intelligence": 6,
         "actions": [
             "Fulguration",
@@ -45,7 +45,7 @@
         "id": "Demon_Hashmal",
         "name":"Hashmal, le Grand Ordonnateur",
         "strength": 5,
-        "endurance": 3,
+        "endurance": 4,
         "intelligence": 6,
         "actions": [
             "Rocher",
@@ -58,7 +58,7 @@
         "id": "Demon_Zeromus",
         "name":"Zeromus, le Condamnateur",
         "strength": 5,
-        "endurance": 2,
+        "endurance": 3,
         "intelligence": 9,
         "actions": [
             "Puit gravitationnel",
@@ -70,7 +70,7 @@
         "id": "Demon_Ultima",
         "name":"Ultima, le Grand Séraphin",
         "strength": 2,
-        "endurance": 2,
+        "endurance": 3,
         "intelligence": 9,
         "actions": [
             "Aérolithe",
