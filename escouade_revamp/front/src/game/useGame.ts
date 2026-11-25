@@ -240,6 +240,10 @@ export function useGame(token: string | null, confirmCombatEnd = false): UseGame
   // Callback d'auto-sortie (donjon terminé) — stocké en ref pour ne pas
   // resouscrire l'abonnement à chaque render.
   const exitedHandlerRef = useRef<(() => void) | null>(null);
+  // Id de la room courante (pour détecter le changement de partie et vider
+  // le journal — les logs sont purement client, le serveur ne pousse pas
+  // d'historique).
+  const lastRoomIdRef = useRef<string | null>(null);
   // Callback d'erreur d'auth (token invalide/expiré) — renvoie vers le login.
   const authErrorHandlerRef = useRef<(() => void) | null>(null);
 
@@ -309,6 +313,15 @@ export function useGame(token: string | null, confirmCombatEnd = false): UseGame
       // PartySidebar le fusionnerait sur l'état de ville → PV « redescendus ».
       setExploration(null);
       setCombat(null);
+      // Changement de partie (ou retour au lobby) : on vide le journal pour
+      // ne pas afficher les logs de l'ancienne session (le serveur ne pousse
+      // pas d'historique, le journal est purement client).
+      const roomId = s?.room?.roomId ?? null;
+      if (roomId !== lastRoomIdRef.current) {
+        lastRoomIdRef.current = roomId;
+        setLogs([]);
+        setCombatEndLogs([]);
+      }
     });
     onLog(pushLogs);
     onError((msg) => {

@@ -98,13 +98,7 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
   // personnage dont c'est le tour. Masqué sur desktop (CSS).
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Auto-scroll du journal : on reste collé au bas (dernière entrée) quand de
-  // nouvelles lignes arrivent.
-  const logRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = logRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [log]);
+
 
   // ── Animation bouclier (protection) ─────────────────────────────────────
   // Quand le log contient « X protège Y » ou « X se protège », on affiche un
@@ -938,7 +932,7 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
                     : "💨 Fuite !"}
                 </p>
                 <p className="combat-end-hint">
-                  Relisez le journal (dernière attaque, butin, XP, montée de
+                  Relisez le narrateur (dernière attaque, butin, XP, montée de
                   niveau) puis validez pour continuer.
                 </p>
                 <button className="action-endturn combat-end-confirm" onClick={onConfirmEnd}>
@@ -972,13 +966,10 @@ export default function CombatView({ combat, onPlace, onConfirmPlacement, onMove
               les logs d'exploration qui noieraient les actions). En phase de
               validation de fin de combat, on ajoute les logs de butin/XP. */}
           <div className="combat-log">
-            <h4>Journal</h4>
-            <div className="combat-log-entries" ref={logRef}>
-              {log.map((entry, i) => (
-                <p key={i} className="log-entry">{entry}</p>
-              ))}
-              {combatEndPending && combatEndLogs.map((entry, i) => (
-                <p key={`end-${i}`} className="log-entry log-entry-loot">{entry}</p>
+            <h4>Narrateur</h4>
+            <div className="combat-log-entries">
+              {[...(combatEndPending ? combatEndLogs ?? [] : []), ...log].reverse().map((entry, i) => (
+                <p key={i} className={i >= log.length ? 'log-entry log-entry-loot' : 'log-entry'}>{entry}</p>
               ))}
             </div>
           </div>

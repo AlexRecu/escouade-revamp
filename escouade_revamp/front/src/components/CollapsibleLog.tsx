@@ -16,15 +16,15 @@ export default function CollapsibleLog({ entries }: { entries: string[] }) {
         className="log-toggle"
         data-open={open}
         onClick={() => setOpen((o) => !o)}
-        aria-label={open ? 'Fermer le journal' : 'Ouvrir le journal'}
-        title="Journal"
+        aria-label={open ? 'Fermer le narrateur' : 'Ouvrir le narrateur'}
+        title="Narrateur"
       >
         📜
       </button>
       <div className="log-sheet" data-open={open}>
         <div className="log">
           {entries.length === 0 && <div className="entry">—</div>}
-          {entries.map((e, i) => (
+          {[...entries].reverse().map((e, i) => (
             <div className="entry" key={i}>
               {e}
             </div>

@@ -320,7 +320,7 @@ export default function DungeonView({ exploration, logs, fishResult, onMove, onR
                 {fishingLine}
               </div>
             )}
-            {logs.slice(-8).map((l, i) => (
+            {[...logs.slice(-8)].reverse().map((l, i) => (
               <div key={i} className="dungeon-log-line">
                 {l}
               </div>

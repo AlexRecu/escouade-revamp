@@ -369,10 +369,10 @@ export default function City({ hub, onBack, world, state, gameLogs, actions }: P
 
       {/* Journal en bas de l'écran (pleine largeur). */}
       <div className="city-log">
-        <h4>Journal</h4>
+        <h4>Narrateur</h4>
         <div className="log">
           {log.length === 0 && <div className="entry">—</div>}
-          {log.map((e, i) => (
+          {[...log].reverse().map((e, i) => (
             <div className="entry" key={i}>
               {e}
             </div>
