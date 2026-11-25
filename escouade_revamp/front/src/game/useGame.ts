@@ -377,6 +377,15 @@ export function useGame(token: string | null, confirmCombatEnd = false): UseGame
           exitedDeferredRef.current = false;
         }
         combatEnd();
+      } else if (!combatEndPendingRef.current) {
+        // Nouveau combat en cours : on remet l'état de relecture à zéro.
+        // Sinon, après une défaite (qui ramène à l'auberge sans écran de
+        // relecture à valider), `combatEndPending` resterait `true` et les
+        // logs d'aventure du combat suivant (Rencontre, …) seraient capturés
+        // dans `combatEndLogs` → affichés en haut du narrateur avec le
+        // highlight loot, alors que le combat vient de commencer.
+        setCombatEndPending(false);
+        setCombatEndLogs([]);
       }
     });
 
